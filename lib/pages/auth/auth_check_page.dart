@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dashboard_page.dart';
+import '../dashboard/dashboard_page.dart';
 import 'login_page.dart';
-import '../utils/user_local_storage.dart'; // تأكد من صحة المسار
+import '../../../utils/user_local_storage.dart'; // تأكد من صحة المسار
 
 class AuthCheckPage extends StatefulWidget {
   const AuthCheckPage({super.key});

@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // صفحات المشروع
-import 'pages/splash_screen.dart';
-import 'pages/login_page.dart';
-import 'pages/signup_page.dart';
-import 'pages/dashboard_page.dart';
+import 'pages/dashboard/splash_screen.dart';
+import 'pages/auth/login_page.dart';
+import 'pages/auth/signup_page.dart';
+import 'pages/dashboard/dashboard_page.dart';
 import 'pages/companies/companies_page.dart';
 import 'pages/companies/add_company_page.dart';
 import 'pages/companies/edit_company_page.dart';
-import 'pages/suppliers_page.dart';
-import 'pages/add_supplier_page.dart';
-import 'pages/edit_supplier_page.dart';
-import 'pages/purchase_orders_page.dart';
-import 'pages/purchase_order_detail_page.dart';
-import 'pages/add_purchase_order_page.dart'; // تأكد من وجود هذا الملف
+import 'pages/suppliers/suppliers_page.dart';
+import 'pages/suppliers/add_supplier_page.dart';
+import 'pages/suppliers/edit_supplier_page.dart';
+import 'pages/purchasing/purchase_orders_page.dart';
+import 'pages/purchasing/purchase_order_detail_page.dart';
+import 'pages/purchasing/add_purchase_order_page.dart'; // تأكد من وجود هذا الملف
 import 'pages/items_page.dart';
 import 'pages/missing_parameter_page.dart';
 
@@ -121,10 +121,14 @@ final GoRouter appRouter = GoRouter(
       name: 'add-purchase-order',
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'];
+        final editOrderId = state.uri.queryParameters['editOrderId'];
         if (companyId == null || companyId.isEmpty) {
-          return const MissingParameterPage(parameterName: 'companyId');
+          return const Scaffold(body: Center(child: Text('Missing companyId')));
         }
-        return AddPurchaseOrderPage(selectedCompany: companyId);
+        return AddPurchaseOrderPage(
+          selectedCompany: companyId,
+          editOrderId: editOrderId,
+        );
       },
     ),
     GoRoute(

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dashboard_page.dart';
+
+import '../dashboard/dashboard_page.dart';
+//import '../../pages/dashboard/dashboard_page.dart';
+//import '../dashboard/dashboard_page.dart';
+
+
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});

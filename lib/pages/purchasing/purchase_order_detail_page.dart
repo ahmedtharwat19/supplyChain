@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
-import '../utils/pdf_exporter.dart';
+
+import '../../utils/pdf_exporter.dart';
+//import '../../../utils/pdf_exporter.dart';
 
 class PurchaseOrderDetailPage extends StatefulWidget {
   final String companyId;

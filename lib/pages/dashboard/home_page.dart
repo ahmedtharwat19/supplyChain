@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'companies/companies_page.dart';
-import 'purchase_orders_page.dart';
-import 'vendors_page.dart';
+import '../companies/companies_page.dart';
+import '../purchasing/purchase_orders_page.dart';
+import '../suppliers/vendors_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

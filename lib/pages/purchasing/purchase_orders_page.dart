@@ -3,8 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/company_selector.dart';
-import '../utils/pdf_exporter.dart';
+
+import '../../utils/pdf_exporter.dart';
+import '../../widgets/company_selector.dart';
 
 class PurchaseOrdersPage extends StatefulWidget {
   final String? userName;
@@ -33,6 +34,26 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     setState(() {
       _userId = prefs.getString('userId');
     });
+  }
+
+  Future<void> deleteOrder(String orderId) async {
+    if (selectedCompany == null) return;
+
+    final docRef = FirebaseFirestore.instance
+        .collection('companies/$selectedCompany/purchase_orders')
+        .doc(orderId);
+
+    final doc = await docRef.get();
+    if (doc.exists && !(doc.data()?['isConfirmed'] ?? false)) {
+      await docRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف أمر الشراء بنجاح.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكن حذف أمر مؤكد.')),
+      );
+    }
   }
 
   @override
@@ -155,6 +176,8 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                   final data = order.data() as Map<String, dynamic>;
                                   final createdAt =
                                       (data['createdAt'] as Timestamp?)?.toDate();
+                                  final isConfirmed = data['isConfirmed'] ?? false;
+
                                   return Card(
                                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     child: ListTile(
@@ -163,37 +186,79 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text('المورد: ${data['supplierId']}'),
-                                          Text(
-                                              'الإجمالي: ${data['totalAmount']?.toStringAsFixed(2) ?? 'N/A'} ل.إ'),
+                                          Text('الإجمالي: ${data['totalAmount']?.toStringAsFixed(2) ?? 'N/A'} ل.إ'),
                                           if (createdAt != null)
-                                            Text(
-                                                'التاريخ: ${createdAt.toLocal().toString().split(' ').first}'),
+                                            Text('التاريخ: ${createdAt.toLocal().toString().split(' ').first}'),
+                                          Text('الحالة: ${isConfirmed ? 'مؤكد' : 'غير مؤكد'}'),
                                         ],
                                       ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.picture_as_pdf),
-                                        tooltip: "تصدير PDF",
-                                        onPressed: () async {
-                                          final companyDoc = await FirebaseFirestore.instance
-                                              .collection('companies').doc(selectedCompany).get();
-                                          final supplierDoc = await FirebaseFirestore.instance
-                                              .collection('vendors').doc(data['supplierId']).get();
+                                      trailing: Wrap(
+                                        spacing: 8,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.picture_as_pdf),
+                                            tooltip: "تصدير PDF",
+                                            onPressed: () async {
+                                              final companyDoc = await FirebaseFirestore.instance
+                                                  .collection('companies').doc(selectedCompany).get();
+                                              final supplierDoc = await FirebaseFirestore.instance
+                                                  .collection('vendors').doc(data['supplierId']).get();
 
-                                          final pdf = await generatePurchaseOrderPdf(
-                                            orderId: order.id,
-                                            orderData: data,
-                                            supplierData: supplierDoc.data() ??
-                                                {'name': data['supplierId'], 'company': ''},
-                                            companyData: companyDoc.data() ??
-                                                {'name_ar': '---', 'name_en': '---', 'logo_base64': ''},
-                                          );
-                                          await Printing.layoutPdf(
-                                              onLayout: (format) async => pdf.save());
-                                        },
+                                              final pdf = await generatePurchaseOrderPdf(
+                                                orderId: order.id,
+                                                orderData: data,
+                                                supplierData: supplierDoc.data() ??
+                                                    {'name': data['supplierId'], 'company': ''},
+                                                companyData: companyDoc.data() ??
+                                                    {'name_ar': '---', 'name_en': '---', 'logo_base64': ''},
+                                              );
+                                              await Printing.layoutPdf(
+                                                  onLayout: (format) async => pdf.save());
+                                            },
+                                          ),
+                                          if (!isConfirmed) ...[
+                                            IconButton(
+                                              icon: const Icon(Icons.edit),
+                                              tooltip: "تعديل الطلب",
+                                              onPressed: () {
+                                                context.push(
+                                                  '/add-purchase-order?companyId=$selectedCompany&editOrderId=${order.id}',
+                                                );
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete),
+                                              tooltip: "حذف الطلب",
+                                              onPressed: () async {
+                                                final confirm = await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (ctx) => AlertDialog(
+                                                    title: const Text('تأكيد الحذف'),
+                                                    content: const Text('هل أنت متأكد من حذف هذا الطلب؟'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(ctx, false),
+                                                        child: const Text('إلغاء'),
+                                                      ),
+                                                      ElevatedButton(
+                                                        onPressed: () => Navigator.pop(ctx, true),
+                                                        child: const Text('حذف'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+
+                                                if (confirm == true) {
+                                                  await deleteOrder(order.id);
+                                                }
+                                              },
+                                            ),
+                                          ]
+                                        ],
                                       ),
                                       onTap: () {
                                         context.push(
-                                          '/purchase-order-detail?companyId=$selectedCompany&orderId=${order.id}'
+                                          '/purchase-order-detail?companyId=$selectedCompany&orderId=${order.id}',
                                         );
                                       },
                                     ),

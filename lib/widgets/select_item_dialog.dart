@@ -45,17 +45,22 @@ class SelectItemDialog extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = items[index];
                 final data = item.data() as Map<String, dynamic>;
+
+                final double unitPrice = (data['unitPrice'] ?? 0).toDouble();
+                final double taxPercent = (data['taxPercent'] ?? 14.0).toDouble();
+
                 return ListTile(
                   title: Text(data['name']),
                   subtitle: Text(
-                    'السعر: ${data['unitPrice']?.toStringAsFixed(2) ?? 'N/A'} ج.م - '
+                    'السعر: ${unitPrice.toStringAsFixed(2)} ج.م - '
                     'النوع: ${_getItemTypeDisplayName(data['type'] ?? 'N/A')}',
                   ),
                   onTap: () {
                     Navigator.pop(context, {
                       'id': item.id,
                       'name': data['name'],
-                      'unitPrice': data['unitPrice'],
+                      'unitPrice': unitPrice,
+                      'taxPercent': taxPercent,
                       'type': data['type'],
                     });
                   },
