@@ -2,9 +2,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:puresip_purchasing/firebase_options.dart';
-import 'package:puresip_purchasing/router.dart';
-import 'pages/no_internet_page.dart'; // تأكد من الاستيراد
+import 'firebase_options.dart';
+import 'router.dart';
+import 'pages/no_internet_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,22 +32,20 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-   bool _hasConnection = true;
-
   @override
   void initState() {
     super.initState();
     Connectivity().onConnectivityChanged.listen((result) {
-      final connected = result != ConnectivityResult.none;
-      if (mounted) {
-        setState(() {
-          _hasConnection = connected;
-        });
-        if (!connected) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NoInternetPage()),
-          );
-        }
+      final isConnected = [
+        ConnectivityResult.mobile,
+        ConnectivityResult.wifi,
+        ConnectivityResult.ethernet,
+      ].contains(result);
+
+      if (mounted && !isConnected) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NoInternetPage()),
+        );
       }
     });
   }
