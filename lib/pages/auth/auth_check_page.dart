@@ -38,7 +38,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Scaffold(
-            body: Center(child: Text('Error: ${snapshot.error}')),
+            body: Center(child: Text('حدث خطأ: ${snapshot.error}')),
           );
         }
 
@@ -49,9 +49,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
         }
 
         if (snapshot.hasData && snapshot.data != null) {
-          final user = snapshot.data!;
-          final userName = user.displayName ?? user.email ?? 'User';
-          return DashboardPage(userName: userName);
+          return const DashboardPage(); // لا تمرر userName هنا
         }
 
         return const LoginPage();

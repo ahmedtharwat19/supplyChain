@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 // صفحات المشروع
 import 'pages/dashboard/splash_screen.dart';
@@ -15,15 +16,39 @@ import 'pages/suppliers/add_supplier_page.dart';
 import 'pages/suppliers/edit_supplier_page.dart';
 import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
-import 'pages/purchasing/add_purchase_order_page.dart'; // تأكد من وجود هذا الملف
+import 'pages/purchasing/add_purchase_order_page.dart';
 import 'pages/items_page.dart';
 
+// ✅ مكون app scaffold الموحد
+Widget appScaffold({required String titleKey, required Widget child}) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(titleKey.tr()),
+      actions: [
+        PopupMenuButton<Locale>(
+          icon: const Icon(Icons.language),
+          onSelected: (locale) => EasyLocalization.of(navigatorKey.currentContext!)?.setLocale(locale),
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: Locale('en'), child: Text('English')),
+            PopupMenuItem(value: Locale('ar'), child: Text('العربية')),
+          ],
+        ),
+        const SizedBox(width: 12),
+      ],
+    ),
+    body: child,
+  );
+}
+
+// ✅ مفتاح التنقل العام
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 final GoRouter appRouter = GoRouter(
+  navigatorKey: navigatorKey,
   initialLocation: '/splash',
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
-    final isLoggingIn =
-        state.fullPath == '/login' || state.fullPath == '/signup';
+    final isLoggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
 
     if (state.fullPath == '/splash') return null;
     if (user == null && !isLoggingIn) return '/login';
@@ -34,106 +59,120 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/splash',
-      name: 'splash',
       builder: (context, state) => const SplashScreen(),
     ),
     GoRoute(
       path: '/login',
-      name: 'login',
       builder: (context, state) => const LoginPage(),
     ),
     GoRoute(
       path: '/signup',
-      name: 'signup',
       builder: (context, state) => const SignupPage(),
     ),
     GoRoute(
       path: '/',
-      name: 'dashboard',
-      pageBuilder: (context, state) => CustomTransitionPage(
+      builder: (context, state) => appScaffold(
+        titleKey: 'dashboard',
         child: const DashboardPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 300),
       ),
     ),
     GoRoute(
       path: '/companies',
-      name: 'companies',
-      builder: (context, state) => const CompaniesPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'companies',
+        child: const CompaniesPage(),
+      ),
     ),
     GoRoute(
       path: '/add-company',
-      name: 'add-company',
-      builder: (context, state) => const AddCompanyPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'add_company',
+        child: const AddCompanyPage(),
+      ),
     ),
     GoRoute(
       path: '/edit-company/:id',
-      name: 'edit-company',
       builder: (context, state) {
         final companyId = state.pathParameters['id']!;
-        return EditCompanyPage(companyId: companyId);
+        return appScaffold(
+          titleKey: 'edit_company',
+          child: EditCompanyPage(companyId: companyId),
+        );
       },
     ),
     GoRoute(
       path: '/suppliers',
-      name: 'suppliers',
-      builder: (context, state) => const SuppliersPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'suppliers',
+        child: const SuppliersPage(),
+      ),
     ),
     GoRoute(
       path: '/add-supplier',
-      name: 'add-supplier',
-      builder: (context, state) => const AddSupplierPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'add_supplier',
+        child: const AddSupplierPage(),
+      ),
     ),
     GoRoute(
       path: '/edit-vendor/:id',
-      name: 'edit-vendor',
       builder: (context, state) {
         final vendorId = state.pathParameters['id']!;
         final extra = state.extra as Map<String, dynamic>? ?? {};
-        return EditSupplierPage(
-          vendorId: vendorId,
-          initialName: extra['name'] ?? '',
-          initialCompany: extra['company'] ?? '',
+        return appScaffold(
+          titleKey: 'edit_supplier',
+          child: EditSupplierPage(
+            vendorId: vendorId,
+            initialName: extra['name'] ?? '',
+            initialCompany: extra['company'] ?? '',
+          ),
         );
       },
     ),
     GoRoute(
       path: '/purchase-orders',
-      name: 'purchase-orders',
-      builder: (context, state) => const PurchaseOrdersPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'purchase_orders',
+        child: const PurchaseOrdersPage(),
+      ),
     ),
     GoRoute(
       path: '/purchase-order-detail',
-      name: 'purchase-order-detail',
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'] ?? '';
         final orderId = state.uri.queryParameters['orderId'] ?? '';
-        return PurchaseOrderDetailPage(
-          companyId: companyId,
-          orderId: orderId,
+        return appScaffold(
+          titleKey: 'purchase_order_details',
+          child: PurchaseOrderDetailPage(
+            companyId: companyId,
+            orderId: orderId,
+          ),
         );
       },
     ),
     GoRoute(
       path: '/add-purchase-order',
-      name: 'add-purchase-order',
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'];
         final editOrderId = state.uri.queryParameters['editOrderId'];
         if (companyId == null || companyId.isEmpty) {
           return const Scaffold(body: Center(child: Text('Missing companyId')));
         }
-        return AddPurchaseOrderPage(
-          selectedCompany: companyId,
-          editOrderId: editOrderId,
+        return appScaffold(
+          titleKey: 'add_purchase_order',
+          child: AddPurchaseOrderPage(
+            selectedCompany: companyId,
+            editOrderId: editOrderId,
+          ),
         );
       },
     ),
     GoRoute(
       path: '/items',
-      name: 'items',
-      builder: (context, state) => const ItemsPage(),
+      builder: (context, state) => appScaffold(
+        titleKey: 'items',
+        child: const ItemsPage(),
+      ),
     ),
   ],
 );

@@ -40,3 +40,12 @@ git commit -m "Updated feature X or fixed bug Y"
 
 git push -u origin main
 
+
+
+
+
+'======================================================================================='
+
+Run app in port 5000
+
+flutter run -d chrome --web-port=5000

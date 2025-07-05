@@ -1,15 +1,14 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import '../../../utils/user_local_storage.dart'; // تأكد من أن المسار صحيح
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../utils/user_local_storage.dart';
+import '../../widgets/app_scaffold.dart'; // مسار app_scaffold.dart الصحيح
 
 class DashboardPage extends StatefulWidget {
-  final String? userName;
-
-  const DashboardPage({super.key, this.userName});
+  const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -35,11 +34,11 @@ class _DashboardPageState extends State<DashboardPage> {
     final email = user?['email'] ?? '';
     String name = user?['displayName'] ?? '';
 
-    // إذا لم يوجد displayName، نأخذ الاسم من البريد
     if (name.isEmpty && email.contains('@')) {
       name = email.split('@')[0];
     }
 
+    if (!mounted) return;
     setState(() {
       userName = name;
     });
@@ -71,24 +70,16 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
 
-    final generalSuppliersSnap = await FirebaseFirestore.instance.collection('vendors').get();
-    supplierCount = generalSuppliersSnap.size;
+    final suppliersSnap = await FirebaseFirestore.instance.collection('vendors').get();
+    supplierCount = suppliersSnap.size;
 
+    if (!mounted) return;
     setState(() {
       totalSuppliers = supplierCount;
       totalOrders = orderCount;
       totalAmount = amountSum;
       isLoading = false;
     });
-  }
-
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    await FirebaseAuth.instance.signOut();
-
-    if (!mounted) return;
-    context.go('/login');
   }
 
   Widget buildTile(String title, String value, IconData icon, Color color) {
@@ -108,40 +99,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 69, 233, 77),
-        title: const Text('PureSip Dashboard'),
-        actions: [
-          if (kIsWeb)
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: Text(
-                  userName ?? '',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: "تسجيل الخروج",
-            onPressed: logout,
-          ),
-        ],
-        bottom: !kIsWeb && userName != null
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(30),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Text(
-                    'مرحبًا، $userName',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ),
-              )
-            : null,
-      ),
+    return AppScaffold(
+      title: 'PureSip Dashboard',
+      userName: userName,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -159,37 +119,25 @@ class _DashboardPageState extends State<DashboardPage> {
                     leading: const Icon(Icons.business),
                     title: const Text('Manage Companies'),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () async {
-                      context.go('/companies');
-                      fetchStats();
-                    },
+                    onTap: () => context.go('/companies'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.group),
                     title: const Text('Manage Suppliers'),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () async {
-                      context.go('/suppliers');
-                      fetchStats();
-                    },
+                    onTap: () => context.go('/suppliers'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.category),
                     title: const Text('Manage Items'),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () async {
-                      context.go('/items');
-                      fetchStats();
-                    },
+                    onTap: () => context.go('/items'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.shopping_cart),
                     title: const Text('View Purchase Orders'),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () async {
-                      context.go('/purchase-orders');
-                      fetchStats();
-                    },
+                    onTap: () => context.go('/purchase-orders'),
                   ),
                 ],
               ),
