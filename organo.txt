@@ -32,3 +32,28 @@ lib/
 ├── services/         # (اختياري)
 ├── utils/            # (اختياري)
 ├── widgets/          # (اختياري)
+
+
+
+'======================================='
+
+lib/
+├── blocs/
+│   └── auth/
+│       ├── auth_cubit.dart
+│       └── auth_state.dart
+├── data/
+│   └── repositories/
+│       └── auth_repository.dart
+├── pages/
+│   └── auth/
+│       ├── login_page.dart
+│       ├── signup_page.dart
+│       └── widgets/
+│           ├── login_form.dart
+│           └── signup_form.dart
+├── l10n/
+│   ├── en.json
+│   └── ar.json
+├── main.dart
+└── router.dart
