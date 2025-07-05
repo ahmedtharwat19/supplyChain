@@ -36,25 +36,29 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     });
   }
 
-  Future<void> deleteOrder(String orderId) async {
-    if (selectedCompany == null) return;
+Future<void> deleteOrder(String orderId) async {
+  if (selectedCompany == null) return;
 
-    final docRef = FirebaseFirestore.instance
-        .collection('companies/$selectedCompany/purchase_orders')
-        .doc(orderId);
+  final docRef = FirebaseFirestore.instance
+      .collection('companies/$selectedCompany/purchase_orders')
+      .doc(orderId);
 
-    final doc = await docRef.get();
-    if (doc.exists && !(doc.data()?['isConfirmed'] ?? false)) {
-      await docRef.delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف أمر الشراء بنجاح.')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا يمكن حذف أمر مؤكد.')),
-      );
-    }
+  final doc = await docRef.get();
+  if (!mounted) return; // ✅ Safety check
+
+  if (doc.exists && !(doc.data()?['isConfirmed'] ?? false)) {
+    await docRef.delete();
+    if (!mounted) return; // ✅ Check again after await
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حذف أمر الشراء بنجاح.')),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('لا يمكن حذف أمر مؤكد.')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

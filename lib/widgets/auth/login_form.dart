@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -13,18 +14,41 @@ class _LoginFormState extends State<LoginForm> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _login() {
+//import 'package:firebase_auth/firebase_auth.dart';
+
+  void _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      // TODO: Add Firebase Auth logic here
-
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful')),
+      try {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
         );
-      });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تسجيل الدخول بنجاح')),
+          );
+          Navigator.pushReplacementNamed(
+              context, '/'); // or context.go('/') if using go_router
+        }
+      } on FirebaseAuthException catch (e) {
+        String message = 'حدث خطأ أثناء تسجيل الدخول.';
+        if (e.code == 'user-not-found') {
+          message = 'المستخدم غير موجود.';
+        } else if (e.code == 'wrong-password') {
+          message = 'كلمة المرور غير صحيحة.';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -48,16 +72,18 @@ class _LoginFormState extends State<LoginForm> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) =>
-                    value != null && value.contains('@') ? null : 'Enter a valid email',
+                validator: (value) => value != null && value.contains('@')
+                    ? null
+                    : 'Enter a valid email',
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
-                validator: (value) =>
-                    value != null && value.length >= 6 ? null : 'Minimum 6 characters required',
+                validator: (value) => value != null && value.length >= 6
+                    ? null
+                    : 'Minimum 6 characters required',
               ),
               const SizedBox(height: 32),
               SizedBox(

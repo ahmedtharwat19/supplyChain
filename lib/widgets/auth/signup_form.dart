@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 class SignupForm extends StatefulWidget {
   const SignupForm({super.key});
 
@@ -14,20 +14,44 @@ class _SignupFormState extends State<SignupForm> {
   final _confirmController = TextEditingController();
   bool _isLoading = false;
 
-  void _signup() {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
+//import 'package:firebase_auth/firebase_auth.dart';
 
-      // TODO: Add Firebase signup logic here
+void _signup() async {
+  if (_formKey.currentState?.validate() ?? false) {
+    setState(() => _isLoading = true);
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _isLoading = false);
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signup successful')),
+          const SnackBar(content: Text('تم إنشاء الحساب بنجاح')),
         );
-      });
+        Navigator.pushReplacementNamed(context, '/'); // or use context.go('/')
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'حدث خطأ أثناء إنشاء الحساب.';
+      if (e.code == 'email-already-in-use') {
+        message = 'البريد الإلكتروني مستخدم بالفعل.';
+      } else if (e.code == 'weak-password') {
+        message = 'كلمة المرور ضعيفة جداً.';
+      } else if (e.code == 'invalid-email') {
+        message = 'البريد الإلكتروني غير صالح.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
+}
+
 
   @override
   void dispose() {

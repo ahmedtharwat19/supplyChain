@@ -17,7 +17,6 @@ import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart'; // تأكد من وجود هذا الملف
 import 'pages/items_page.dart';
-import 'pages/missing_parameter_page.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
