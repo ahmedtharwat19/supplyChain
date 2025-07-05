@@ -68,5 +68,9 @@
   "filter_by_supplier": "Filter by Supplier",
   "filter_by_date": "Filter by Date",
   "language_en": "English",
-  "language_ar": "Arabic"
+  "language_ar": "Arabic",
+  "forgot_password": "Forgot Password?",
+  "reset_password": "Reset Password", 
+  "reset_link_sent": "Reset link sent to your email",
+  "short_password": "Password must be at least 6 characters"
 }

@@ -68,5 +68,9 @@
   "filter_by_supplier": "فلترة حسب المورد",
   "filter_by_date": "فلترة حسب التاريخ",
   "language_en": "الإنجليزية",
-  "language_ar": "العربية"
+  "language_ar": "العربية",
+  "forgot_password": "نسيت كلمة المرور؟",
+  "reset_password": "إعادة تعيين كلمة المرور",
+  "reset_link_sent": "تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني",  
+  "short_password": "يجب أن تكون كلمة المرور 6 أحرف على الأقل"
 }

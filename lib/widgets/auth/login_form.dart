@@ -69,6 +69,7 @@ class _LoginFormState extends State<LoginForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('google_signin_failed'.tr())),
         );
+        debugPrint('Google Sign-In Error: $e');
       }
     }
   }
@@ -82,66 +83,73 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _emailController,
-            decoration: InputDecoration(labelText: 'email'.tr()),
-            validator: (value) => value != null && value.contains('@')
-                ? null
-                : 'invalid_email'.tr(),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _passwordController,
-            decoration: InputDecoration(labelText: 'password'.tr()),
-            obscureText: true,
-            validator: (value) => value != null && value.length >= 6
-                ? null
-                : 'short_password'.tr(),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go('/forgot-password'),
-              child: Text('forgot_password'.tr()),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _login,
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text('login'.tr()),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _signInWithGoogle,
-            icon: const Icon(Icons.login),
-            label: Text('login_with_google'.tr()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
             children: [
-              Text('no_account'.tr()),
-              TextButton(
-                onPressed: () => context.go('/signup'),
-                child: Text('signup'.tr()),
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(labelText: 'email'.tr()),
+                validator: (value) =>
+                    value != null && value.contains('@')
+                        ? null
+                        : 'invalid_email'.tr(),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(labelText: 'password'.tr()),
+                obscureText: true,
+                validator: (value) =>
+                    value != null && value.length >= 6
+                        ? null
+                        : 'short_password'.tr(),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.go('/forgot-password'),
+                  child: Text('forgot_password'.tr()),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('login'.tr()),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _signInWithGoogle,
+                icon: const Icon(Icons.login),
+                label: Text('login_with_google'.tr()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('no_account'.tr()),
+                  TextButton(
+                    onPressed: () => context.go('/signup'),
+                    child: Text('signup'.tr()),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
