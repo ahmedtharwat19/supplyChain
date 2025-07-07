@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -91,11 +92,11 @@ class _CompaniesPageState extends State<CompaniesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('قائمة الشركات'),
+        title:  Text('company_list'.tr()), // استخدام الترجمة
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'إضافة شركة',
+            tooltip: 'add_company'.tr(), // استخدام الترجمة
             onPressed: () {
               context.push('/add-company').then((_) => loadUserCompanies()); // استخدام go_router
             },

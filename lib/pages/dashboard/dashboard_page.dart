@@ -1,9 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../utils/user_local_storage.dart';
 import '../../widgets/app_scaffold.dart'; // مسار app_scaffold.dart الصحيح
 
@@ -109,33 +107,33 @@ class _DashboardPageState extends State<DashboardPage> {
               child: ListView(
                 padding: const EdgeInsets.all(12),
                 children: [
-                  buildTile('Total Companies', '$totalCompanies', Icons.business, Colors.blue),
-                  buildTile('Total Suppliers', '$totalSuppliers', Icons.group, Colors.orange),
-                  buildTile('Purchase Orders', '$totalOrders', Icons.receipt, Colors.green),
-                  buildTile('Total Amount', '${totalAmount.toStringAsFixed(2)} L.E', Icons.attach_money, Colors.teal),
+                  buildTile('total_companies'.tr(), '$totalCompanies', Icons.business, Colors.blue),
+                  buildTile('total_suppliers'.tr(), '$totalSuppliers', Icons.group, Colors.orange),
+                  buildTile('purchase_orders'.tr(), '$totalOrders', Icons.receipt, Colors.green),
+                  buildTile('total_amount'.tr(), '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}', Icons.attach_money, Colors.teal),
                   const SizedBox(height: 20),
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.business),
-                    title: const Text('Manage Companies'),
+                    title: Text('manage_companies'.tr()),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () => context.go('/companies'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.group),
-                    title: const Text('Manage Suppliers'),
+                    title:  Text('manage_suppliers'.tr()),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () => context.go('/suppliers'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.category),
-                    title: const Text('Manage Items'),
+                    title:  Text('manage_items'.tr()),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () => context.go('/items'),
                   ),
                   ListTile(
                     leading: const Icon(Icons.shopping_cart),
-                    title: const Text('View Purchase Orders'),
+                    title:  Text('view_purchase_orders'.tr()),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () => context.go('/purchase-orders'),
                   ),

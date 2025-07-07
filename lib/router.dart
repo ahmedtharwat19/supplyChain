@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-// صفحات المشروع
+// الصفحات
 import 'pages/dashboard/splash_screen.dart';
 import 'pages/auth/login_page.dart';
 import 'pages/auth/signup_page.dart';
@@ -18,27 +18,10 @@ import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart';
 import 'pages/items_page.dart';
+import 'widgets/app_scaffold.dart';
 
-// ✅ مكون app scaffold الموحد
-Widget appScaffold({required String titleKey, required Widget child}) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text(titleKey.tr()),
-      actions: [
-        PopupMenuButton<Locale>(
-          icon: const Icon(Icons.language),
-          onSelected: (locale) => EasyLocalization.of(navigatorKey.currentContext!)?.setLocale(locale),
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: Locale('en'), child: Text('English')),
-            PopupMenuItem(value: Locale('ar'), child: Text('العربية')),
-          ],
-        ),
-        const SizedBox(width: 12),
-      ],
-    ),
-    body: child,
-  );
-}
+// ✅ استيراد AppScaffold الحقيقي
+//import 'widgets/layout/app_scaffold.dart';
 
 // ✅ مفتاح التنقل العام
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -71,47 +54,47 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/',
-      builder: (context, state) => appScaffold(
-        titleKey: 'dashboard',
-        child: const DashboardPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('dashboard'),
+        body: const DashboardPage(),
       ),
     ),
     GoRoute(
       path: '/companies',
-      builder: (context, state) => appScaffold(
-        titleKey: 'companies',
-        child: const CompaniesPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('companies'),
+        body: const CompaniesPage(),
       ),
     ),
     GoRoute(
       path: '/add-company',
-      builder: (context, state) => appScaffold(
-        titleKey: 'add_company',
-        child: const AddCompanyPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('add_company'),
+        body: const AddCompanyPage(),
       ),
     ),
     GoRoute(
       path: '/edit-company/:id',
       builder: (context, state) {
         final companyId = state.pathParameters['id']!;
-        return appScaffold(
-          titleKey: 'edit_company',
-          child: EditCompanyPage(companyId: companyId),
+        return AppScaffold(
+          title: tr('edit_company'),
+          body: EditCompanyPage(companyId: companyId),
         );
       },
     ),
     GoRoute(
       path: '/suppliers',
-      builder: (context, state) => appScaffold(
-        titleKey: 'suppliers',
-        child: const SuppliersPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('suppliers'),
+        body: const SuppliersPage(),
       ),
     ),
     GoRoute(
       path: '/add-supplier',
-      builder: (context, state) => appScaffold(
-        titleKey: 'add_supplier',
-        child: const AddSupplierPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('add_supplier'),
+        body: const AddSupplierPage(),
       ),
     ),
     GoRoute(
@@ -119,9 +102,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final vendorId = state.pathParameters['id']!;
         final extra = state.extra as Map<String, dynamic>? ?? {};
-        return appScaffold(
-          titleKey: 'edit_supplier',
-          child: EditSupplierPage(
+        return AppScaffold(
+          title: tr('edit_supplier'),
+          body: EditSupplierPage(
             vendorId: vendorId,
             initialName: extra['name'] ?? '',
             initialCompany: extra['company'] ?? '',
@@ -131,9 +114,9 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/purchase-orders',
-      builder: (context, state) => appScaffold(
-        titleKey: 'purchase_orders',
-        child: const PurchaseOrdersPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('purchase_orders'),
+        body: const PurchaseOrdersPage(),
       ),
     ),
     GoRoute(
@@ -141,9 +124,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'] ?? '';
         final orderId = state.uri.queryParameters['orderId'] ?? '';
-        return appScaffold(
-          titleKey: 'purchase_order_details',
-          child: PurchaseOrderDetailPage(
+        return AppScaffold(
+          title: tr('purchase_order_details'),
+          body: PurchaseOrderDetailPage(
             companyId: companyId,
             orderId: orderId,
           ),
@@ -158,9 +141,9 @@ final GoRouter appRouter = GoRouter(
         if (companyId == null || companyId.isEmpty) {
           return const Scaffold(body: Center(child: Text('Missing companyId')));
         }
-        return appScaffold(
-          titleKey: 'add_purchase_order',
-          child: AddPurchaseOrderPage(
+        return AppScaffold(
+          title: tr('add_purchase_order'),
+          body: AddPurchaseOrderPage(
             selectedCompany: companyId,
             editOrderId: editOrderId,
           ),
@@ -169,9 +152,9 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/items',
-      builder: (context, state) => appScaffold(
-        titleKey: 'items',
-        child: const ItemsPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('items'),
+        body: const ItemsPage(),
       ),
     ),
   ],

@@ -31,40 +31,49 @@ class AppScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF45E94D),
-        title: Text(title ?? 'PureSip Dashboard'),
+        title: Builder(
+          builder: (context) => Text(title ?? tr('dashboard_title')),
+        ),
         actions: [
-          // اللغة
-          PopupMenuButton<Locale>(
-            icon: const Icon(Icons.language, color: Colors.white),
-            tooltip: 'change_language'.tr(),
-            onSelected: (locale) => context.setLocale(locale),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: const Locale('en'),
-                child: const Text('English'),
-              ),
-              PopupMenuItem(
-                value: const Locale('ar'),
-                child: const Text('العربية'),
-              ),
-            ],
+          Builder(
+            builder: (context) => PopupMenuButton<Locale>(
+              icon: const Icon(Icons.language, color: Colors.white),
+              tooltip: tr('change_language'),
+              onSelected: (locale) async {
+                await context.setLocale(locale);
+                // إعادة بناء الواجهة
+                (context as Element).markNeedsBuild();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: Locale('en'),
+                  child: Text('English'),
+                ),
+                PopupMenuItem(
+                  value: Locale('ar'),
+                  child: Text('العربية'),
+                ),
+              ],
+            ),
           ),
-          // اسم المستخدم
           if (kIsWeb && userName != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Center(
-                child: Text(
-                  '${'hello'.tr()}, $userName',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
+            Builder(
+              builder: (context) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Center(
+                  child: Text(
+                    '${tr('hello')}, $userName',
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                  ),
                 ),
               ),
             ),
-          // زر تسجيل الخروج
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'logout'.tr(),
-            onPressed: () => logout(context),
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: tr('logout'),
+              onPressed: () => logout(context),
+            ),
           ),
         ],
       ),

@@ -15,6 +15,8 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+
   bool _isLoading = false;
 
   Future<void> _login() async {
@@ -49,15 +51,12 @@ class _LoginFormState extends State<LoginForm> {
 
   Future<void> _signInWithGoogle() async {
     try {
-      //final googleSignIn = GoogleSignIn();
       final googleSignIn = GoogleSignIn(
         clientId:
             '80836764748-b9oa8c86ago3ckp801ogm5ol6ae5va3b.apps.googleusercontent.com',
       );
-
       final googleUser = await googleSignIn.signIn();
-
-      if (googleUser == null) return; // المستخدم ألغى العملية
+      if (googleUser == null) return;
 
       final googleAuth = await googleUser.authentication;
 
@@ -83,6 +82,7 @@ class _LoginFormState extends State<LoginForm> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -97,16 +97,23 @@ class _LoginFormState extends State<LoginForm> {
             children: [
               TextFormField(
                 controller: _emailController,
+                textInputAction: TextInputAction.next, // ✅ الانتقال للحقل التالي
                 decoration: InputDecoration(labelText: 'email'.tr()),
                 validator: (value) => value != null && value.contains('@')
                     ? null
                     : 'invalid_email'.tr(),
+                onFieldSubmitted: (_) {
+                  FocusScope.of(context).requestFocus(_passwordFocusNode);
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'password'.tr()),
+                focusNode: _passwordFocusNode,
                 obscureText: true,
+                textInputAction: TextInputAction.done, // ✅ زر Done = تنفيذ login
+                onFieldSubmitted: (_) => _login(),
+                decoration: InputDecoration(labelText: 'password'.tr()),
                 validator: (value) => value != null && value.length >= 6
                     ? null
                     : 'short_password'.tr(),

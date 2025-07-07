@@ -29,6 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      key: ValueKey(context.locale.languageCode), // ✅ هذا هو التغيير الأهم
       title: 'PureSip',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.green),
