@@ -1,3 +1,13 @@
+// android/build.gradle.kts
+
+
+
+plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("com.google.gms.google-services") version "4.4.3" apply false // ✅ Firebase plugin
+}
+
 allprojects {
     repositories {
         google()
@@ -12,6 +22,7 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

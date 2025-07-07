@@ -4,6 +4,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'router.dart';
+//import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+
+
+
+Future<void> requestNotificationPermission() async {
+  final status = await Permission.notification.status;
+  if (!status.isGranted) {
+    await Permission.notification.request();
+  }
+}
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
