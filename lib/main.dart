@@ -1,14 +1,11 @@
-//import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'router.dart';
-//import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-
-
 
 Future<void> requestNotificationPermission() async {
   final status = await Permission.notification.status;
@@ -17,14 +14,18 @@ Future<void> requestNotificationPermission() async {
   }
 }
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // ✅ Firebase initialization based on platform
+  if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isWindows) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    await Firebase.initializeApp(); // fallback if needed
+  }
 
   runApp(
     EasyLocalization(
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      key: ValueKey(context.locale.languageCode), // ✅ هذا هو التغيير الأهم
+      key: ValueKey(context.locale.languageCode),
       title: 'PureSip',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.green),

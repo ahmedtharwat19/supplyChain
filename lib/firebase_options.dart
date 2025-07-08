@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -9,6 +10,8 @@ class DefaultFirebaseOptions {
       return android;
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       return ios;
+    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+      return windows;
     }
     throw UnsupportedError(
       'DefaultFirebaseOptions are not supported for this platform.',
@@ -40,5 +43,13 @@ class DefaultFirebaseOptions {
     projectId: 'puresip-purchasing',
     storageBucket: 'puresip-purchasing.appspot.com',
     iosBundleId: 'com.puresip.purchasing',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBLh1kz54d-85FzETal_pUp1hgizty_rFk',
+    appId: '1:80836764748:windows:dummyid123456', // يمكن تغييره لاحقًا
+    messagingSenderId: '80836764748',
+    projectId: 'puresip-purchasing',
+    storageBucket: 'puresip-purchasing.appspot.com',
   );
 }
