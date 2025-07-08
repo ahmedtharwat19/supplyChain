@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -19,7 +19,34 @@ class _LoginFormState extends State<LoginForm> {
 
   bool _isLoading = false;
 
-  Future<void> _login() async {
+  Future<void> _signInWithGoogle() async {
+    try {
+      final auth = FirebaseAuth.instance;
+
+      if (kIsWeb) {
+        // Web: Google Sign-In via popup
+        await auth.signInWithPopup(GoogleAuthProvider());
+      } else {
+        // Mobile/Desktop: signInWithProvider
+        final googleProvider = GoogleAuthProvider()
+          ..addScope('email')
+          ..setCustomParameters({'login_hint': 'user@example.com'});
+
+        await auth.signInWithProvider(googleProvider);
+      }
+
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('google_signin_failed'.tr())),
+        );
+        debugPrint('Google Sign-In Error: $e');
+      }
+    }
+  }
+
+  Future<void> _loginWithEmailPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
@@ -28,8 +55,9 @@ class _LoginFormState extends State<LoginForm> {
           password: _passwordController.text.trim(),
         );
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('login_success'.tr())));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('login_success'.tr())),
+          );
           context.go('/');
         }
       } on FirebaseAuthException catch (e) {
@@ -40,40 +68,12 @@ class _LoginFormState extends State<LoginForm> {
           message = 'wrong_password'.tr();
         }
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    try {
-      final googleSignIn = GoogleSignIn(
-        clientId:
-            '80836764748-b9oa8c86ago3ckp801ogm5ol6ae5va3b.apps.googleusercontent.com',
-      );
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
-
-      final googleAuth = await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-
-      if (mounted) context.go('/');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('google_signin_failed'.tr())),
-        );
-        debugPrint('Google Sign-In Error: $e');
       }
     }
   }
@@ -97,7 +97,7 @@ class _LoginFormState extends State<LoginForm> {
             children: [
               TextFormField(
                 controller: _emailController,
-                textInputAction: TextInputAction.next, // ✅ الانتقال للحقل التالي
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: 'email'.tr()),
                 validator: (value) => value != null && value.contains('@')
                     ? null
@@ -111,30 +111,19 @@ class _LoginFormState extends State<LoginForm> {
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
                 obscureText: true,
-                textInputAction: TextInputAction.done, // ✅ زر Done = تنفيذ login
-                onFieldSubmitted: (_) => _login(),
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(labelText: 'password'.tr()),
                 validator: (value) => value != null && value.length >= 6
                     ? null
                     : 'short_password'.tr(),
+                onFieldSubmitted: (_) => _loginWithEmailPassword(),
               ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => context.go('/forgot-password'),
-                  child: Text('forgot_password'.tr()),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text('login'.tr()),
-                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _loginWithEmailPassword,
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text('login'.tr()),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
