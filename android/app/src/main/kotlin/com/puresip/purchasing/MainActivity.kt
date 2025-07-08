@@ -1,4 +1,4 @@
-package com.puresip.puresip_purchasing
+package com.puresip.purchasing
 
 import io.flutter.embedding.android.FlutterActivity
 

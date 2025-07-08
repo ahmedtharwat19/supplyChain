@@ -1,4 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.puresip.purchasing">
+
+    <!-- This is required to make the app work on Android 13 and above.
+         See https://developer.android.com/about/versions/13/privacy/changes-13#tiramisu-privacy-changes -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
@@ -33,7 +37,9 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default_channel"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -18,13 +18,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  // ✅ Firebase initialization based on platform
-  if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isWindows) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } else {
-    await Firebase.initializeApp(); // fallback if needed
+  // ✅ تهيئة Firebase فقط إذا لم تكن مهيأة مسبقًا
+  if (Firebase.apps.isEmpty) {
+    if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isWindows) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      await Firebase.initializeApp(); // fallback
+    }
   }
 
   runApp(
