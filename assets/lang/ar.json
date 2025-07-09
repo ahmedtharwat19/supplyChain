@@ -147,5 +147,10 @@
   "item_unit": "وحدة الصنف",
   "item_category": "فئة الصنف",
   "item_supplier": "مورد الصنف",
-  "item_image": "صورة الصنف"
+  "item_image": "صورة الصنف",
+  "login_hint": "تلميح تسجيل الدخول",
+    "exit_confirm_title": "تأكيد الخروج",
+  "exit_confirm_message": "هل تريد الخروج من التطبيق؟",
+  "stay": "البقاء",
+  "exit": "الخروج"
 }

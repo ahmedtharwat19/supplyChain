@@ -20,25 +20,13 @@ import 'pages/purchasing/add_purchase_order_page.dart';
 import 'pages/items_page.dart';
 import 'widgets/app_scaffold.dart';
 
-// ✅ استيراد AppScaffold الحقيقي
-//import 'widgets/layout/app_scaffold.dart';
-
-// ✅ مفتاح التنقل العام
+// مفتاح التنقل العام
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
-  redirect: (context, state) {
-    final user = FirebaseAuth.instance.currentUser;
-    final isLoggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
-
-    if (state.fullPath == '/splash') return null;
-    if (user == null && !isLoggingIn) return '/login';
-    if (user != null && isLoggingIn) return '/';
-
-    return null;
-  },
+  debugLogDiagnostics: true, // يساعدك أثناء التطوير
   routes: [
     GoRoute(
       path: '/splash',
@@ -158,4 +146,17 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
   ],
+
+  /// ✅ إعادة التوجيه بناءً على حالة تسجيل الدخول
+  redirect: (context, state) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSplash = state.fullPath == '/splash';
+    final isLoggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
+
+    if (isSplash) return null;
+    if (user == null && !isLoggingIn) return '/login';
+    if (user != null && isLoggingIn) return '/';
+
+    return null;
+  },
 );

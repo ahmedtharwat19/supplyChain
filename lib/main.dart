@@ -18,23 +18,31 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  // ✅ تهيئة Firebase فقط إذا لم تكن مهيأة مسبقًا
-  if (Firebase.apps.isEmpty) {
-    if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isWindows) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } else {
-      await Firebase.initializeApp(); // fallback
+  try {
+    // ✅ تهيئة Firebase فقط إذا لم تكن مهيأة مسبقًا
+    if (Firebase.apps.isEmpty) {
+      if (kIsWeb ||
+          Platform.isAndroid ||
+          Platform.isIOS ||
+          Platform.isWindows) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      } else {
+        await Firebase.initializeApp(); // fallback
+      }
     }
+  } catch (e) {
+    debugPrint('⚠️ Firebase already initialized: $e');
   }
-
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('ar')],
       path: 'assets/lang',
       fallbackLocale: const Locale('ar'),
-      child: const MyApp(),
+      child: Builder(
+        builder: (context) => const MyApp(), // ✅ مهم لدعم تغيير اللغة فورًا
+      ),
     ),
   );
 }
@@ -45,14 +53,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      key: ValueKey(context.locale.languageCode),
+      key: ValueKey(
+          context.locale.languageCode), // ✅ يعيد بناء الواجهة عند تغيير اللغة
       title: 'PureSip',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.green),
-      routerConfig: appRouter,
       locale: context.locale,
       supportedLocales: context.supportedLocales,
       localizationsDelegates: context.localizationDelegates,
+      routerConfig: appRouter,
     );
   }
 }

@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -24,10 +26,8 @@ class _LoginFormState extends State<LoginForm> {
       final auth = FirebaseAuth.instance;
 
       if (kIsWeb) {
-        // Web: Google Sign-In via popup
         await auth.signInWithPopup(GoogleAuthProvider());
       } else {
-        // Mobile/Desktop: signInWithProvider
         final googleProvider = GoogleAuthProvider()
           ..addScope('email')
           ..setCustomParameters({'login_hint': 'user@example.com'});
@@ -86,67 +86,82 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
+  bool get _shouldShowGoogleButton {
+    return kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _emailController,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: 'email'.tr()),
-                validator: (value) => value != null && value.contains('@')
-                    ? null
-                    : 'invalid_email'.tr(),
-                onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(_passwordFocusNode);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                focusNode: _passwordFocusNode,
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(labelText: 'password'.tr()),
-                validator: (value) => value != null && value.length >= 6
-                    ? null
-                    : 'short_password'.tr(),
-                onFieldSubmitted: (_) => _loginWithEmailPassword(),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _loginWithEmailPassword,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text('login'.tr()),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _signInWithGoogle,
-                icon: const Icon(Icons.login),
-                label: Text('login_with_google'.tr()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
+    return PopScope(
+      canPop: true, // هذا مطلوب لدعم السلوك التفاعلي
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (!didPop && !kIsWeb) {
+          exit(0); // ⛔️ يغلق التطبيق نهائيًا على Android/iOS/Windows
+        }
+      },
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _emailController,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(labelText: 'email'.tr()),
+                  validator: (value) => value != null && value.contains('@')
+                      ? null
+                      : 'invalid_email'.tr(),
+                  onFieldSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_passwordFocusNode);
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('no_account'.tr()),
-                  TextButton(
-                    onPressed: () => context.go('/signup'),
-                    child: Text('signup'.tr()),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(labelText: 'password'.tr()),
+                  validator: (value) => value != null && value.length >= 6
+                      ? null
+                      : 'short_password'.tr(),
+                  onFieldSubmitted: (_) => _loginWithEmailPassword(),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _loginWithEmailPassword,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('login'.tr()),
+                ),
+                const SizedBox(height: 12),
+                if (_shouldShowGoogleButton)
+                  ElevatedButton.icon(
+                    onPressed: _signInWithGoogle,
+                    icon: const Icon(Icons.login),
+                    label: Text('login_with_google'.tr()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                ],
-              ),
-            ],
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('no_account'.tr()),
+                    TextButton(
+                      onPressed: () => context.go('/signup'),
+                      child: Text('signup'.tr()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

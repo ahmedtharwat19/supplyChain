@@ -5,15 +5,24 @@ version: 1.0.0+1
 environment:
   sdk: ">=3.3.0 <4.0.0"
 
+# -----------------------------
+# Dependencies
+# -----------------------------
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
-  # Firebase
+
+  # Firebase Core & Features
   firebase_core: ^3.14.0
   firebase_auth: ^5.6.0
   cloud_firestore: ^5.6.9
   firebase_storage: ^12.4.8
+
+  # Authentication & Sign-in
+  google_sign_in: ^7.1.0
 
   # Utilities
   shared_preferences: ^2.5.3
@@ -23,16 +32,18 @@ dependencies:
   permission_handler: ^12.0.1
   leak_tracker: ^10.0.9
 
-  # PDF and Printing
+  # PDF & Printing
   printing: ^5.12.0
   pdf: ^3.10.4
 
-  # UI
-  image_picker: ^1.1.0
+  # UI & Design
   flutter_svg: ^2.2.0
-  go_router: ^16.0.0
+  image_picker: ^1.1.0
   flutter_screenutil: ^5.9.3
   gap: ^3.0.1
+
+  # Routing
+  go_router: ^16.0.0
 
   # State Management
   flutter_bloc: ^9.1.1
@@ -42,23 +53,51 @@ dependencies:
   # Localization
   easy_localization: ^3.0.7+1
 
-  # Google Sign-In
-  google_sign_in: ^7.1.0
+  # Icon Management
+  flutter_launcher_icons: ^0.14.4
 
-  # Rive Animation (optional)
+  # Optional Animation
   # rive: ^0.13.20
   # rive_common: ^0.3.0
 
+# -----------------------------
+# Dev Dependencies
+# -----------------------------
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
-flutter_icons:
-  android: true
-  ios: true
+# -----------------------------
+# Flutter Launcher Icons Config
+# -----------------------------
+flutter_launcher_icons:
   image_path: "assets/logo.png"
 
+  android: true
+  ios: true
+
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
+
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+    icon_size: 48
+
+  linux:
+    generate: true
+    image_path: "assets/logo.png"
+
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+
+
+# -----------------------------
+# Flutter Assets & Fonts
+# -----------------------------
 flutter:
   uses-material-design: true
 
@@ -66,9 +105,9 @@ flutter:
     - assets/logo.png
     - assets/images/splash_screen.jpg
     - assets/images/no_internet.png
-    - assets/lang/                   # مجلد الترجمة
+    - assets/lang/
     - assets/animation/headless_bear.riv
-    - assets/svgs/                   # مجلد الرسوم المتجهة
+    - assets/svgs/
 
   fonts:
     - family: Cairo
@@ -79,7 +118,9 @@ flutter:
         - asset: assets/fonts/Cairo-Light.ttf
           weight: 300
 
-# # Optional override to disable rive_common plugin on Windows (if causing build issues)
+# -----------------------------
+# Optional Rive Override (for Windows compatibility)
+# -----------------------------
 # dependency_overrides:
 #   rive_common:
 #     git:

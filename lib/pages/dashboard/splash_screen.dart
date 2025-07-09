@@ -9,14 +9,15 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-
+    debugPrint('📱 Splash started on Android');
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -28,7 +29,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Timer(const Duration(seconds: 3), () {
       _fadeController.stop();
       if (mounted) {
-        context.go('/'); // أو أي مسار تريده بعد السبلاتش
+        debugPrint('🚀 Navigating to / from splash');
+        context.go('/'); // انتقل إلى الصفحة الرئيسية بعد السبلاتش
       }
     });
   }
@@ -44,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: Colors.white,
       body: FadeTransition(
-        opacity: _fadeAnimation,
+        opacity: _fadeAnimation, // ← استخدم المتغير فعليًا هنا
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

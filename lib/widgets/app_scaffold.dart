@@ -31,52 +31,74 @@ class AppScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF45E94D),
-        title: Builder(
-          builder: (context) => Text(title ?? tr('dashboard_title')),
-        ),
+        title: Text(title ?? tr('dashboard_title')),
         actions: [
-          Builder(
-            builder: (context) => PopupMenuButton<Locale>(
-              icon: const Icon(Icons.language, color: Colors.white),
-              tooltip: tr('change_language'),
-              onSelected: (locale) async {
-                await context.setLocale(locale);
-                // إعادة بناء الواجهة
-                (context as Element).markNeedsBuild();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: Locale('en'),
-                  child: Text('English'),
-                ),
-                PopupMenuItem(
-                  value: Locale('ar'),
-                  child: Text('العربية'),
-                ),
-              ],
-            ),
-          ),
           if (kIsWeb && userName != null)
-            Builder(
-              builder: (context) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Center(
-                  child: Text(
-                    '${tr('hello')}, $userName',
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                child: Text(
+                  '${tr('hello')}, $userName',
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: tr('logout'),
-              onPressed: () => logout(context),
-            ),
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            tooltip: tr('change_language'),
+            onSelected: (locale) async {
+              await context.setLocale(locale);
+              (context as Element).markNeedsBuild();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: Locale('en'),
+                child: Text('English'),
+              ),
+              PopupMenuItem(
+                value: Locale('ar'),
+                child: Text('العربية'),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: tr('logout'),
+            onPressed: () => logout(context),
           ),
         ],
       ),
+      drawer: !kIsWeb
+          ? Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  DrawerHeader(
+                    decoration: const BoxDecoration(color: Color(0xFF45E94D)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.person, size: 40, color: Colors.white),
+                        const SizedBox(height: 8),
+                        Text(
+                          userName != null
+                              ? '${tr('hello')}, $userName'
+                              : tr('welcome'),
+                          style: const TextStyle(
+                              fontSize: 18, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: Text(tr('logout')),
+                    onTap: () => logout(context),
+                  ),
+                ],
+              ),
+            )
+          : null,
       body: body,
     );
   }

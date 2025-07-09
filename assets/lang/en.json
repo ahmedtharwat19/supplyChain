@@ -147,5 +147,10 @@
   "item_unit": "Item Unit",
   "item_category": "Item Category",
   "item_supplier": "Item Supplier",
-  "item_image": "Item Image"
+  "item_image": "Item Image",
+  "login_hint": "log in hint.",
+  "exit_confirm_title": "Exit Confirmation",
+  "exit_confirm_message": "Do you want to exit the app?",
+  "stay": "Stay",
+  "exit": "Exit"
 }
