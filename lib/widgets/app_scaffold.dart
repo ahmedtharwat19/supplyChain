@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,13 +11,41 @@ class AppScaffold extends StatelessWidget {
   final Widget body;
   final String? userName;
   final String? title;
+  final bool isDashboard;
+  final FloatingActionButton? floatingActionButton;
+
 
   const AppScaffold({
     super.key,
     required this.body,
     this.userName,
     this.title,
+    this.isDashboard = false,
+    this.floatingActionButton,
   });
+
+
+Future<bool> _confirmExit(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(tr('exit_confirm_title')),
+      content: Text(tr('exit_confirm_message')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(tr('stay')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(tr('exit')),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
 
   Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -31,8 +61,14 @@ class AppScaffold extends StatelessWidget {
     final appBar = AppBar(
       backgroundColor: const Color.fromARGB(255, 69, 200, 218),
       title: Text(title ?? tr('dashboard_title')),
+      leading: !kIsWeb && ModalRoute.of(context)?.settings.name != '/dashboard'
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => context.pop(),
+            )
+          : null,
       actions: [
-        if (userName != null)
+        if (kIsWeb && userName != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Center(
@@ -42,66 +78,101 @@ class AppScaffold extends StatelessWidget {
               ),
             ),
           ),
-        PopupMenuButton<Locale>(
-          icon: const Icon(Icons.language, color: Colors.white),
-          tooltip: tr('change_language'),
-          onSelected: (locale) async {
-            await context.setLocale(locale);
-            (context as Element).markNeedsBuild();
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(
-              value: Locale('en'),
-              child: Text('English'),
+        if (kIsWeb)
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            tooltip: tr('change_language'),
+            onSelected: (locale) async {
+              await context.setLocale(locale);
+              (context as Element).markNeedsBuild();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: Locale('en'), child: Text('English')),
+              PopupMenuItem(value: Locale('ar'), child: Text('العربية')),
+            ],
+          ),
+        if (kIsWeb)
+          if (isDashboard)
+            IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              tooltip: tr('exit'),
+              onPressed: () async {
+                final shouldExit = await _confirmExit(context);
+                if (shouldExit) exit(0);
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: tr('back'),
+              onPressed: () => context.pop(),
             ),
-            PopupMenuItem(
-              value: Locale('ar'),
-              child: Text('العربية'),
-            ),
-          ],
-        ),
-        IconButton(
-          icon: const Icon(Icons.logout),
-          tooltip: tr('logout'),
-          onPressed: () => logout(context),
-        ),
       ],
     );
 
+    final drawer = !kIsWeb
+        ? Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(color: Color(0xFF45E94D)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.person, size: 40, color: Colors.white),
+                      const SizedBox(height: 8),
+                      Text(
+                        userName != null
+                            ? '${tr('hello')}, $userName'
+                            : tr('welcome'),
+                        style:
+                            const TextStyle(fontSize: 18, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.dashboard),
+                  title: Text(tr('dashboard_title')),
+                  onTap: () => context.go('/dashboard'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.business),
+                  title: Text(tr('manage_companies')),
+                  onTap: () => context.go('/companies'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.group),
+                  title: Text(tr('manage_suppliers')),
+                  onTap: () => context.go('/suppliers'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.category),
+                  title: Text(tr('manage_items')),
+                  onTap: () => context.go('/items'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.shopping_cart),
+                  title: Text(tr('view_purchase_orders')),
+                  onTap: () => context.go('/purchase-orders'),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: Text(tr('logout')),
+                  onTap: () => logout(context),
+                ),
+              ],
+            ),
+          )
+        : null;
+
     return Scaffold(
-      appBar: kIsWeb ? appBar : null,
-      drawer: !kIsWeb
-          ? Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  DrawerHeader(
-                    decoration: const BoxDecoration(color: Color(0xFF45E94D)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.person, size: 40, color: Colors.white),
-                        const SizedBox(height: 8),
-                        Text(
-                          userName != null
-                              ? '${tr('hello')}, $userName'
-                              : tr('welcome'),
-                          style: const TextStyle(
-                              fontSize: 18, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.logout),
-                    title: Text(tr('logout')),
-                    onTap: () => logout(context),
-                  ),
-                ],
-              ),
-            )
-          : null,
+      appBar: appBar,
+      drawer: drawer,
       body: SafeArea(child: body),
+      floatingActionButton: floatingActionButton,
     );
   }
 }

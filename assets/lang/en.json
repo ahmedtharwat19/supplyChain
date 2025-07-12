@@ -152,5 +152,13 @@
   "exit_confirm_title": "Exit Confirmation",
   "exit_confirm_message": "Do you want to exit the app?",
   "stay": "Stay",
-  "exit": "Exit"
+  "exit": "Exit",
+  "back": "Back",
+  "dashboard_welcome": "Welcome to the Dashboard",
+  "dashboard_description": "Here you can manage your companies, suppliers, and purchase orders.",
+  "dashboard_stats": "Dashboard Statistics",
+  "no_match_search": "No companies match your search or linked to your account.",
+  "edit": "Edit",
+  "confirm_delete_title": "Confirm Deletion"
+  
 }

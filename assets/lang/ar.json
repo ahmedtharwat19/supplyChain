@@ -152,5 +152,13 @@
     "exit_confirm_title": "تأكيد الخروج",
   "exit_confirm_message": "هل تريد الخروج من التطبيق؟",
   "stay": "البقاء",
-  "exit": "الخروج"
+  "exit": "الخروج",
+  "back": "عودة",
+  "dashboard_welcome": "مرحبًا بك في لوحة التحكم",
+  "dashboard_description": "هنا يمكنك إدارة الشركات والموردين وأوامر الشراء.",
+  "dashboard_stats": "إحصائيات لوحة التحكم",
+  "no_match_search": "لا توجد شركات تطابق البحث أو مرتبطة بحسابك.",
+  "edit": "تعديل",
+  "confirm_delete_title": "تأكيد الحذف"
+
 }

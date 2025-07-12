@@ -1,11 +1,10 @@
-import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/user_local_storage.dart';
-// import '../../widgets/app_scaffold.dart';
+import '../../widgets/app_scaffold.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -31,7 +30,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> loadUserName() async {
     final user = await UserLocalStorage.getUser();
-    debugPrint('user:$user');
     final email = user?['email'] ?? '';
     String name = user?['displayName'] ?? '';
 
@@ -42,7 +40,6 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     setState(() {
       userName = name;
-      debugPrint('userName:${userName!}');
     });
   }
 
@@ -101,40 +98,12 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<bool> _confirmExit(BuildContext context) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('exit_confirm_title'.tr()),
-        content: Text('exit_confirm_message'.tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('stay'.tr()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('exit'.tr()),
-          ),
-        ],
-      ),
-    );
-    return result ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop && !kIsWeb) {
-          bool shouldExit = await _confirmExit(context);
-          if (shouldExit) {
-            exit(0);
-          }
-        }
-      },
-      child: isLoading
+    return AppScaffold(
+      userName: userName,
+      isDashboard: true,
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: fetchStats,
@@ -148,40 +117,38 @@ class _DashboardPageState extends State<DashboardPage> {
                   buildTile('purchase_orders'.tr(), '$totalOrders',
                       Icons.receipt, Colors.green),
                   buildTile(
-                    'total_amount'.tr(),
-                    '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}',
-                    Icons.attach_money,
-                    Colors.teal,
-                  ),
+                      'total_amount'.tr(),
+                      '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}',
+                      Icons.attach_money,
+                      Colors.teal),
                   const SizedBox(height: 20),
                   const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.business),
-                    title: Text('manage_companies'.tr()),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => context.go('/companies'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.group),
-                    title: Text('manage_suppliers'.tr()),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => context.go('/suppliers'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.category),
-                    title: Text('manage_items'.tr()),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => context.go('/items'),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.shopping_cart),
-                    title: Text('view_purchase_orders'.tr()),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => context.go('/purchase-orders'),
-                  ),
+                  _buildNavTile(context, Icons.business,
+                      'manage_companies'.tr(), '/companies'),
+                  _buildNavTile(context, Icons.group, 'manage_suppliers'.tr(),
+                      '/suppliers'),
+                  _buildNavTile(
+                      context, Icons.category, 'manage_items'.tr(), '/items'),
+                  _buildNavTile(context, Icons.shopping_cart,
+                      'view_purchase_orders'.tr(), '/purchase-orders'),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildNavTile(
+      BuildContext context, IconData icon, String title, String route) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: const Icon(Icons.arrow_forward_ios),
+      onTap: () {
+        if (!kIsWeb) {
+          Navigator.of(context).pop(); // لإغلاق Drawer على المنصات غير الويب
+        }
+        context.go(route);
+      },
     );
   }
 }
