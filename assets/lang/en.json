@@ -159,6 +159,18 @@
   "dashboard_stats": "Dashboard Statistics",
   "no_match_search": "No companies match your search or linked to your account.",
   "edit": "Edit",
-  "confirm_delete_title": "Confirm Deletion"
+  "confirm_delete_title": "Confirm Deletion",
+  "search": "Search",
+  "search_companies": "Search Companies",
+  "search_suppliers": "Search Suppliers",
+  "search_items": "Search Items",
+  "no_results_found": "No results found.",
+  "company_details": "Company Details",
+  "supplier_details": "Supplier Details",
+  "item_details": "Item Details",
+  "company_logo": "Company Logo",
+  "supplier_logo": "Supplier Logo",
+  "item_image_upload": "Upload Item Image",
+  "item_image_required": "Item image is required"
   
 }

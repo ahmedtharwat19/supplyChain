@@ -14,7 +14,6 @@ class AppScaffold extends StatelessWidget {
   final bool isDashboard;
   final FloatingActionButton? floatingActionButton;
 
-
   const AppScaffold({
     super.key,
     required this.body,
@@ -24,28 +23,26 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
   });
 
-
-Future<bool> _confirmExit(BuildContext context) async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(tr('exit_confirm_title')),
-      content: Text(tr('exit_confirm_message')),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(tr('stay')),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(tr('exit')),
-        ),
-      ],
-    ),
-  );
-  return result ?? false;
-}
-
+  Future<bool> _confirmExit(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('exit_confirm_title')),
+        content: Text(tr('exit_confirm_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(tr('stay')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(tr('exit')),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
   Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,10 +58,14 @@ Future<bool> _confirmExit(BuildContext context) async {
     final appBar = AppBar(
       backgroundColor: const Color.fromARGB(255, 69, 200, 218),
       title: Text(title ?? tr('dashboard_title')),
-      leading: !kIsWeb && ModalRoute.of(context)?.settings.name != '/dashboard'
+      leading: !kIsWeb && !isDashboard
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => context.pop(),
+              onPressed: () {
+                if (GoRouter.of(context).canPop()) {
+                  context.pop();
+                }
+              },
             )
           : null,
       actions: [
@@ -105,7 +106,12 @@ Future<bool> _confirmExit(BuildContext context) async {
             IconButton(
               icon: const Icon(Icons.arrow_back),
               tooltip: tr('back'),
-              onPressed: () => context.pop(),
+              onPressed: () {
+  if (GoRouter.of(context).canPop()) {
+    context.pop();
+  }
+},
+
             ),
       ],
     );

@@ -159,6 +159,16 @@
   "dashboard_stats": "إحصائيات لوحة التحكم",
   "no_match_search": "لا توجد شركات تطابق البحث أو مرتبطة بحسابك.",
   "edit": "تعديل",
-  "confirm_delete_title": "تأكيد الحذف"
+  "confirm_delete_title": "تأكيد الحذف",
+  "search": "بحث",
+  "search_companies": "بحث عن الشركات",
+  "search_suppliers": "بحث عن الموردين",
+  "search_items": "بحث عن الأصناف",
+  "no_results_found": "لا توجد نتائج.",
+  "company_details": "تفاصيل الشركة",
+  "supplier_details": "تفاصيل المورد",
+  "item_details": "تفاصيل الصنف",
+  "company_logo": "شعار الشركة",
+  "supplier_logo": "شعار المورد"
 
 }
