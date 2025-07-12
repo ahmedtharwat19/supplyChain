@@ -64,6 +64,8 @@ class AppScaffold extends StatelessWidget {
               onPressed: () {
                 if (GoRouter.of(context).canPop()) {
                   context.pop();
+                } else{
+                  context.go('/');
                 }
               },
             )
@@ -107,11 +109,12 @@ class AppScaffold extends StatelessWidget {
               icon: const Icon(Icons.arrow_back),
               tooltip: tr('back'),
               onPressed: () {
-  if (GoRouter.of(context).canPop()) {
-    context.pop();
-  }
-},
-
+                if (GoRouter.of(context).canPop()) {
+                  context.pop();
+                } else{
+                  context.go('/');
+                }
+              },
             ),
       ],
     );
