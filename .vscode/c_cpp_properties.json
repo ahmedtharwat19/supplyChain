@@ -7,13 +7,17 @@
         "${workspaceFolder}/.dart_tool/**",
         "E:/SDKs/flutter/bin/cache/**",
         "C:/Program Files (x86)/Windows Kits/10/Include/**",
-        "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/**/include"
+        "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/include"
       ],
-      "defines": [],
-      "windowsSdkVersion": "10.0.19041.0",
-      "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/**/bin/Hostx64/x64/cl.exe",
-      "intelliSenseMode": "windows-msvc-x64",
-      "cppStandard": "c++17"
+      "defines": [
+        "_DEBUG",
+        "UNICODE"
+      ],
+      "windowsSdkVersion": "10.0.22621.0",
+      "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "windows-msvc-x64"
     }
   ],
   "version": 4

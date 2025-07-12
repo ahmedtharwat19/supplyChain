@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/user_local_storage.dart';
-import '../../widgets/app_scaffold.dart';
+// import '../../widgets/app_scaffold.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -31,6 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> loadUserName() async {
     final user = await UserLocalStorage.getUser();
+    debugPrint('user:$user');
     final email = user?['email'] ?? '';
     String name = user?['displayName'] ?? '';
 
@@ -41,13 +42,15 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     setState(() {
       userName = name;
+      debugPrint('userName:${userName!}');
     });
   }
 
   Future<void> fetchStats() async {
     setState(() => isLoading = true);
 
-    final companiesSnapshot = await FirebaseFirestore.instance.collection('companies').get();
+    final companiesSnapshot =
+        await FirebaseFirestore.instance.collection('companies').get();
     totalCompanies = companiesSnapshot.size;
 
     int supplierCount = 0;
@@ -70,7 +73,8 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
 
-    final suppliersSnap = await FirebaseFirestore.instance.collection('vendors').get();
+    final suppliersSnap =
+        await FirebaseFirestore.instance.collection('vendors').get();
     supplierCount = suppliersSnap.size;
 
     if (!mounted) return;
@@ -130,55 +134,54 @@ class _DashboardPageState extends State<DashboardPage> {
           }
         }
       },
-      child: AppScaffold(
-        title: 'PureSip Dashboard',
-        userName: userName,
-        body: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: fetchStats,
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: [
-                    buildTile('total_companies'.tr(), '$totalCompanies', Icons.business, Colors.blue),
-                    buildTile('total_suppliers'.tr(), '$totalSuppliers', Icons.group, Colors.orange),
-                    buildTile('purchase_orders'.tr(), '$totalOrders', Icons.receipt, Colors.green),
-                    buildTile(
-                      'total_amount'.tr(),
-                      '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}',
-                      Icons.attach_money,
-                      Colors.teal,
-                    ),
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    ListTile(
-                      leading: const Icon(Icons.business),
-                      title: Text('manage_companies'.tr()),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () => context.go('/companies'),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.group),
-                      title: Text('manage_suppliers'.tr()),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () => context.go('/suppliers'),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.category),
-                      title: Text('manage_items'.tr()),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () => context.go('/items'),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.shopping_cart),
-                      title: Text('view_purchase_orders'.tr()),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () => context.go('/purchase-orders'),
-                    ),
-                  ],
-                ),
+      child: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: fetchStats,
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  buildTile('total_companies'.tr(), '$totalCompanies',
+                      Icons.business, Colors.blue),
+                  buildTile('total_suppliers'.tr(), '$totalSuppliers',
+                      Icons.group, Colors.orange),
+                  buildTile('purchase_orders'.tr(), '$totalOrders',
+                      Icons.receipt, Colors.green),
+                  buildTile(
+                    'total_amount'.tr(),
+                    '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}',
+                    Icons.attach_money,
+                    Colors.teal,
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.business),
+                    title: Text('manage_companies'.tr()),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => context.go('/companies'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.group),
+                    title: Text('manage_suppliers'.tr()),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => context.go('/suppliers'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.category),
+                    title: Text('manage_items'.tr()),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => context.go('/items'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.shopping_cart),
+                    title: Text('view_purchase_orders'.tr()),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () => context.go('/purchase-orders'),
+                  ),
+                ],
               ),
-      ),
+            ),
     );
   }
 }

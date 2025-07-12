@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../utils/user_local_storage.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -17,6 +18,8 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
@@ -35,6 +38,24 @@ class _LoginFormState extends State<LoginForm> {
         await auth.signInWithProvider(googleProvider);
       }
 
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        String name = user.displayName ?? '';
+        final email = user.email ?? '';
+
+        if (name.isEmpty && email.contains('@')) {
+          name = email.split('@')[0];
+        }
+
+        await UserLocalStorage.saveUser(
+          userId: user.uid,
+          email: email,
+          displayName: name,
+        );
+
+        debugPrint('✅ Google login: $name <$email>');
+      }
+
       if (mounted) context.go('/');
     } catch (e) {
       if (mounted) {
@@ -50,15 +71,34 @@ class _LoginFormState extends State<LoginForm> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('login_success'.tr())),
+
+        final user = credential.user;
+        if (user != null) {
+          String name = user.displayName ?? '';
+          final email = user.email ?? '';
+
+          if (name.isEmpty && email.contains('@')) {
+            name = email.split('@')[0];
+          }
+
+          await UserLocalStorage.saveUser(
+            userId: user.uid,
+            email: email,
+            displayName: name,
           );
-          context.go('/');
+
+          debugPrint('✅ Logged in user: $name <$email>');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('login_success'.tr())),
+            );
+            context.go('/');
+          }
         }
       } on FirebaseAuthException catch (e) {
         String message = 'login_error'.tr();
@@ -78,14 +118,6 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _passwordFocusNode.dispose();
-    super.dispose();
-  }
-
   bool get _shouldShowGoogleButton {
     return kIsWeb ||
         defaultTargetPlatform == TargetPlatform.android ||
@@ -93,12 +125,21 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true, // هذا مطلوب لدعم السلوك التفاعلي
-      onPopInvokedWithResult: (bool didPop, dynamic result) {
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop && !kIsWeb) {
-          exit(0); // ⛔️ يغلق التطبيق نهائيًا على Android/iOS/Windows
+          exit(0);
         }
       },
       child: SafeArea(
@@ -110,11 +151,13 @@ class _LoginFormState extends State<LoginForm> {
               children: [
                 TextFormField(
                   controller: _emailController,
+                  focusNode: _emailFocusNode,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(labelText: 'email'.tr()),
-                  validator: (value) => value != null && value.contains('@')
-                      ? null
-                      : 'invalid_email'.tr(),
+                  validator: (value) =>
+                      value != null && value.contains('@')
+                          ? null
+                          : 'invalid_email'.tr(),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_passwordFocusNode);
                   },
@@ -126,9 +169,10 @@ class _LoginFormState extends State<LoginForm> {
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(labelText: 'password'.tr()),
-                  validator: (value) => value != null && value.length >= 6
-                      ? null
-                      : 'short_password'.tr(),
+                  validator: (value) =>
+                      value != null && value.length >= 6
+                          ? null
+                          : 'short_password'.tr(),
                   onFieldSubmitted: (_) => _loginWithEmailPassword(),
                 ),
                 const SizedBox(height: 20),

@@ -28,46 +28,48 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF45E94D),
-        title: Text(title ?? tr('dashboard_title')),
-        actions: [
-          if (kIsWeb && userName != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Center(
-                child: Text(
-                  '${tr('hello')}, $userName',
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                ),
+    final appBar = AppBar(
+      backgroundColor: const Color.fromARGB(255, 69, 200, 218),
+      title: Text(title ?? tr('dashboard_title')),
+      actions: [
+        if (userName != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Center(
+              child: Text(
+                '${tr('hello')}, $userName',
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
-          PopupMenuButton<Locale>(
-            icon: const Icon(Icons.language, color: Colors.white),
-            tooltip: tr('change_language'),
-            onSelected: (locale) async {
-              await context.setLocale(locale);
-              (context as Element).markNeedsBuild();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: Locale('en'),
-                child: Text('English'),
-              ),
-              PopupMenuItem(
-                value: Locale('ar'),
-                child: Text('العربية'),
-              ),
-            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: tr('logout'),
-            onPressed: () => logout(context),
-          ),
-        ],
-      ),
+        PopupMenuButton<Locale>(
+          icon: const Icon(Icons.language, color: Colors.white),
+          tooltip: tr('change_language'),
+          onSelected: (locale) async {
+            await context.setLocale(locale);
+            (context as Element).markNeedsBuild();
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(
+              value: Locale('en'),
+              child: Text('English'),
+            ),
+            PopupMenuItem(
+              value: Locale('ar'),
+              child: Text('العربية'),
+            ),
+          ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: tr('logout'),
+          onPressed: () => logout(context),
+        ),
+      ],
+    );
+
+    return Scaffold(
+      appBar: kIsWeb ? appBar : null,
       drawer: !kIsWeb
           ? Drawer(
               child: ListView(
@@ -99,7 +101,7 @@ class AppScaffold extends StatelessWidget {
               ),
             )
           : null,
-      body: body,
+      body: SafeArea(child: body),
     );
   }
 }
