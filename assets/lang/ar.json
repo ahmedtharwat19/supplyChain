@@ -169,6 +169,27 @@
   "supplier_details": "تفاصيل المورد",
   "item_details": "تفاصيل الصنف",
   "company_logo": "شعار الشركة",
-  "supplier_logo": "شعار المورد"
+  "supplier_logo": "شعار المورد",
+  "raw_material": "خامة",
+  "finished_product": "منتج نهائي",
+  "service": "خدمة",
+  "accessory": "ملحقات",
+  "other": "أخرى",
+  "packaging": "تغليف",
+  "kg": "كجم",
+  "gram": "جرام",
+  "piece": "قطعة",
+  "box": "صندوق",
+  "meter": "متر",
+  "liter": "لتر",
+  "pack": "عبوة",
+  "unit": "وحدة",
+  "error_occurred": "حدث خطأ. يرجى المحاولة مرة أخرى.",
+  "no_data_available": "No data available.",
+   "name": "الاسم",
+  "company": "الشركة",
+  "phone": "الهاتف",
+  "address": "العنوان",
+  "note": "ملاحظة"
 
 }

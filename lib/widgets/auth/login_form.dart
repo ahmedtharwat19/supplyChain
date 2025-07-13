@@ -56,7 +56,7 @@ class _LoginFormState extends State<LoginForm> {
         debugPrint('✅ Google login: $name <$email>');
       }
 
-      if (mounted) context.go('/');
+      if (mounted) context.go('/dashboard');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

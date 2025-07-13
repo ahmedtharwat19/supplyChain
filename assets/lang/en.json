@@ -171,6 +171,28 @@
   "company_logo": "Company Logo",
   "supplier_logo": "Supplier Logo",
   "item_image_upload": "Upload Item Image",
-  "item_image_required": "Item image is required"
+  "item_image_required": "Item image is required",
+  "raw_material": "Raw Material",
+  "finished_product": "Finished Product",
+  "service": "Service",
+  "accessory": "Accessory",
+  "other": "Other",
+  "packaging": "Packaging",
+  "kg": "Kg",
+  "gram": "Gram",
+  "piece": "Piece",
+  "box": "Box",
+  "meter": "Meter",
+  "liter": "Liter",
+  "pack": "Pack",
+  "unit": "Unit",
+  "error_occurred": "An error occurred. Please try again.",
+  "no_data_available": "No data available.",
+  "name": "Name",
+  "company": "Company",
+  "phone": "Phone",
+  "address": "Address",
+  "note": "Note"
+
   
 }

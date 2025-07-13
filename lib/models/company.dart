@@ -1,6 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Company {
+  // ➤ ثابتات الحقول
+  static const fieldNameAr = 'name_ar';
+  static const fieldNameEn = 'name_en';
+  static const fieldAddress = 'address';
+  static const fieldManagerName = 'manager_name';
+  static const fieldManagerPhone = 'manager_phone';
+  static const fieldLogoBase64 = 'logo_base64';
+  static const fieldUserId = 'user_id';
+  static const fieldCreatedAt = 'createdAt';
+
+  // ➤ الخصائص
   final String? id;
   final String nameAr;
   final String nameEn;
@@ -23,30 +33,32 @@ class Company {
     required this.createdAt,
   });
 
+  // ➤ Factory Constructor from Map
   factory Company.fromMap(Map<String, dynamic> data, String documentId) {
     return Company(
       id: documentId,
-      nameAr: data['name_ar'] ?? '',
-      nameEn: data['name_en'] ?? '',
-      address: data['address'] ?? '',
-      managerName: data['manager_name'] ?? '',
-      managerPhone: data['manager_phone'] ?? '',
-      logoBase64: data['logo_base64'],
-      userId: data['user_id'] ?? '',
-      createdAt: data['createdAt'] ?? Timestamp.now(),
+      nameAr: data[fieldNameAr] ?? '',
+      nameEn: data[fieldNameEn] ?? '',
+      address: data[fieldAddress] ?? '',
+      managerName: data[fieldManagerName] ?? '',
+      managerPhone: data[fieldManagerPhone] ?? '',
+      logoBase64: data[fieldLogoBase64],
+      userId: data[fieldUserId] ?? '',
+      createdAt: data[fieldCreatedAt] ?? Timestamp.now(),
     );
   }
 
+  // ➤ Convert to Map
   Map<String, dynamic> toMap() {
     return {
-      'name_ar': nameAr,
-      'name_en': nameEn,
-      'address': address,
-      'manager_name': managerName,
-      'manager_phone': managerPhone,
-      'logo_base64': logoBase64,
-      'user_id': userId,
-      'createdAt': createdAt,
+      fieldNameAr: nameAr,
+      fieldNameEn: nameEn,
+      fieldAddress: address,
+      fieldManagerName: managerName,
+      fieldManagerPhone: managerPhone,
+      fieldLogoBase64: logoBase64,
+      fieldUserId: userId,
+      fieldCreatedAt: createdAt,
     };
   }
 }

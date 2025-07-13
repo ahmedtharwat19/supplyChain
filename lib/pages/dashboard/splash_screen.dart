@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen>
       _fadeController.stop();
       if (mounted) {
         debugPrint('🚀 Navigating to / from splash');
-        context.go('/'); // انتقل إلى الصفحة الرئيسية بعد السبلاتش
+        context.go('/dashboard'); // انتقل إلى الصفحة الرئيسية بعد السبلاتش
       }
     });
   }

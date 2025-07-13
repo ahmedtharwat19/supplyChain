@@ -1,4 +1,5 @@
-//import 'dart:io';
+import 'dart:io';
+//import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +22,6 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
   });
 
-  // ignore: unused_element
   Future<bool> _confirmExit(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
@@ -53,21 +53,20 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final router = GoRouter.of(context);
-    //final currentPath = router.routeInformationProvider.value.uri.toString();
-    final currentPath = GoRouter.of(context).routeInformationProvider.value.uri.toString();
-    final canGoBack = currentPath != '/dashboard';
+    //final currentPath = GoRouter.of(context).routeInformationProvider.value.uri.path;
+
+    final showBackButton = !isDashboard;
 
     final appBar = AppBar(
       backgroundColor: const Color.fromARGB(255, 69, 200, 218),
       title: Text(title ?? tr('dashboard_title')),
-      leading: canGoBack
+      leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 if (Navigator.of(context).canPop()) {
                   Navigator.of(context).pop();
-                } else if (router.canPop()) {
+                } else if (GoRouter.of(context).canPop()) {
                   context.pop();
                 } else {
                   context.go('/dashboard');
@@ -77,7 +76,7 @@ class AppScaffold extends StatelessWidget {
           : null,
       actions: [
         if (userName != null)
-/*           Padding(
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Center(
               child: Text(
@@ -85,7 +84,7 @@ class AppScaffold extends StatelessWidget {
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
-          ), */
+          ),
         PopupMenuButton<Locale>(
           icon: const Icon(Icons.language, color: Colors.white),
           tooltip: tr('change_language'),
@@ -98,7 +97,7 @@ class AppScaffold extends StatelessWidget {
             PopupMenuItem(value: Locale('ar'), child: Text('العربية')),
           ],
         ),
-/*         if (isDashboard)
+        if (isDashboard)
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             tooltip: tr('exit'),
@@ -106,7 +105,9 @@ class AppScaffold extends StatelessWidget {
               final shouldExit = await _confirmExit(context);
               if (shouldExit) exit(0);
             },
-          ), */
+          )
+        else
+          const SizedBox.shrink(),
       ],
     );
 

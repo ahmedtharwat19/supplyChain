@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 
 class EditSupplierPage extends StatefulWidget {
-  final String vendorId;
+  final String supplierId;
   final String initialName;
   final String initialCompany;
 
   const EditSupplierPage({
     super.key,
-    required this.vendorId,
+    required this.supplierId,
     required this.initialName,
     required this.initialCompany,
   });
@@ -18,9 +20,9 @@ class EditSupplierPage extends StatefulWidget {
 }
 
 class _EditSupplierPageState extends State<EditSupplierPage> {
-  late TextEditingController _nameController;
-  late TextEditingController _companyController;
-  bool _isSaving = false;
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _companyController;
 
   @override
   void initState() {
@@ -30,59 +32,59 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
   }
 
   Future<void> _updateSupplier() async {
-    final name = _nameController.text.trim();
-    final company = _companyController.text.trim();
-
-    if (name.isEmpty || company.isEmpty) return;
-
-    setState(() => _isSaving = true);
+    if (!_formKey.currentState!.validate()) return;
 
     try {
       await FirebaseFirestore.instance
           .collection('vendors')
-          .doc(widget.vendorId)
+          .doc(widget.supplierId)
           .update({
-        'name': name,
-        'company': company,
+        'name': _nameController.text.trim(),
+        'company': _companyController.text.trim(),
       });
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('supplier_updated'))),
+        );
+        context.pop();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل في التعديل: $e')),
+          SnackBar(content: Text('${tr('error_occurred')}: $e')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('تعديل المورد')),
+      appBar: AppBar(title: Text(tr('edit_supplier'))),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'اسم المورد'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _companyController,
-              decoration: const InputDecoration(labelText: 'اسم الشركة'),
-            ),
-            const SizedBox(height: 20),
-            _isSaving
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _updateSupplier,
-                    child: const Text('تحديث'),
-                  ),
-          ],
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: tr('name')),
+                validator: (value) =>
+                    value == null || value.isEmpty ? tr('required') : null,
+              ),
+              TextFormField(
+                controller: _companyController,
+                decoration: InputDecoration(labelText: tr('company')),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _updateSupplier,
+                child: Text(tr('save')),
+              ),
+            ],
+          ),
         ),
       ),
     );

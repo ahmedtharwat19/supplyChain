@@ -45,7 +45,10 @@ class _CompaniesPageState extends State<CompaniesPage> {
       return;
     }
 
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     if (!mounted) return;
 
     final data = doc.data();
@@ -68,7 +71,8 @@ class _CompaniesPageState extends State<CompaniesPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+            child:
+                Text(tr('delete'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -79,12 +83,16 @@ class _CompaniesPageState extends State<CompaniesPage> {
         await company.reference.delete();
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({
             'companyIds': FieldValue.arrayRemove([company.id]),
           });
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('company_deleted'))));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(tr('company_deleted'))));
           await loadUserCompanies();
         }
       } catch (e) {
@@ -118,30 +126,46 @@ class _CompaniesPageState extends State<CompaniesPage> {
                     decoration: InputDecoration(
                       labelText: tr('search'),
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
-                    onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
+                    onChanged: (value) =>
+                        setState(() => searchQuery = value.toLowerCase()),
                   ),
                 ),
                 Expanded(
                   child: userCompanyIds.isEmpty
                       ? Center(child: Text(tr('no_companies_linked')))
                       : StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance.collection('companies').snapshots(),
+                          stream: FirebaseFirestore.instance
+                              .collection('companies')
+                              .where('user_id',
+                                  isEqualTo:
+                                      FirebaseAuth.instance.currentUser?.uid)
+                              .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
                             }
                             if (snapshot.hasError) {
-                              return Center(child: Text('${tr('error_occurred')}: ${snapshot.error}'));
+                              return Center(
+                                  child: Text(
+                                      '${tr('error_occurred')}: ${snapshot.error}'));
                             }
 
                             final companies = snapshot.data!.docs.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
-                              final nameAr = (data['name_ar'] ?? '').toString().toLowerCase();
-                              final nameEn = (data['name_en'] ?? '').toString().toLowerCase();
+                              final nameAr = (data['name_ar'] ?? '')
+                                  .toString()
+                                  .toLowerCase();
+                              final nameEn = (data['name_en'] ?? '')
+                                  .toString()
+                                  .toLowerCase();
                               return userCompanyIds.contains(doc.id) &&
-                                  (nameAr.contains(searchQuery) || nameEn.contains(searchQuery));
+                                  (nameAr.contains(searchQuery) ||
+                                      nameEn.contains(searchQuery));
                             }).toList();
 
                             if (companies.isEmpty) {
@@ -152,18 +176,25 @@ class _CompaniesPageState extends State<CompaniesPage> {
                               itemCount: companies.length,
                               itemBuilder: (context, index) {
                                 final company = companies[index];
-                                final data = company.data() as Map<String, dynamic>;
+                                final data =
+                                    company.data() as Map<String, dynamic>;
 
                                 Uint8List? imageBytes;
                                 try {
-                                  if (data['logo_base64'] != null && data['logo_base64'].toString().isNotEmpty) {
-                                    imageBytes = base64Decode(data['logo_base64']);
+                                  if (data['logo_base64'] != null &&
+                                      data['logo_base64']
+                                          .toString()
+                                          .isNotEmpty) {
+                                    imageBytes =
+                                        base64Decode(data['logo_base64']);
                                   }
                                 } catch (_) {}
 
                                 return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
                                   elevation: 2,
                                   child: ListTile(
                                     leading: SizedBox(
@@ -171,32 +202,44 @@ class _CompaniesPageState extends State<CompaniesPage> {
                                       height: 60,
                                       child: imageBytes != null
                                           ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: Image.memory(imageBytes, fit: BoxFit.contain),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.memory(imageBytes,
+                                                  fit: BoxFit.contain),
                                             )
-                                          : const Icon(Icons.business, size: 40),
+                                          : const Icon(Icons.business,
+                                              size: 40),
                                     ),
-                                    title: Text('${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                                    title: Text(
+                                        '${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
                                     subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        if (data['address'] != null) Text('📍 ${data['address']}'),
-                                        if (data['manager_name'] != null) Text('👤 ${data['manager_name']}'),
-                                        if (data['manager_phone'] != null) Text('📞 ${data['manager_phone']}'),
+                                        if (data['address'] != null)
+                                          Text('📍 ${data['address']}'),
+                                        if (data['manager_name'] != null)
+                                          Text('👤 ${data['manager_name']}'),
+                                        if (data['manager_phone'] != null)
+                                          Text('📞 ${data['manager_phone']}'),
                                       ],
                                     ),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit, color: Colors.blue),
+                                          icon: const Icon(Icons.edit,
+                                              color: Colors.blue),
                                           tooltip: tr('edit'),
-                                          onPressed: () => _editCompany(company),
+                                          onPressed: () =>
+                                              _editCompany(company),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.red),
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.red),
                                           tooltip: tr('delete'),
-                                          onPressed: () => _confirmDeleteCompany(company),
+                                          onPressed: () =>
+                                              _confirmDeleteCompany(company),
                                         ),
                                       ],
                                     ),

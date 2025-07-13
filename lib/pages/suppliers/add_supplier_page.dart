@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
+import '../../models/supplier.dart';
+import '../../utils/user_local_storage.dart';
 
 class AddSupplierPage extends StatefulWidget {
   const AddSupplierPage({super.key});
@@ -9,64 +13,110 @@ class AddSupplierPage extends StatefulWidget {
 }
 
 class _AddSupplierPageState extends State<AddSupplierPage> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _companyController = TextEditingController();
-  bool _isSaving = false;
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  String? userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    final user = await UserLocalStorage.getUser();
+    setState(() {
+      userId = user?['userId'];
+    });
+  }
 
   Future<void> _saveSupplier() async {
-    final name = _nameController.text.trim();
-    final company = _companyController.text.trim();
+    if (!_formKey.currentState!.validate() || userId == null) return;
 
-    if (name.isEmpty || company.isEmpty) return;
-
-    setState(() => _isSaving = true);
+    final newSupplier = Supplier(
+      name: _nameController.text.trim(),
+      company: _companyController.text.trim(),
+      phone: _phoneController.text.trim(),
+      email: _emailController.text.trim(),
+      address: _addressController.text.trim(),
+      notes: _notesController.text.trim(),
+      userId: userId!,
+      createdAt: Timestamp.now(),
+    );
 
     try {
-      await FirebaseFirestore.instance.collection('vendors').add({
-        'name': name,
-        'company': company,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance
+          .collection('vendors')
+          .add(newSupplier.toMap());
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('supplier_added'))),
+        );
+        context.pop();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل في الإضافة: $e')),
+          SnackBar(content: Text('${tr('error_occurred')}: $e')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('إضافة مورد جديد')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'اسم المورد'),
+      appBar: AppBar(title: Text(tr('add_supplier'))),
+      body: userId == null
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: tr('name')),
+                      validator: (value) =>
+                          value == null || value.isEmpty ? tr('required') : null,
+                    ),
+                    TextFormField(
+                      controller: _companyController,
+                      decoration: InputDecoration(labelText: tr('company')),
+                    ),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(labelText: tr('phone')),
+                    ),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(labelText: tr('email')),
+                    ),
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: InputDecoration(labelText: tr('address')),
+                    ),
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(labelText: tr('notes')),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _saveSupplier,
+                      child: Text(tr('save')),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _companyController,
-              decoration: const InputDecoration(labelText: 'اسم الشركة'),
-            ),
-            const SizedBox(height: 20),
-            _isSaving
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _saveSupplier,
-                    child: const Text('حفظ'),
-                  ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -19,18 +19,19 @@ class _DashboardPageState extends State<DashboardPage> {
   double totalAmount = 0.0;
   bool isLoading = true;
   String? userName;
+  String? userId;
 
   @override
   void initState() {
     super.initState();
-    loadUserName();
-    fetchStats();
+    loadUser();
   }
 
-  Future<void> loadUserName() async {
+  Future<void> loadUser() async {
     final user = await UserLocalStorage.getUser();
     final email = user?['email'] ?? '';
     String name = user?['displayName'] ?? '';
+    final uid = user?['userId'];
 
     if (name.isEmpty && email.contains('@')) {
       name = email.split('@')[0];
@@ -39,14 +40,22 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
     setState(() {
       userName = name;
+      userId = uid;
+      debugPrint('User loaded: $name, $uid,$email');
     });
+
+    fetchStats();
   }
 
   Future<void> fetchStats() async {
+    if (userId == null) return;
     setState(() => isLoading = true);
+    debugPrint('Fetching stats...');
 
-    final companiesSnapshot =
-        await FirebaseFirestore.instance.collection('companies').get();
+    final companiesSnapshot = await FirebaseFirestore.instance
+        .collection('companies')
+        .where('user_id', isEqualTo: userId)
+        .get();
     totalCompanies = companiesSnapshot.size;
 
     int supplierCount = 0;
@@ -58,6 +67,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       final ordersSnap = await FirebaseFirestore.instance
           .collection('companies/$companyId/purchase_orders')
+          .where('user_id', isEqualTo: userId)
           .get();
 
       orderCount += ordersSnap.size;
@@ -69,8 +79,10 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
 
-    final suppliersSnap =
-        await FirebaseFirestore.instance.collection('vendors').get();
+    final suppliersSnap = await FirebaseFirestore.instance
+        .collection('vendors')
+        .where('user_id', isEqualTo: userId)
+        .get();
     supplierCount = suppliersSnap.size;
 
     if (!mounted) return;
@@ -141,67 +153,69 @@ class _DashboardPageState extends State<DashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        children: [
-                          buildTile(
-                            title: tr('total_companies'),
-                            value: '$totalCompanies',
-                            icon: Icons.business,
-                            color: Colors.blue,
-                            onTap: () => context.go('/companies'),
-                            progress: totalCompanies / 100,
-                          ),
-                          buildTile(
-                            title: tr('total_suppliers'),
-                            value: '$totalSuppliers',
-                            icon: Icons.group,
-                            color: Colors.orange,
-                            onTap: () => context.go('/suppliers'),
-                            progress: totalSuppliers / 100,
-                          ),
-                          buildTile(
-                            title: tr('purchase_orders'),
-                            value: '$totalOrders',
-                            icon: Icons.receipt,
-                            color: Colors.green,
-                            onTap: () => context.go('/purchase-orders'),
-                            progress: totalOrders / 100,
-                          ),
-                          buildTile(
-                            title: tr('total_amount'),
-                            value:
-                                '${totalAmount.toStringAsFixed(2)} ${tr('eg_pound')}',
-                            icon: Icons.attach_money,
-                            color: Colors.teal,
-                            onTap: () => context.go('/purchase-orders'),
-                            progress:
-                                totalAmount > 0 ? (totalAmount / 100000) : 0.05,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      _buildNavTile(context, Icons.business,
-                          'manage_companies'.tr(), '/companies'),
-                      _buildNavTile(context, Icons.group,
-                          'manage_suppliers'.tr(), '/suppliers'),
-                      _buildNavTile(context, Icons.category,
-                          'manage_items'.tr(), '/items'),
-                      _buildNavTile(context, Icons.shopping_cart,
-                          'view_purchase_orders'.tr(), '/purchase-orders'),
-                    ],
+                  child:  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GridView.count(
+                          crossAxisCount: 2,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          children: [
+                            buildTile(
+                              title: tr('total_companies'),
+                              value: '$totalCompanies',
+                              icon: Icons.business,
+                              color: Colors.blue,
+                              onTap: () => context.go('/companies'),
+                              progress: totalCompanies / 100,
+                            ),
+                            buildTile(
+                              title: tr('total_suppliers'),
+                              value: '$totalSuppliers',
+                              icon: Icons.group,
+                              color: Colors.orange,
+                              onTap: () => context.go('/suppliers'),
+                              progress: totalSuppliers / 100,
+                            ),
+                            buildTile(
+                              title: tr('purchase_orders'),
+                              value: '$totalOrders',
+                              icon: Icons.receipt,
+                              color: Colors.green,
+                              onTap: () => context.go('/purchase-orders'),
+                              progress: totalOrders / 100,
+                            ),
+                            buildTile(
+                              title: tr('total_amount'),
+                              value:
+                                  '${totalAmount.toStringAsFixed(2)} ${tr('eg_pound')}',
+                              icon: Icons.attach_money,
+                              color: Colors.teal,
+                              onTap: () => context.go('/purchase-orders'),
+                              progress: totalAmount > 0
+                                  ? (totalAmount / 100000)
+                                  : 0.05,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        _buildNavTile(context, Icons.business,
+                            'manage_companies'.tr(), '/companies'),
+                        _buildNavTile(context, Icons.group,
+                            'manage_suppliers'.tr(), '/suppliers'),
+                        _buildNavTile(context, Icons.category,
+                            'manage_items'.tr(), '/items'),
+                        _buildNavTile(context, Icons.shopping_cart,
+                            'view_purchase_orders'.tr(), '/purchase-orders'),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            
     );
   }
 
@@ -211,9 +225,7 @@ class _DashboardPageState extends State<DashboardPage> {
       leading: Icon(icon),
       title: Text(title),
       trailing: const Icon(Icons.arrow_forward_ios),
-      onTap: () {
-        context.go(route);
-      },
+      onTap: () => context.go(route),
     );
   }
 }

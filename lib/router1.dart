@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:easy_localization/easy_localization.dart';
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -18,6 +18,7 @@ import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart';
 import 'pages/items_page.dart';
+import 'widgets/app_scaffold.dart';
 
 // مفتاح التنقل العام
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -25,7 +26,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GoRouter appRouter = GoRouter(
   navigatorKey: navigatorKey,
   initialLocation: '/splash',
-  debugLogDiagnostics: true,
+  debugLogDiagnostics: true, // يساعدك أثناء التطوير
   routes: [
     GoRoute(
       path: '/splash',
@@ -41,55 +42,82 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) => const DashboardPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('dashboard'),
+        body: const DashboardPage(),
+      ),
     ),
     GoRoute(
       path: '/companies',
-      builder: (context, state) => const CompaniesPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('companies'),
+        body: const CompaniesPage(),
+      ),
     ),
     GoRoute(
       path: '/add-company',
-      builder: (context, state) => const AddCompanyPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('add_company'),
+        body: const AddCompanyPage(),
+      ),
     ),
     GoRoute(
       path: '/edit-company/:id',
       builder: (context, state) {
         final companyId = state.pathParameters['id']!;
-        return EditCompanyPage(companyId: companyId);
+        return AppScaffold(
+          title: tr('edit_company'),
+          body: EditCompanyPage(companyId: companyId),
+        );
       },
     ),
     GoRoute(
       path: '/suppliers',
-      builder: (context, state) => const SuppliersPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('suppliers'),
+        body: const SuppliersPage(),
+      ),
     ),
     GoRoute(
       path: '/add-supplier',
-      builder: (context, state) => const AddSupplierPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('add_supplier'),
+        body: const AddSupplierPage(),
+      ),
     ),
     GoRoute(
       path: '/edit-vendor/:id',
       builder: (context, state) {
         final supplierId = state.pathParameters['id']!;
         final extra = state.extra as Map<String, dynamic>? ?? {};
-        return EditSupplierPage(
-          supplierId: supplierId,
-          initialName: extra['name'] ?? '',
-          initialCompany: extra['company'] ?? '',
+        return AppScaffold(
+          title: tr('edit_supplier'),
+          body: EditSupplierPage(
+            supplierId: supplierId,
+            initialName: extra['name'] ?? '',
+            initialCompany: extra['company'] ?? '',
+          ),
         );
       },
     ),
     GoRoute(
       path: '/purchase-orders',
-      builder: (context, state) => const PurchaseOrdersPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('purchase_orders'),
+        body: const PurchaseOrdersPage(),
+      ),
     ),
     GoRoute(
       path: '/purchase-order-detail',
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'] ?? '';
         final orderId = state.uri.queryParameters['orderId'] ?? '';
-        return PurchaseOrderDetailPage(
-          companyId: companyId,
-          orderId: orderId,
+        return AppScaffold(
+          title: tr('purchase_order_details'),
+          body: PurchaseOrderDetailPage(
+            companyId: companyId,
+            orderId: orderId,
+          ),
         );
       },
     ),
@@ -101,19 +129,25 @@ final GoRouter appRouter = GoRouter(
         if (companyId == null || companyId.isEmpty) {
           return const Scaffold(body: Center(child: Text('Missing companyId')));
         }
-        return AddPurchaseOrderPage(
-          selectedCompany: companyId,
-          editOrderId: editOrderId,
+        return AppScaffold(
+          title: tr('add_purchase_order'),
+          body: AddPurchaseOrderPage(
+            selectedCompany: companyId,
+            editOrderId: editOrderId,
+          ),
         );
       },
     ),
     GoRoute(
       path: '/items',
-      builder: (context, state) => const ItemsPage(),
+      builder: (context, state) => AppScaffold(
+        title: tr('items'),
+        body: const ItemsPage(),
+      ),
     ),
   ],
 
-  /// ✅ التوجيه حسب حالة تسجيل الدخول
+  /// ✅ إعادة التوجيه بناءً على حالة تسجيل الدخول
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
