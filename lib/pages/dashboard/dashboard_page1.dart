@@ -19,35 +19,44 @@ class _DashboardPageState extends State<DashboardPage> {
   double totalAmount = 0.0;
   bool isLoading = true;
   String? userName;
+  String? userId;
 
   @override
   void initState() {
     super.initState();
-    loadUserName();
+    loadUserAndCachedData();
+  }
+
+  Future<void> loadUserAndCachedData() async {
+    final user = await UserLocalStorage.getUser();
+    if (user == null) return;
+
+    userName = user['displayName'];
+    userId = user['userId'];
+
+    // تحميل القيم المحفوظة مؤقتًا لعرضها مبدئيًا
+    final cached = await UserLocalStorage.getDashboardData();
+    setState(() {
+      totalCompanies = cached['totalCompanies'] ?? 0;
+      totalSuppliers = cached['totalSuppliers'] ?? 0;
+      totalOrders = cached['totalOrders'] ?? 0;
+      totalAmount = cached['totalAmount'] ?? 0.0;
+      isLoading = false;
+    });
+
+    // تحميل القيم الحقيقية من Firestore
     fetchStats();
   }
 
-  Future<void> loadUserName() async {
-    final user = await UserLocalStorage.getUser();
-    final email = user?['email'] ?? '';
-    String name = user?['displayName'] ?? '';
-
-    if (name.isEmpty && email.contains('@')) {
-      name = email.split('@')[0];
-    }
-
-    if (!mounted) return;
-    setState(() {
-      userName = name;
-    });
-  }
-
   Future<void> fetchStats() async {
+    if (userId == null) return;
     setState(() => isLoading = true);
 
-    final companiesSnapshot =
-        await FirebaseFirestore.instance.collection('companies').get();
-    totalCompanies = companiesSnapshot.size;
+    final companiesSnapshot = await FirebaseFirestore.instance
+        .collection('companies')
+        .where('user_id', isEqualTo: userId)
+        .get();
+    final int companyCount = companiesSnapshot.size;
 
     int supplierCount = 0;
     int orderCount = 0;
@@ -58,6 +67,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       final ordersSnap = await FirebaseFirestore.instance
           .collection('companies/$companyId/purchase_orders')
+          .where('user_id', isEqualTo: userId)
           .get();
 
       orderCount += ordersSnap.size;
@@ -69,31 +79,76 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     }
 
-    final suppliersSnap =
-        await FirebaseFirestore.instance.collection('vendors').get();
+    final suppliersSnap = await FirebaseFirestore.instance
+        .collection('vendors')
+        .where('user_id', isEqualTo: userId)
+        .get();
     supplierCount = suppliersSnap.size;
 
-    if (!mounted) return;
     setState(() {
+      totalCompanies = companyCount;
       totalSuppliers = supplierCount;
       totalOrders = orderCount;
       totalAmount = amountSum;
       isLoading = false;
     });
+
+    // حفظ الإحصائيات محليًا
+    await UserLocalStorage.saveDashboardData(
+      totalCompanies: companyCount,
+      totalSuppliers: supplierCount,
+      totalOrders: orderCount,
+      totalAmount: amountSum,
+    );
   }
 
-  Widget buildTile(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: color, size: 30),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+  Widget buildTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    double progress = 0.5,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 34),
+              const SizedBox(height: 8),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15)),
+              const SizedBox(height: 6),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(
+                value: progress.clamp(0.05, 1.0),
+                backgroundColor: Colors.grey[200],
+                color: color,
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildNavTile(
+      BuildContext context, IconData icon, String title, String route) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: const Icon(Icons.arrow_forward_ios),
+      onTap: () => context.go(route),
     );
   }
 
@@ -107,48 +162,73 @@ class _DashboardPageState extends State<DashboardPage> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: fetchStats,
-              child: ListView(
-                padding: const EdgeInsets.all(12),
-                children: [
-                  buildTile('total_companies'.tr(), '$totalCompanies',
-                      Icons.business, Colors.blue),
-                  buildTile('total_suppliers'.tr(), '$totalSuppliers',
-                      Icons.group, Colors.orange),
-                  buildTile('purchase_orders'.tr(), '$totalOrders',
-                      Icons.receipt, Colors.green),
-                  buildTile(
-                      'total_amount'.tr(),
-                      '${totalAmount.toStringAsFixed(2)} ${'eg_pound'.tr()}',
-                      Icons.attach_money,
-                      Colors.teal),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  _buildNavTile(context, Icons.business,
-                      'manage_companies'.tr(), '/companies'),
-                  _buildNavTile(context, Icons.group, 'manage_suppliers'.tr(),
-                      '/suppliers'),
-                  _buildNavTile(
-                      context, Icons.category, 'manage_items'.tr(), '/items'),
-                  _buildNavTile(context, Icons.shopping_cart,
-                      'view_purchase_orders'.tr(), '/purchase-orders'),
-                ],
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LayoutBuilder(builder: (context, constraints) {
+                        int crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+                        return GridView.count(
+                          crossAxisCount: crossAxisCount,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          children: [
+                            buildTile(
+                              title: tr('total_companies'),
+                              value: '$totalCompanies',
+                              icon: Icons.business,
+                              color: Colors.blue,
+                              onTap: () => context.go('/companies'),
+                              progress: totalCompanies / 100,
+                            ),
+                            buildTile(
+                              title: tr('total_suppliers'),
+                              value: '$totalSuppliers',
+                              icon: Icons.group,
+                              color: Colors.orange,
+                              onTap: () => context.go('/suppliers'),
+                              progress: totalSuppliers / 100,
+                            ),
+                            buildTile(
+                              title: tr('purchase_orders'),
+                              value: '$totalOrders',
+                              icon: Icons.receipt_long,
+                              color: Colors.green,
+                              onTap: () => context.go('/purchase-orders'),
+                              progress: totalOrders / 100,
+                            ),
+                            buildTile(
+                              title: tr('total_amount'),
+                              value:
+                                  '${totalAmount.toStringAsFixed(2)} ${tr('eg_pound')}',
+                              icon: Icons.attach_money,
+                              color: Colors.teal,
+                              onTap: () => context.go('/purchase-orders'),
+                              progress: totalAmount / 100000,
+                            ),
+                          ],
+                        );
+                      }),
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      _buildNavTile(context, Icons.business,
+                          tr('manage_companies'), '/companies'),
+                      _buildNavTile(context, Icons.group,
+                          tr('manage_suppliers'), '/suppliers'),
+                      _buildNavTile(context, Icons.category,
+                          tr('manage_items'), '/items'),
+                      _buildNavTile(context, Icons.shopping_cart,
+                          tr('view_purchase_orders'), '/purchase-orders'),
+                    ],
+                  ),
+                ),
               ),
             ),
-    );
-  }
-
-  Widget _buildNavTile(
-      BuildContext context, IconData icon, String title, String route) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      trailing: const Icon(Icons.arrow_forward_ios),
-      onTap: () {
-        // if (!kIsWeb) {
-        //   Navigator.of(context).pop(); // لإغلاق Drawer على المنصات غير الويب
-        // }
-        context.go(route);
-      },
     );
   }
 }

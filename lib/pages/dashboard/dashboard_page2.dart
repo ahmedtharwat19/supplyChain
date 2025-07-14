@@ -24,23 +24,24 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    loadUserAndCachedData();
+    loadUser();
   }
 
-  Future<void> loadUserAndCachedData() async {
+  Future<void> loadUser() async {
     final user = await UserLocalStorage.getUser();
-    if (user == null) return;
+    final email = user?['email'] ?? '';
+    String name = user?['displayName'] ?? '';
+    final uid = user?['userId'];
 
-    userName = user['displayName'];
-    userId = user['userId'];
+    if (name.isEmpty && email.contains('@')) {
+      name = email.split('@')[0];
+    }
 
-    final cached = await UserLocalStorage.getDashboardData();
+    if (!mounted) return;
     setState(() {
-      totalCompanies = cached['totalCompanies'] ?? 0;
-      totalSuppliers = cached['totalSuppliers'] ?? 0;
-      totalOrders = cached['totalOrders'] ?? 0;
-      totalAmount = cached['totalAmount'] ?? 0.0;
-      isLoading = false;
+      userName = name;
+      userId = uid;
+      debugPrint('User loaded: $name, $uid,$email');
     });
 
     fetchStats();
@@ -49,12 +50,13 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> fetchStats() async {
     if (userId == null) return;
     setState(() => isLoading = true);
+    debugPrint('Fetching stats...');
 
     final companiesSnapshot = await FirebaseFirestore.instance
         .collection('companies')
         .where('user_id', isEqualTo: userId)
         .get();
-    final int companyCount = companiesSnapshot.size;
+    totalCompanies = companiesSnapshot.size;
 
     int supplierCount = 0;
     int orderCount = 0;
@@ -84,20 +86,56 @@ class _DashboardPageState extends State<DashboardPage> {
     supplierCount = suppliersSnap.size;
 
     if (!mounted) return;
-
     setState(() {
-      totalCompanies = companyCount;
       totalSuppliers = supplierCount;
       totalOrders = orderCount;
       totalAmount = amountSum;
       isLoading = false;
     });
+  }
 
-    await UserLocalStorage.saveDashboardData(
-      totalCompanies: companyCount,
-      totalSuppliers: supplierCount,
-      totalOrders: orderCount,
-      totalAmount: amountSum,
+  Widget buildTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    double progress = 0.5,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 36),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Colors.grey.shade200,
+                color: color,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -115,24 +153,17 @@ class _DashboardPageState extends State<DashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LayoutBuilder(builder: (context, constraints) {
-                        int crossAxisCount = constraints.maxWidth >= 900
-                            ? 4
-                            : constraints.maxWidth >= 600
-                                ? 3
-                                : 2;
-
-                        return GridView.count(
-                          crossAxisCount: crossAxisCount,
+                  child:  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GridView.count(
+                          crossAxisCount: 2,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
                           children: [
-                            _buildDashboardTile(
+                            buildTile(
                               title: tr('total_companies'),
                               value: '$totalCompanies',
                               icon: Icons.business,
@@ -140,7 +171,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               onTap: () => context.go('/companies'),
                               progress: totalCompanies / 100,
                             ),
-                            _buildDashboardTile(
+                            buildTile(
                               title: tr('total_suppliers'),
                               value: '$totalSuppliers',
                               icon: Icons.group,
@@ -148,111 +179,48 @@ class _DashboardPageState extends State<DashboardPage> {
                               onTap: () => context.go('/suppliers'),
                               progress: totalSuppliers / 100,
                             ),
-                            _buildDashboardTile(
+                            buildTile(
                               title: tr('purchase_orders'),
                               value: '$totalOrders',
-                              icon: Icons.receipt_long,
+                              icon: Icons.receipt,
                               color: Colors.green,
                               onTap: () => context.go('/purchase-orders'),
                               progress: totalOrders / 100,
                             ),
-                            _buildDashboardTile(
+                            buildTile(
                               title: tr('total_amount'),
                               value:
                                   '${totalAmount.toStringAsFixed(2)} ${tr('eg_pound')}',
                               icon: Icons.attach_money,
                               color: Colors.teal,
                               onTap: () => context.go('/purchase-orders'),
-                              progress: (totalAmount / 100000).clamp(0.05, 1),
+                              progress: totalAmount > 0
+                                  ? (totalAmount / 100000)
+                                  : 0.05,
                             ),
                           ],
-                        );
-                      }),
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      _buildNavTile(
-                        context,
-                        Icons.business,
-                        tr('manage_companies'),
-                        '/companies',
-                      ),
-                      _buildNavTile(
-                        context,
-                        Icons.group,
-                        tr('manage_suppliers'),
-                        '/suppliers',
-                      ),
-                      _buildNavTile(
-                        context,
-                        Icons.category,
-                        tr('manage_items'),
-                        '/items',
-                      ),
-                      _buildNavTile(
-                        context,
-                        Icons.shopping_cart,
-                        tr('view_purchase_orders'),
-                        '/purchase-orders',
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        _buildNavTile(context, Icons.business,
+                            'manage_companies'.tr(), '/companies'),
+                        _buildNavTile(context, Icons.group,
+                            'manage_suppliers'.tr(), '/suppliers'),
+                        _buildNavTile(context, Icons.category,
+                            'manage_items'.tr(), '/items'),
+                        _buildNavTile(context, Icons.shopping_cart,
+                            'view_purchase_orders'.tr(), '/purchase-orders'),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-    );
-  }
-
-  Widget _buildDashboardTile({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    required double progress,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 34),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 10),
-              LinearProgressIndicator(
-                value: progress.clamp(0.05, 1.0),
-                backgroundColor: Colors.grey[200],
-                color: color,
-              ),
-            ],
-          ),
-        ),
-      ),
+            
     );
   }
 
   Widget _buildNavTile(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String route,
-  ) {
+      BuildContext context, IconData icon, String title, String route) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
