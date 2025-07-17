@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
+import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
+import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -98,9 +100,15 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'];
         final editOrderId = state.uri.queryParameters['editOrderId'];
+
         if (companyId == null || companyId.isEmpty) {
-          return const Scaffold(body: Center(child: Text('Missing companyId')));
+          return const Scaffold(
+            body: Center(
+              child: Text('Missing companyId'),
+            ),
+          );
         }
+
         return AddPurchaseOrderPage(
           selectedCompany: companyId,
           editOrderId: editOrderId,
@@ -111,13 +119,26 @@ final GoRouter appRouter = GoRouter(
       path: '/items',
       builder: (context, state) => const ItemsPage(),
     ),
+    GoRoute(
+        path: '/factories', builder: (context, state) => const FactoriesPage()),
+    GoRoute(
+        path: '/add-factory',
+        builder: (context, state) => const AddFactoryPage()),
+    GoRoute(
+      path: '/edit-factory/:id',
+      builder: (context, state) {
+        final factoryId = state.pathParameters['id']!;
+        return EditFactoryPage(factoryId: factoryId);
+      },
+    ),
   ],
 
   /// ✅ التوجيه حسب حالة تسجيل الدخول
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
-    final isLoggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
+    final isLoggingIn =
+        state.fullPath == '/login' || state.fullPath == '/signup';
 
     if (isSplash) return null;
     if (user == null && !isLoggingIn) return '/login';

@@ -49,6 +49,7 @@ class _CompaniesPageState extends State<CompaniesPage> {
         .collection('users')
         .doc(user.uid)
         .get();
+
     if (!mounted) return;
 
     final data = doc.data();
@@ -56,6 +57,8 @@ class _CompaniesPageState extends State<CompaniesPage> {
       userCompanyIds = (data?['companyIds'] as List?)?.cast<String>() ?? [];
       isLoading = false;
     });
+
+    debugPrint('🔹 Loaded company IDs: $userCompanyIds');
   }
 
   Future<void> _confirmDeleteCompany(DocumentSnapshot company) async {
@@ -127,7 +130,8 @@ class _CompaniesPageState extends State<CompaniesPage> {
                       labelText: tr('search'),
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onChanged: (value) =>
                         setState(() => searchQuery = value.toLowerCase()),
@@ -139,9 +143,10 @@ class _CompaniesPageState extends State<CompaniesPage> {
                       : StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
                               .collection('companies')
-                              .where('user_id',
-                                  isEqualTo:
-                                      FirebaseAuth.instance.currentUser?.uid)
+                              .where(FieldPath.documentId,
+                                  whereIn: userCompanyIds.isEmpty
+                                      ? ['dummy']
+                                      : userCompanyIds)
                               .snapshots(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
@@ -149,13 +154,17 @@ class _CompaniesPageState extends State<CompaniesPage> {
                               return const Center(
                                   child: CircularProgressIndicator());
                             }
+
                             if (snapshot.hasError) {
                               return Center(
-                                  child: Text(
-                                      '${tr('error_occurred')}: ${snapshot.error}'));
+                                child: Text(
+                                    '${tr('error_occurred')}: ${snapshot.error}'),
+                              );
                             }
 
-                            final companies = snapshot.data!.docs.where((doc) {
+                            final companies = snapshot.data?.docs ?? [];
+
+                            final filtered = companies.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
                               final nameAr = (data['name_ar'] ?? '')
                                   .toString()
@@ -163,19 +172,18 @@ class _CompaniesPageState extends State<CompaniesPage> {
                               final nameEn = (data['name_en'] ?? '')
                                   .toString()
                                   .toLowerCase();
-                              return userCompanyIds.contains(doc.id) &&
-                                  (nameAr.contains(searchQuery) ||
-                                      nameEn.contains(searchQuery));
+                              return nameAr.contains(searchQuery) ||
+                                  nameEn.contains(searchQuery);
                             }).toList();
 
-                            if (companies.isEmpty) {
+                            if (filtered.isEmpty) {
                               return Center(child: Text(tr('no_match_search')));
                             }
 
                             return ListView.builder(
-                              itemCount: companies.length,
+                              itemCount: filtered.length,
                               itemBuilder: (context, index) {
-                                final company = companies[index];
+                                final company = filtered[index];
                                 final data =
                                     company.data() as Map<String, dynamic>;
 
@@ -194,7 +202,8 @@ class _CompaniesPageState extends State<CompaniesPage> {
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 6),
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   elevation: 2,
                                   child: ListTile(
                                     leading: SizedBox(
@@ -252,8 +261,6 @@ class _CompaniesPageState extends State<CompaniesPage> {
                 ),
               ],
             ),
-      // زر الإضافة في AppBar يتم إدارته من داخل AppScaffold أو يتم إضافته عبر FloatingActionButton
-      // لكن إذا أردت هنا:
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await context.push('/add-company');

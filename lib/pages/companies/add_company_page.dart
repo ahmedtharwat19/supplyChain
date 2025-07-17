@@ -1,15 +1,14 @@
-// lib/pages/add_company_page.dart
-
 import 'dart:convert';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:puresip_purchasing/pages/companies/companies_page.dart';
 import 'company_added_page.dart';
-//import '../../../../models/company.dart';
-
 
 class AddCompanyPage extends StatefulWidget {
   const AddCompanyPage({super.key});
@@ -48,6 +47,8 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
   }
 
   Future<void> _addCompany() async {
+    if (_isLoading) return; // 🔒 لمنع الضغط المتكرر
+
     final nameAr = _nameArController.text.trim();
     final nameEn = _nameEnController.text.trim();
     final address = _addressController.text.trim();
@@ -56,7 +57,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
     if (nameAr.isEmpty || nameEn.isEmpty || address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
+        SnackBar(content: Text('requierd_fields'.tr())),
+      );
+      return;
+    }
+
+    if (_base64Logo == null || _base64Logo!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('please_select_logo'.tr())),
       );
       return;
     }
@@ -67,12 +75,12 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يجب تسجيل الدخول أولاً')),
+          SnackBar(content: Text('login_first'.tr())),
         );
         return;
       }
 
-      final docRef = await FirebaseFirestore.instance.collection('companies').add({
+      final companyData = {
         'name_ar': nameAr,
         'name_en': nameEn,
         'address': address,
@@ -81,24 +89,61 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         'logo_base64': _base64Logo,
         'user_id': user.uid,
         'createdAt': Timestamp.now(),
-      });
+      };
 
-      // ربط الشركة بالمستخدم الحالي
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'companyIds': FieldValue.arrayUnion([docRef.id]),
-      }, SetOptions(merge: true));
+      final docRef = await FirebaseFirestore.instance
+          .collection('companies')
+          .add(companyData);
+
+      final userDocRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userDoc = await userDocRef.get();
+
+      if (userDoc.exists) {
+        await userDocRef.update({
+          'companyIds': FieldValue.arrayUnion([docRef.id]),
+        });
+      } else {
+        await userDocRef.set({
+          'companyIds': [docRef.id],
+        });
+      }
 
       if (!mounted) return;
-      Navigator.pushReplacement(
+
+      // ✅ عرض رسالة نجاح قبل الانتقال
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('company_added_successfully'.tr())),
+      );
+
+      // تأخير بسيط لعرض الرسالة
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      // ✅ التنقل إلى صفحة "تمت الإضافة"
+/*       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => CompanyAddedPage(nameAr: nameAr, docId: docRef.id),
+          builder: (_) => CompanyAddedPage(
+            nameAr: nameAr,
+            docId: docRef.id,
+          ),
         ),
-      );
+      ); */
+      if (mounted) {
+        //{ context.go('/companies');}
+
+        GoRoute(
+          path: '/companies',
+          builder: (context, state) => const CompaniesPage(), // أو الصفحة المناسبة
+        );
+      }
+      //context.go('/company-added/${docRef.id}');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ أثناء الإضافة: $e')),
+          SnackBar(content: Text('${tr('error_while_adding_company')}: $e')),
         );
       }
     } finally {
@@ -108,34 +153,38 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
   @override
   Widget build(BuildContext context) {
-    Uint8List? previewBytes =
-        _webImageBytes ?? (_base64Logo != null ? base64Decode(_base64Logo!) : null);
+    Uint8List? previewBytes = _webImageBytes ??
+        (_base64Logo != null ? base64Decode(_base64Logo!) : null);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('إضافة شركة')),
+      appBar: AppBar(title: Text('add_company'.tr())),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _nameArController,
-              decoration: const InputDecoration(labelText: 'اسم الشركة (عربي)'),
+              decoration:
+                  InputDecoration(labelText: 'company_name_arabic'.tr()),
             ),
             TextField(
               controller: _nameEnController,
-              decoration: const InputDecoration(labelText: 'Company Name (English)'),
+              decoration:
+                  InputDecoration(labelText: 'company_name_english'.tr()),
             ),
             TextField(
               controller: _addressController,
-              decoration: const InputDecoration(labelText: 'عنوان الشركة'),
+              decoration: InputDecoration(labelText: 'company_address'.tr()),
             ),
             TextField(
               controller: _managerNameController,
-              decoration: const InputDecoration(labelText: 'اسم المسؤول'),
+              decoration:
+                  InputDecoration(labelText: 'company_manager_name'.tr()),
             ),
             TextField(
               controller: _managerPhoneController,
-              decoration: const InputDecoration(labelText: 'رقم هاتف المسؤول'),
+              decoration:
+                  InputDecoration(labelText: 'company_manager_phone'.tr()),
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 10),
@@ -144,7 +193,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                 ElevatedButton.icon(
                   onPressed: _pickLogo,
                   icon: const Icon(Icons.image),
-                  label: const Text('اختيار لوجو'),
+                  label: Text('company_logo'.tr()),
                 ),
                 const SizedBox(width: 10),
                 if (previewBytes != null)
@@ -164,7 +213,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                 : ElevatedButton.icon(
                     onPressed: _addCompany,
                     icon: const Icon(Icons.add_business),
-                    label: const Text('إضافة الشركة'),
+                    label: Text('add_company'.tr()),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),

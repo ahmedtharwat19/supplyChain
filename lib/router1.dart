@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
+import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
+import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -145,13 +148,44 @@ final GoRouter appRouter = GoRouter(
         body: const ItemsPage(),
       ),
     ),
+    GoRoute(
+      path: '/factories',
+      builder: (context, state) => AppScaffold(
+        title: tr('factories'),
+        body: const FactoriesPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/add-factory',
+      builder: (context, state) => AppScaffold(
+        title: tr('add_factory'),
+        body: const AddFactoryPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/edit-factory/:id',
+      builder: (context, state) {
+        final factoryId = state.pathParameters['id']!;
+        return AppScaffold(
+          title: tr('edit_factory'),
+          body: EditFactoryPage(factoryId: factoryId),
+        );
+      },
+    ),
+    GoRoute(path:'/finished-products', builder: (context, state) {
+      return AppScaffold(
+        title: tr('finished_products'),
+        body: const Center(child: Text('Finished Products Page')),
+      );
+    }),
   ],
 
   /// ✅ إعادة التوجيه بناءً على حالة تسجيل الدخول
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
-    final isLoggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
+    final isLoggingIn =
+        state.fullPath == '/login' || state.fullPath == '/signup';
 
     if (isSplash) return null;
     if (user == null && !isLoggingIn) return '/login';

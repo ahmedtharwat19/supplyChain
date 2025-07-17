@@ -1,26 +1,29 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserLocalStorage {
-  // ══════════════ User Info ══════════════
+  // ══════════════ Keys ══════════════
   static const String _keyUserId = 'userId';
   static const String _keyEmail = 'email';
   static const String _keyDisplayName = 'displayName';
 
-  // ══════════════ Dashboard Stats ══════════════
+  static const String _keyCompanyIds = 'companyIds';
+  static const String _keyCurrentCompanyId = 'currentCompanyId';
+
+  static const String _keyFactoryIds = 'factoryIds';
+  static const String _keyCurrentFactoryId = 'currentFactoryId';
+
   static const String _keyTotalCompanies = 'totalCompanies';
   static const String _keyTotalSuppliers = 'totalSuppliers';
   static const String _keyTotalOrders = 'totalOrders';
   static const String _keyTotalAmount = 'totalAmount';
 
-  // ══════════════ Manufacturing & Inventory Stats (جديدة) ══════════════
   static const String _keyTotalFactories = 'totalFactories';
   static const String _keyTotalItems = 'totalItems';
   static const String _keyTotalStockMovements = 'totalStockMovements';
   static const String _keyTotalManufacturingOrders = 'totalManufacturingOrders';
   static const String _keyTotalFinishedProducts = 'totalFinishedProducts';
 
-  // ══════════════ User Methods ══════════════
-
+  // ══════════════ User Info ══════════════
   static Future<void> saveUser({
     required String userId,
     required String email,
@@ -41,7 +44,6 @@ class UserLocalStorage {
     final userId = prefs.getString(_keyUserId);
     final email = prefs.getString(_keyEmail);
     final displayName = prefs.getString(_keyDisplayName);
-
     if (userId == null) return null;
 
     return {
@@ -58,7 +60,61 @@ class UserLocalStorage {
     await prefs.remove(_keyDisplayName);
   }
 
-  // ══════════════ Dashboard Methods ══════════════
+  // ══════════════ Company & Factory Lists ══════════════
+
+  static Future<void> saveCompanyIds(List<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyCompanyIds, ids);
+  }
+
+  static Future<List<String>> getCompanyIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_keyCompanyIds) ?? [];
+  }
+
+  static Future<void> saveCurrentCompanyId(String companyId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCurrentCompanyId, companyId);
+  }
+
+  static Future<String?> getCurrentCompanyId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyCurrentCompanyId);
+  }
+
+  static Future<void> clearCompanyInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyCompanyIds);
+    await prefs.remove(_keyCurrentCompanyId);
+  }
+
+  static Future<void> saveFactoryIds(List<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyFactoryIds, ids);
+  }
+
+  static Future<List<String>> getFactoryIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_keyFactoryIds) ?? [];
+  }
+
+  static Future<void> saveCurrentFactoryId(String factoryId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCurrentFactoryId, factoryId);
+  }
+
+  static Future<String?> getCurrentFactoryId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyCurrentFactoryId);
+  }
+
+  static Future<void> clearFactoryInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyFactoryIds);
+    await prefs.remove(_keyCurrentFactoryId);
+  }
+
+  // ══════════════ Dashboard Data ══════════════
 
   static Future<void> saveDashboardData({
     required int totalCompanies,
@@ -91,7 +147,7 @@ class UserLocalStorage {
     await prefs.remove(_keyTotalAmount);
   }
 
-  // ══════════════ Extended Stats Methods (مصانع، تشغيلات، إلخ) ══════════════
+  // ══════════════ Extended Stats ══════════════
 
   static Future<void> saveExtendedStats({
     required int totalFactories,
@@ -129,10 +185,12 @@ class UserLocalStorage {
     await prefs.remove(_keyTotalFinishedProducts);
   }
 
-  // ══════════════ All Clear ══════════════
+  // ══════════════ Clear All ══════════════
 
   static Future<void> clearAll() async {
     await clearUser();
+    await clearCompanyInfo();
+    await clearFactoryInfo();
     await clearDashboardData();
     await clearExtendedStats();
   }

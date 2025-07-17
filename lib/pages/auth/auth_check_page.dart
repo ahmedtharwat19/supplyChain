@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../dashboard/dashboard_page1.dart';
+import '../dashboard/dashboard_page.dart';
 import 'login_page.dart';
 import '../../../utils/user_local_storage.dart'; // تأكد من صحة المسار
 
