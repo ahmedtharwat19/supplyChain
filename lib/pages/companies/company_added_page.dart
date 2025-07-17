@@ -1,19 +1,24 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CompanyAddedPage extends StatelessWidget {
-  final String nameAr;
+  final String nameEn;
   final String docId;
 
   const CompanyAddedPage({
     super.key,
-    required this.nameAr,
+    required this.nameEn,
     required this.docId,
   });
 
   @override
   Widget build(BuildContext context) {
+    // فك ترميز الاسم العربي في حال احتوى على رموز خاصة
+    final decodednameEn = Uri.decodeComponent(nameEn);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('تمت الإضافة')),
+      appBar: AppBar(title: Text('company_added'.tr())),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -29,29 +34,28 @@ class CompanyAddedPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-              const Text(
-                '✅ تم إضافة الشركة بنجاح!',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                '✅ ${'company_added_successfully'.tr()}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               Text(
-                '🧾 اسم الشركة: $nameAr',
+                '🧾 ${tr('company_name')} : $decodednameEn',
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 10),
               Text(
-                '🆔 معرف الشركة: $docId',
+                '🆔 ${tr('company_id')}: $docId',
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 40),
               Center(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // العودة إلى الصفحة الرئيسية (أو أول صفحة في الـ Navigator stack)
-                    Navigator.popUntil(context, (route) => route.isFirst);
+                    context.go('/companies');
                   },
                   icon: const Icon(Icons.home),
-                  label: const Text('العودة إلى الرئيسية'),
+                  label: Text('back_to_home'.tr()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,

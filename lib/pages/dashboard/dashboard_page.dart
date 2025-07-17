@@ -1,9 +1,14 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:go_router/go_router.dart';
+//import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
+import 'package:puresip_purchasing/pages/dashboard/dashboard_tile_widget.dart';
+
 import '../../utils/user_local_storage.dart';
 import '../../widgets/app_scaffold.dart';
+// import 'dashboard_metrics.dart';
+// import 'dashboard_tile_widget.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -62,13 +67,11 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() => isLoading = true);
 
     try {
-      debugPrint('🔍 Fetching companies for userId = $userId');
       final companiesSnapshot = await FirebaseFirestore.instance
           .collection('companies')
           .where('user_id', isEqualTo: userId)
           .get();
       totalCompanies = companiesSnapshot.size;
-      debugPrint('✅ Found ${companiesSnapshot.size} companies');
 
       List<Future<void>> futures = [];
 
@@ -81,21 +84,24 @@ class _DashboardPageState extends State<DashboardPage> {
       int finishedProductCount = 0;
       int factoryCount = 0;
 
+      debugPrint('$userId userId');
+
+      final itemsSnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('user_id', isEqualTo: userId)
+          .get();
+
+      itemCount += itemsSnapshot.size;
       for (var company in companiesSnapshot.docs) {
         final companyId = company.id;
-        debugPrint('🔹 Processing company $companyId');
 
         futures.add(Future(() async {
-          final firestore = FirebaseFirestore.instance;
-
           try {
+            final firestore = FirebaseFirestore.instance;
+
             final results = await Future.wait([
               firestore
                   .collection('companies/$companyId/purchase_orders')
-                  .where('user_id', isEqualTo: userId)
-                  .get(),
-              firestore
-                  .collection('companies/$companyId/items')
                   .where('user_id', isEqualTo: userId)
                   .get(),
               firestore
@@ -118,7 +124,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
             final ordersSnap = results[0];
             orderCount += ordersSnap.size;
-            debugPrint('🧾 purchase_orders: ${ordersSnap.size}');
 
             for (var doc in ordersSnap.docs) {
               final data = doc.data();
@@ -127,19 +132,12 @@ class _DashboardPageState extends State<DashboardPage> {
               }
             }
 
-            itemCount += results[1].size;
-            debugPrint('📦 items: ${results[1].size}');
-            movementCount += results[2].size;
-            debugPrint('🔄 stock_movements: ${results[2].size}');
-            manufacturingCount += results[3].size;
-            debugPrint('🏭 manufacturing_orders: ${results[3].size}');
-            finishedProductCount += results[4].size;
-            debugPrint('✅ finished_products: ${results[4].size}');
-            factoryCount += results[5].size;
-            debugPrint('🏢 factories: ${results[5].size}');
+            movementCount += results[1].size;
+            manufacturingCount += results[2].size;
+            finishedProductCount += results[3].size;
+            factoryCount += results[4].size;
           } catch (e) {
-            debugPrint(
-                '❌ Error fetching subcollections for company $companyId: $e');
+            debugPrint('Error fetching company $companyId data: $e');
           }
         }));
       }
@@ -149,7 +147,6 @@ class _DashboardPageState extends State<DashboardPage> {
           .where('user_id', isEqualTo: userId)
           .get();
       supplierCount = suppliersSnap.size;
-      debugPrint('🤝 vendors: $supplierCount');
 
       await Future.wait(futures);
 
@@ -166,8 +163,6 @@ class _DashboardPageState extends State<DashboardPage> {
         totalFactories = factoryCount;
         isLoading = false;
       });
-
-      debugPrint('✅ Dashboard stats loaded successfully');
 
       await UserLocalStorage.saveDashboardData(
         totalCompanies: totalCompanies,
@@ -221,74 +216,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            children: [
-                              _buildDashboardTile(
-                                  title: tr('total_companies'),
-                                  value: '$totalCompanies',
-                                  icon: Icons.business,
-                                  color: Colors.blue,
-                                  onTap: () => context.go('/companies'),
-                                  progress: totalCompanies / 100),
-                              _buildDashboardTile(
-                                  title: tr('total_suppliers'),
-                                  value: '$totalSuppliers',
-                                  icon: Icons.group,
-                                  color: Colors.orange,
-                                  onTap: () => context.go('/suppliers'),
-                                  progress: totalSuppliers / 100),
-                              _buildDashboardTile(
-                                  title: tr('purchase_orders'),
-                                  value: '$totalOrders',
-                                  icon: Icons.receipt_long,
-                                  color: Colors.green,
-                                  onTap: () => context.go('/purchase-orders'),
-                                  progress: totalOrders / 100),
-                              _buildDashboardTile(
-                                  title: tr('total_amount'),
-                                  value:
-                                      '${totalAmount.toStringAsFixed(2)} ${tr('eg_pound')}',
-                                  icon: Icons.attach_money,
-                                  color: Colors.teal,
-                                  onTap: () => context.go('/purchase-orders'),
-                                  progress:
-                                      (totalAmount / 100000).clamp(0.05, 1)),
-                              _buildDashboardTile(
-                                  title: tr('total_items'),
-                                  value: '$totalItems',
-                                  icon: Icons.inventory_2,
-                                  color: Colors.purple,
-                                  onTap: () => context.go('/items'),
-                                  progress: totalItems / 100),
-                              _buildDashboardTile(
-                                  title: tr('stock_movements'),
-                                  value: '$totalMovements',
-                                  icon: Icons.swap_horiz,
-                                  color: Colors.cyan,
-                                  onTap: () => context.go('/stock-movements'),
-                                  progress: totalMovements / 100),
-                              _buildDashboardTile(
-                                  title: tr('manufacturing_orders'),
-                                  value: '$totalManufacturingOrders',
-                                  icon: Icons.precision_manufacturing,
-                                  color: Colors.brown,
-                                  onTap: () =>
-                                      context.go('/manufacturing-orders'),
-                                  progress: totalManufacturingOrders / 100),
-                              _buildDashboardTile(
-                                  title: tr('finished_products'),
-                                  value: '$totalFinishedProducts',
-                                  icon: Icons.done_all,
-                                  color: Colors.deepOrange,
-                                  onTap: () => context.go('/finished-products'),
-                                  progress: totalFinishedProducts / 100),
-                              _buildDashboardTile(
-                                  title: tr('factories'),
-                                  value: '$totalFactories',
-                                  icon: Icons.factory,
-                                  color: Colors.indigo,
-                                  onTap: () => context.go('/factories'),
-                                  progress: totalFactories / 100),
-                            ],
+                            children: _buildDashboardTiles(),
                           );
                         },
                       ),
@@ -300,43 +228,21 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDashboardTile({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    double progress = 0,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 36, color: color),
-              const SizedBox(height: 12),
-              Text(
-                value,
-                style: TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold, color: color),
-              ),
-              const SizedBox(height: 4),
-              Text(title, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                backgroundColor: Colors.grey[200],
-                color: color,
-                minHeight: 6,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  List<Widget> _buildDashboardTiles() {
+    final stats = {
+      'totalCompanies': totalCompanies,
+      'totalSuppliers': totalSuppliers,
+      'totalOrders': totalOrders,
+      'totalAmount': totalAmount,
+      'totalItems': totalItems,
+      'totalStockMovements': totalMovements,
+      'totalManufacturingOrders': totalManufacturingOrders,
+      'totalFinishedProducts': totalFinishedProducts,
+      'totalFactories': totalFactories,
+    };
+
+    return dashboardMetrics
+        .map((metric) => DashboardTileWidget(metric: metric, data: stats))
+        .toList();
   }
 }

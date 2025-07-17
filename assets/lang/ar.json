@@ -91,8 +91,8 @@
   "unauthorized-access": "الوصول غير مصرح به. يرجى تسجيل الدخول للوصول إلى هذه الصفحة.",
   "feature-not-available": "هذه الميزة غير متاحة حاليًا. يرجى المحاولة لاحقًا.",
   "loading_data": "جارٍ تحميل البيانات...",
-  "total_companies": "عدد الشركات",
-  "total_suppliers": "عدد الموردين",
+  "total_companies": "الشركات",
+  "total_suppliers": "الموردين",
   "manage_companies": "إدارة الشركات",
   "manage_suppliers": "إدارة الموردين",
   "manage_items": "إدارة الأصناف",
@@ -191,7 +191,7 @@
   "phone": "الهاتف",
   "address": "العنوان",
   "note": "ملاحظة",
-  "total_items": "إجمالي الأصناف",
+  "total_items": "الأصناف",
   "stock": "المخزون",
   "stock_alert": "تنبيه المخزون",
   "stock_movements": "حركة المخزون",
@@ -205,7 +205,7 @@
   "no_factories": "لا توجد مصانع مسجلة بعد",
   "no_company_found": "يجب إنشاء شركة أولاً",
   "no_user_or_company": "يجب تسجيل الدخول واختيار شركة أولاً",
-  "total_factories": "إجمالي المصانع",
+  "total_factories": "المصانع",
   "welcome_back": "مرحبًا بعودتك",
   "requierd_fields":"يرجى ملء جميع الحقول المطلوبة",
   "login_first": "يرجى تسجيل الدخول أولاً",
@@ -269,7 +269,28 @@
   "supplier_manager": "مدير المورد",  
   "company_manager_phone": "رقم هاتف الشركة",
   "company_email": "البريد الإلكتروني للشركة",
-  "please_select_logo": "يرجى اختيار شعار"
+  "please_select_logo": "يرجى اختيار شعار",
+  "company_already_exists": "الشركة موجودة بالفعل.",
+  "supplier_already_exists": "المورد موجود بالفعل.",
+  "company_id": "🆔 معرف الشركة",
+  "back_to_home": "العودة إلى الرئيسية",
+  "total_orders": "الطلبات",
+  "total_stock_movements": "المخزون",
+  "total_manufacturing_orders": "أوامر التصنيع",
+  "total_finished_products": "المنتجات النهائية",
+  "notes": "ملاحظات",
+    "add_new_item": "إضافة صنف جديد",
+  "unit_price": "سعر الوحدة",
+  "item_type": "نوع الصنف",
+  "packaging_material": "مادة تعبئة",
+  "add": "إضافة",
+  "please_login_first": "يرجى تسجيل الدخول أولاً",
+  "please_enter_item_name": "يرجى إدخال اسم الصنف",
+  "please_enter_unit_price": "يرجى إدخال سعر الوحدة",
+  "please_enter_valid_number": "يرجى إدخال رقم صالح",
+  "loading_items": "جارٍ تحميل الأصناف..."
+  
+
 
   
 

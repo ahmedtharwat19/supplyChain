@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:puresip_purchasing/pages/companies/company_added_page.dart';
+import 'package:puresip_purchasing/pages/items/add_item_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
@@ -19,7 +21,7 @@ import 'pages/suppliers/edit_supplier_page.dart';
 import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart';
-import 'pages/items_page.dart';
+import 'pages/items/items_page.dart';
 
 // مفتاح التنقل العام
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -58,6 +60,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final companyId = state.pathParameters['id']!;
         return EditCompanyPage(companyId: companyId);
+      },
+    ),
+    GoRoute(
+      path: '/company-added/:id',
+      builder: (context, state) {
+        final docId = state.pathParameters['id']!;
+        final nameEn = state.uri.queryParameters['nameEn'] ?? '';
+        return CompanyAddedPage(nameEn: nameEn, docId: docId);
       },
     ),
     GoRoute(
@@ -118,6 +128,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/items',
       builder: (context, state) => const ItemsPage(),
+    ),
+    GoRoute(
+      path: '/items/add',
+      builder: (context, state) => const AddItemPage(),
     ),
     GoRoute(
         path: '/factories', builder: (context, state) => const FactoriesPage()),

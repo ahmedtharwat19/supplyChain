@@ -20,7 +20,7 @@ import 'pages/suppliers/edit_supplier_page.dart';
 import 'pages/purchasing/purchase_orders_page.dart';
 import 'pages/purchasing/purchase_order_detail_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart';
-import 'pages/items_page.dart';
+import 'pages/items/items_page.dart';
 import 'widgets/app_scaffold.dart';
 
 // مفتاح التنقل العام

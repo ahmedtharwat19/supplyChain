@@ -7,8 +7,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:puresip_purchasing/pages/companies/companies_page.dart';
-import 'company_added_page.dart';
+import 'package:flutter/services.dart';
+// import 'company_added_page.dart';
+// import 'companies_page.dart';
 
 class AddCompanyPage extends StatefulWidget {
   const AddCompanyPage({super.key});
@@ -29,6 +30,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
   String? _base64Logo;
   bool _isLoading = false;
 
+  final arabicOnlyFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[\u0600-\u06FF\s]'),
+  );
+  final englishOnlyFormatter = FilteringTextInputFormatter.allow(
+    RegExp(r'[a-zA-Z\s]'),
+  );
+  final numbersOnlyFormatter = FilteringTextInputFormatter.digitsOnly;
+
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -46,8 +55,32 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     }
   }
 
+  Future<bool> _isCompanyDuplicate(String nameAr, String nameEn) async {
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection('companies').get();
+
+    final normalizedAr = nameAr.replaceAll(RegExp(r'\s+'), '').toLowerCase();
+    final normalizedEn = nameEn.replaceAll(RegExp(r'\s+'), '').toLowerCase();
+
+    for (var doc in querySnapshot.docs) {
+      final existingAr = doc['name_ar']
+          ?.toString()
+          .replaceAll(RegExp(r'\s+'), '')
+          .toLowerCase();
+      final existingEn = doc['name_en']
+          ?.toString()
+          .replaceAll(RegExp(r'\s+'), '')
+          .toLowerCase();
+
+      if (existingAr == normalizedAr || existingEn == normalizedEn) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> _addCompany() async {
-    if (_isLoading) return; // 🔒 لمنع الضغط المتكرر
+    if (_isLoading) return;
 
     final nameAr = _nameArController.text.trim();
     final nameEn = _nameEnController.text.trim();
@@ -72,8 +105,19 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     setState(() => _isLoading = true);
 
     try {
+      final isDuplicate = await _isCompanyDuplicate(nameAr, nameEn);
+      if (isDuplicate) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ ${tr('company_already_exists')}')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('login_first'.tr())),
         );
@@ -111,35 +155,24 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
       if (!mounted) return;
 
-      // ✅ عرض رسالة نجاح قبل الانتقال
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('company_added_successfully'.tr())),
       );
 
-      // تأخير بسيط لعرض الرسالة
       await Future.delayed(const Duration(seconds: 1));
 
       if (!mounted) return;
 
-      // ✅ التنقل إلى صفحة "تمت الإضافة"
-/*       Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CompanyAddedPage(
-            nameAr: nameAr,
-            docId: docRef.id,
-          ),
-        ),
-      ); */
-      if (mounted) {
-        //{ context.go('/companies');}
+      // إعادة تحميل البيانات لضمان التحديث
+      await FirebaseFirestore.instance.disableNetwork();
+      await FirebaseFirestore.instance.enableNetwork();
 
-        GoRoute(
-          path: '/companies',
-          builder: (context, state) => const CompaniesPage(), // أو الصفحة المناسبة
-        );
-      }
-      //context.go('/company-added/${docRef.id}');
+      if (!mounted) return;
+      final uri = Uri(
+        path: '/company-added/${docRef.id}',
+        queryParameters: {'nameEn': nameEn},
+      );
+      context.go(uri.toString());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -166,11 +199,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
               controller: _nameArController,
               decoration:
                   InputDecoration(labelText: 'company_name_arabic'.tr()),
+              inputFormatters: [arabicOnlyFormatter],
             ),
             TextField(
               controller: _nameEnController,
               decoration:
                   InputDecoration(labelText: 'company_name_english'.tr()),
+              inputFormatters: [englishOnlyFormatter],
             ),
             TextField(
               controller: _addressController,
@@ -186,6 +221,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
               decoration:
                   InputDecoration(labelText: 'company_manager_phone'.tr()),
               keyboardType: TextInputType.phone,
+              inputFormatters: [numbersOnlyFormatter],
             ),
             const SizedBox(height: 10),
             Row(
