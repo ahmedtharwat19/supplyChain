@@ -1,70 +1,129 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==================================================
+#                    IDE CONFIG                    
+# ==================================================
 
-# IntelliJ related
+# JetBrains (Android Studio/IntelliJ)
 *.iml
 *.ipr
 *.iws
 .idea/
+**/.idea/
 
-# VSCode settings (optional)
-#.vscode/
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
 
-# Flutter/Dart/Pub related
-.dart_tool/
+# ==================================================
+#                DEVELOPMENT TOOLS                 
+# ==================================================
+
+# Java Environment
+.jdk/
+jdk/
+jre/
+.java/
+.java-*
+.java.config
+
+# Android Tools
+.sdk/
+.sdkman/
+.ndk/
+android/ndk-bundle/
+android/ndk/
+android/sdk/
+
+# ==================================================
+#                FLUTTER/ARTIFACTS                 
+# ==================================================
+
+# Flutter/Dart
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
+.dart_tool/
+**/GeneratedPluginRegistrant.*
+
+# ==================================================
+#                  BUILD OUTPUTS                   
+# ==================================================
+
+# Platform Agnostic
 build/
 **/build/
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# iOS related
-ios/Flutter/.last_build_id
-ios/.generated/
-
-# Android related
+# Android
 android/.gradle/
-android/.idea/
-android/local.properties
 android/build/
 android/captures/
 android/app/debug/
 android/app/profile/
 android/app/release/
 
-# Linux related
+# iOS
+ios/Flutter/.last_build_id
+ios/.generated/
+ios/Flutter/App.framework/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+
+# Desktop Platforms
 linux/flutter/ephemeral/
 linux/flutter/generated_*
-
-# macOS related
 macos/Flutter/ephemeral/
-macos/Flutter/GeneratedPluginRegistrant.swift
-
-# Windows related
 windows/flutter/generated_*
 
-# Google Services
+# ==================================================
+#                CONFIGURATION FILES               
+# ==================================================
+
+# Environment
+.env
+!.env.example
+!.env.template
+!.env.sample
+
+# Firebase
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
-
-# Firebase crashlytics or others
 firebase_app_id_file.json
+
+# Android Local
+android/local.properties
+android/gradle.properties
+
+# ==================================================
+#                SYSTEM TEMPORARY FILES            
+# ==================================================
+
+# Cross-Platform
+*.class
+*.log
+*.pyc
+*.swp
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# OS-Specific
+.DS_Store
+._*              # macOS
+Thumbs.db
+ehthumbs.db
+Desktop.ini      # Windows
+*~               # Linux
+
+# ==================================================
+#                DEBUGGING ARTIFACTS               
+# ==================================================
+
+app.*.symbols
+app.*.map.json

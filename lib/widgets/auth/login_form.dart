@@ -97,7 +97,7 @@ class _LoginFormState extends State<LoginForm> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('login_success'.tr())),
             );
-            context.go('/');
+            context.go('/dashboard');
           }
         }
       } on FirebaseAuthException catch (e) {

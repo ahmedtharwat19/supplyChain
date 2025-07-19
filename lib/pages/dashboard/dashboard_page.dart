@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -26,6 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
   int totalSuppliers = 0;
   String? userId;
   String? userName;
+  List<String> userCompanyIds = []; // Added to match CompaniesPage approach
 
   @override
   void initState() {
@@ -40,6 +42,8 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       userName = user['displayName'];
       userId = user['userId'];
+      userCompanyIds = (user['companyIds'] as List?)?.cast<String>() ??
+          []; // Initialize company IDs
     });
 
     await _loadCachedData();
@@ -53,7 +57,8 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
 
     setState(() {
-      totalCompanies = cached['totalCompanies'] ?? 0;
+      totalCompanies =
+          userCompanyIds.length; // Use actual count from userCompanyIds
       totalSuppliers = cached['totalSuppliers'] ?? 0;
       totalOrders = cached['totalOrders'] ?? 0;
       totalAmount = cached['totalAmount'] ?? 0.0;
@@ -66,32 +71,44 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> fetchStats() async {
-    if (userId == null || !mounted) {
-      debugPrint('❌ fetchStats aborted: userId is null or widget not mounted');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !mounted) {
+      debugPrint(
+          '❌ fetchStats aborted: User not logged in or widget not mounted');
       return;
     }
 
     setState(() => isLoading = true);
 
     try {
-      // Fetch basic data in parallel
+      // First get the user's company IDs (same approach as CompaniesPage)
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final updatedCompanyIds =
+          (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
+
+      // Fetch other counts in parallel
       final results = await Future.wait([
-        _fetchCollectionCount('companies'),
         _fetchCollectionCount('items'),
         _fetchCollectionCount('vendors'),
       ]);
 
       if (mounted) {
         setState(() {
-          totalCompanies = results[0];
-          totalItems = results[1];
-          totalSuppliers = results[2];
+          userCompanyIds = updatedCompanyIds;
+          totalCompanies =
+              updatedCompanyIds.length; // Update count based on actual IDs
+          totalItems = results[0];
+          totalSuppliers = results[1];
         });
       }
 
-      // Fetch additional data if companies exist
-      if (totalCompanies > 0) {
-        await _fetchAdditionalData();
+      // Only fetch additional data if we have companies
+      if (updatedCompanyIds.isNotEmpty) {
+        await _fetchAdditionalData(updatedCompanyIds);
       }
 
       await _saveToLocalStorage();
@@ -122,13 +139,8 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<void> _fetchAdditionalData() async {
+  Future<void> _fetchAdditionalData(List<String> companyIds) async {
     try {
-      final companiesSnapshot = await FirebaseFirestore.instance
-          .collection('companies')
-          .where('user_id', isEqualTo: userId)
-          .get();
-
       int orderCount = 0;
       double amountSum = 0.0;
       int movementCount = 0;
@@ -136,23 +148,17 @@ class _DashboardPageState extends State<DashboardPage> {
       int finishedProductCount = 0;
       int factoryCount = 0;
 
-      for (var company in companiesSnapshot.docs) {
-        final companyId = company.id;
-        
-        final results = await Future.wait([
-          _getSubCollectionCount('purchase_orders', companyId),
-          _getSubCollectionCount('stock_movements', companyId),
-          _getSubCollectionCount('manufacturing_orders', companyId),
-          _getSubCollectionCount('finished_products', companyId),
-          _getSubCollectionCount('factories', companyId),
-        ]);
+      // Process each company in parallel
+      final results = await Future.wait(
+          companyIds.map((companyId) => _getCompanyStats(companyId)));
 
-        orderCount += (results[0]['count'] as num).toInt();
-        amountSum += (results[0]['amount'] as num).toDouble();
-        movementCount += (results[1]['count'] as num).toInt();
-        manufacturingCount += (results[2]['count'] as num).toInt();
-        finishedProductCount += (results[3]['count'] as num).toInt();
-        factoryCount += (results[4]['count'] as num).toInt();
+      for (final result in results) {
+        orderCount += (result['orders'] as num).toInt(); // Explicit cast
+        amountSum += (result['amount'] as num).toDouble();
+        movementCount += (result['movements'] as num).toInt();
+        manufacturingCount += (result['manufacturing'] as num).toInt();
+        finishedProductCount += (result['finishedProducts'] as num).toInt();
+        factoryCount += (result['factories'] as num).toInt();
       }
 
       if (mounted) {
@@ -170,7 +176,39 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<Map<String, dynamic>> _getSubCollectionCount(String collection, String companyId) async {
+  Future<Map<String, dynamic>> _getCompanyStats(String companyId) async {
+    try {
+      final results = await Future.wait([
+        _getSubCollectionCount('purchase_orders', companyId),
+        _getSubCollectionCount('stock_movements', companyId),
+        _getSubCollectionCount('manufacturing_orders', companyId),
+        _getSubCollectionCount('finished_products', companyId),
+        _getSubCollectionCount('factories', companyId),
+      ]);
+
+      return {
+        'orders': results[0]['count'],
+        'amount': results[0]['amount'],
+        'movements': results[1]['count'],
+        'manufacturing': results[2]['count'],
+        'finishedProducts': results[3]['count'],
+        'factories': results[4]['count'],
+      };
+    } catch (e) {
+      debugPrint('❌ Error getting stats for company $companyId: $e');
+      return {
+        'orders': 0,
+        'amount': 0,
+        'movements': 0,
+        'manufacturing': 0,
+        'finishedProducts': 0,
+        'factories': 0,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _getSubCollectionCount(
+      String collection, String companyId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('companies/$companyId/$collection')
@@ -200,7 +238,6 @@ class _DashboardPageState extends State<DashboardPage> {
       totalSuppliers: totalSuppliers,
       totalOrders: totalOrders,
       totalAmount: totalAmount,
-
     );
 
     await UserLocalStorage.saveExtendedStats(
@@ -214,7 +251,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildStatsGrid() {
     final stats = {
-      'totalCompanies': totalCompanies,
+      'totalCompanies': userCompanyIds.length, // Always use the actual count
       'totalSuppliers': totalSuppliers,
       'totalOrders': totalOrders,
       'totalAmount': totalAmount,
@@ -234,7 +271,8 @@ class _DashboardPageState extends State<DashboardPage> {
         return DashboardTileWidget(
           metric: metric,
           data: stats,
-          highlight: metric.titleKey == 'totalCompanies' && totalCompanies == 0,
+          highlight:
+              metric.titleKey == 'totalCompanies' && userCompanyIds.isEmpty,
         );
       }).toList(),
     );
@@ -259,7 +297,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       Text(tr('welcome_back', args: [userName ?? ''])),
                       const SizedBox(height: 20),
                       _buildStatsGrid(),
-                      if (totalCompanies == 0 && !isLoading)
+                      if (userCompanyIds.isEmpty &&
+                          !isLoading) // Check actual IDs
                         Padding(
                           padding: const EdgeInsets.only(top: 20),
                           child: Text(

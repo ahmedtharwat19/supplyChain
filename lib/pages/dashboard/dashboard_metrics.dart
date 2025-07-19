@@ -52,7 +52,7 @@ final List<DashboardMetric> dashboardMetrics = [
     valueBuilder: (data) => (data['totalOrders'] ?? 0).toString(),
     icon: Icons.shopping_cart,
     color: Colors.orange,
-    route: '/orders',
+    route: '/purchase-orders',
     progressBuilder: (data) {
       final value = (data['totalOrders'] ?? 0) as int;
       final max = 1000;
