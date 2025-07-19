@@ -39,7 +39,7 @@ class DashboardTileWidget extends StatelessWidget {
           constraints: const BoxConstraints(
             minWidth: 150,
             maxWidth: 180,
-            minHeight: 250,
+            minHeight: 200,
           ),
           padding: const EdgeInsets.all(16),
           child: Column(

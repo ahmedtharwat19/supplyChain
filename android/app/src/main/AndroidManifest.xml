@@ -7,7 +7,7 @@
 <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="puresip_purchasing"
+        android:label="puresip purchasing"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">

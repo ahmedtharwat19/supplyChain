@@ -15,56 +15,89 @@ class _ItemsPageState extends State<ItemsPage> {
   String? userId;
   bool isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
+@override
+void initState() {
+  super.initState();
+  debugPrint("🚀 initState: Starting to load user...");
+  _loadUser();
+}
 
-  Future<void> _loadUser() async {
-    final user = await UserLocalStorage.getUser();
-    if (!mounted) return;
-    if (user == null) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
+Future<void> _loadUser() async {
+  final user = await UserLocalStorage.getUser();
+  debugPrint("👤 Loaded user: $user");
+
+  if (!mounted) return;
+
+  if (user == null) {
+    debugPrint("⚠️ No user found in local storage.");
     setState(() {
-      userId = user['userId'];
       isLoading = false;
     });
+    return;
   }
 
-  Future<List<QueryDocumentSnapshot>> _fetchUserItems() async {
-    if (userId == null) {
-      debugPrint("❌ userId is null");
-      return [];
-    }
+  setState(() {
+    userId = user['userId'];
+    isLoading = false;
+  });
+
+  debugPrint("✅ User ID set to: $userId");
+}
+
+
+
+Future<List<QueryDocumentSnapshot>> _fetchUserItems() async {
+  if (userId == null) {
+    debugPrint("❌ Cannot fetch items: userId is null");
+    return [];
+  }
+
+  try {
+    debugPrint("📦 Fetching items for user: $userId...");
     final snapshot = await FirebaseFirestore.instance
         .collection('items')
         .where('user_id', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .get();
+
     debugPrint("📦 Retrieved ${snapshot.docs.length} items for user: $userId");
+
     for (var doc in snapshot.docs) {
       debugPrint("✅ Item: ${doc.data()}");
     }
-    return snapshot.docs;
-  }
 
-  Future<List<String>> _getSupplierNames(List<dynamic> supplierIds) async {
-    if (supplierIds.isEmpty) return [];
+    return snapshot.docs;
+  } catch (e) {
+    debugPrint("❌ Error fetching items: $e");
+    return [];
+  }
+}
+
+Future<List<String>> _getSupplierNames(List<dynamic> supplierIds) async {
+  try {
+    if (supplierIds.isEmpty) {
+      debugPrint("ℹ️ No supplier IDs provided.");
+      return [];
+    }
+
+    debugPrint("🔍 Fetching supplier names for IDs: $supplierIds");
 
     final suppliersSnapshot = await FirebaseFirestore.instance
         .collection('vendors')
         .where(FieldPath.documentId, whereIn: supplierIds)
         .get();
 
+    debugPrint("✅ Fetched ${suppliersSnapshot.docs.length} suppliers.");
+
     return suppliersSnapshot.docs
         .map((doc) => doc.data()['name']?.toString() ?? 'N/A')
         .toList();
+  } catch (e) {
+    debugPrint("❌ Error fetching supplier names: $e");
+    return ['Error loading suppliers'];
   }
+}
+
 
   String _typeName(String type) {
     return {
@@ -95,13 +128,19 @@ class _ItemsPageState extends State<ItemsPage> {
         future: _fetchUserItems(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
+             debugPrint("⏳ Waiting for items to load...");
             return Center(child: Text(tr('loading_items')));
           }
           if (snapshot.hasError) {
+
+            debugPrint("❌ Error loading items: ${snapshot.error}");
+
             return Center(
+              
                 child: Text('${tr('error_occurred')}: ${snapshot.error}'));
           }
           final items = snapshot.data ?? [];
+          debugPrint("📋 Final item count in UI: ${items.length}");
           if (items.isEmpty) {
             return Center(child: Text(tr('no_items_found')));
           }

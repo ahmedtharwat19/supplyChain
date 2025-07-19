@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 
 class DashboardMetric {
   final String titleKey; // مفتاح الترجمة للعنوان
-  final String Function(Map<String, dynamic>) valueBuilder; // دالة لتحويل البيانات إلى نص عرض
+  final String Function(Map<String, dynamic>)
+      valueBuilder; // دالة لتحويل البيانات إلى نص عرض
   final IconData icon;
   final Color color;
   final String route; // المسار الذي ينتقل إليه عند الضغط
-  final double Function(Map<String, dynamic>) progressBuilder; // دالة لحساب نسبة التقدم
+  final double Function(Map<String, dynamic>)
+      progressBuilder; // دالة لحساب نسبة التقدم
 
   DashboardMetric({
     required this.titleKey,
