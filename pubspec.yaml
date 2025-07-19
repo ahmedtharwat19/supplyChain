@@ -25,7 +25,6 @@ dependencies:
   google_sign_in: ^7.1.0
 
   # Utilities
-  shared_preferences: ^2.5.3
   logger: ^2.6.0
   intl: ^0.20.2
   connectivity_plus: ^6.1.4
@@ -56,6 +55,7 @@ dependencies:
   # Icon Management
   flutter_launcher_icons: ^0.14.4
   firebase_app_check: ^0.3.2+9
+  shared_preferences: ^2.5.3
 
   # Optional Animation
   # rive: ^0.13.20
