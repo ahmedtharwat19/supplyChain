@@ -1,0 +1,59 @@
+lib/
+├── models/
+│   ├── company.dart
+│   ├── supplier.dart
+│   ├── purchase_order.dart
+│   ├── item.dart
+│   └── user.dart
+├── pages/
+│   ├── auth/
+│   │   ├── login_page.dart
+│   │   ├── signup_page.dart
+│   │   ├── splash_screen.dart
+│   │   └── auth_check_page.dart
+│   ├── companies/
+│   │   ├── add_company_page.dart
+│   │   ├── company_added_page.dart
+│   │   ├── companies_page.dart
+│   │   └── edit_company_page.dart
+│   ├── suppliers/
+│   │   ├── add_supplier_page.dart
+│   │   ├── edit_supplier_page.dart
+│   │   ├── suppliers_page.dart
+│   │   └── vendors_page.dart
+│   ├── purchase_orders/
+│   │   ├── add_purchase_order_page.dart
+│   │   ├── purchase_orders_page.dart
+│   │   └── purchase_order_detail_page.dart
+│   ├── items/
+│   │   └── items_page.dart
+│   ├── dashboard_page.dart
+│   └── home_page.dart
+├── services/         # (اختياري)
+├── utils/            # (اختياري)
+├── widgets/          # (اختياري)
+
+
+
+'======================================='
+
+lib/
+├── blocs/
+│   └── auth/
+│       ├── auth_cubit.dart
+│       └── auth_state.dart
+├── data/
+│   └── repositories/
+│       └── auth_repository.dart
+├── pages/
+│   └── auth/
+│       ├── login_page.dart
+│       ├── signup_page.dart
+│       └── widgets/
+│           ├── login_form.dart
+│           └── signup_form.dart
+├── l10n/
+│   ├── en.json
+│   └── ar.json
+├── main.dart
+└── router.dart

@@ -1,0 +1,132 @@
+name: puresip_purchasing
+description: A purchasing system for multiple companies.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+# -----------------------------
+# Dependencies
+# -----------------------------
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+
+  # Firebase Core & Features
+  firebase_core: ^3.14.0
+  firebase_auth: ^5.6.0
+  cloud_firestore: ^5.6.9
+  firebase_storage: ^12.4.8
+
+  # Authentication & Sign-in
+  google_sign_in: ^7.1.0
+
+  # Utilities
+  shared_preferences: ^2.5.3
+  logger: ^2.6.0
+  intl: ^0.20.2
+  connectivity_plus: ^6.1.4
+  permission_handler: ^12.0.1
+  leak_tracker: ^10.0.9
+
+  # PDF & Printing
+  printing: ^5.12.0
+  pdf: ^3.10.4
+
+  # UI & Design
+  flutter_svg: ^2.2.0
+  image_picker: ^1.1.0
+  flutter_screenutil: ^5.9.3
+  gap: ^3.0.1
+
+  # Routing
+  go_router: ^16.0.0
+
+  # State Management
+  flutter_bloc: ^9.1.1
+  bloc: ^9.0.0
+  equatable: ^2.0.7
+
+  # Localization
+  easy_localization: ^3.0.7+1
+
+  # Icon Management
+  flutter_launcher_icons: ^0.14.4
+  firebase_app_check: ^0.3.2+9
+
+  # Optional Animation
+  # rive: ^0.13.20
+  # rive_common: ^0.3.0
+
+# -----------------------------
+# Dev Dependencies
+# -----------------------------
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+# -----------------------------
+# Flutter Launcher Icons Config
+# -----------------------------
+flutter_launcher_icons:
+  image_path: "assets/logo.png"
+
+  android: true
+  ios: true
+
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
+
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+    icon_size: 48
+
+  linux:
+    generate: true
+    image_path: "assets/logo.png"
+
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+
+
+# -----------------------------
+# Flutter Assets & Fonts
+# -----------------------------
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logo.png
+    - assets/images/splash_screen.jpg
+    - assets/images/no_internet.png
+    - assets/lang/
+    - assets/animation/headless_bear.riv
+    - assets/svgs/
+
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cairo-Light.ttf
+          weight: 300
+
+# -----------------------------
+# Optional Rive Override (for Windows compatibility)
+# -----------------------------
+# dependency_overrides:
+#   rive_common:
+#     git:
+#       url: https://github.com/rive-app/rive-flutter.git
+#       path: packages/rive_common
+#     platforms:
+#       windows:
+#         plugin: null

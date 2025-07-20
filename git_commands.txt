@@ -1,0 +1,51 @@
+✅ Step-by-Step Guide to Pull GitHub Updates
+🧭 First: Open Terminal or Command Prompt
+Go to your project folder in the terminal or VS Code terminal.
+
+🔁 1. Check current branch:
+
+git branch
+You’ll see something like:
+
+* main
+If you're not on the correct branch (main or master), switch to it:
+
+
+git checkout main
+
+🔄 2. Pull latest changes from GitHub:
+
+git pull origin main
+
+Replace main with your branch name if different.
+
+🧹 3. (Optional) If your files have conflicts or you're unsure:
+
+git stash          # Save local changes temporarily
+git pull origin main
+git stash pop      # Reapply your changes after update
+
+'===================================================================================='
+
+🔁 Updating Existing GitHub Repository
+If you’ve already pushed before, and just want to update:
+
+1. Stage your changes
+
+git add .
+2. Commit changes
+
+git commit -m "Updated feature X or fixed bug Y"
+3. Push
+
+git push -u origin main
+
+
+
+'======================================================================================='
+
+Run web app in port 5000
+
+flutter run -d chrome --web-port=5000
+flutter run -d CPH2235 -v
+flutter run -d windows -v
