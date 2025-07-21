@@ -15,7 +15,6 @@ class DashboardTileWidget extends StatelessWidget {
     this.highlight = false,
   });
 
-  // دالة لجعل اللون شفاف بنسبة معينة
   Color _withOpacity(Color color, double opacity) {
     return color.withAlpha((opacity * 255).round());
   }
@@ -38,36 +37,35 @@ class DashboardTileWidget extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
         onTap: () => context.go(metric.route),
-        child: Container(
-          width: isMobile ? 160 : 200,
-          padding: const EdgeInsets.all(12),
-          
+        /*  child: Container(
+          width: isMobile ? 120 : 160,   // 160 : 200
+          padding: const EdgeInsets.all(4),
+
           // استخدم Expanded أو Flexible داخل العمود لمنع overflow
           child: Column(
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: _withOpacity(metric.color, 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   metric.icon,
-                  size: isMobile ? 28 : 32,
+                  size: isMobile ? 24 : 28,  // 28 : 32
                   color: metric.color,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
               // FittedBox لمنع النص من التمدد الزائد
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  value.isNotEmpty ? value : 'No Data',
+                  value.isNotEmpty ? value : 'no_data'.tr(),
                   style: TextStyle(
-                    fontSize: isMobile ? 20 : 26,
+                    fontSize: isMobile ? 18 : 22,  //20 : 26
                     fontWeight: FontWeight.bold,
                     color: metric.color,
                   ),
@@ -75,20 +73,92 @@ class DashboardTileWidget extends StatelessWidget {
                   maxLines: 2,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 1),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   tr(metric.titleKey),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontSize: isMobile ? 16 : 18,
-                        height: 1.3,
+                        fontSize: isMobile ? 16 : 20,  //  16 : 18
+                        height: 1.1,//1.3,
                       ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                 ),
               ),
-              const SizedBox(height: 12),
+         //     const SizedBox(height: 8),
+              // المساحة المرنة لدفع شريط التقدم لأسفل
+              Expanded(
+                // التغيير الرئيسي هنا
+                child: Container(), // حاوية فارغة تأخذ المساحة المتبقية
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: _withOpacity(Colors.grey, 0.2),
+                    color: metric.color,
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ), */
+        child: Container(
+          //height: 300, // اضبط هذا حسب التصميم العام
+           width: isMobile ? 120 : 160,   // 160 : 200
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //  crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _withOpacity(metric.color, 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      metric.icon,
+                      size: isMobile ? 24 : 28,
+                      color: metric.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value.isNotEmpty ? value : 'no_data'.tr(),
+                      style: TextStyle(
+                        fontSize: isMobile ? 18 : 22,
+                        fontWeight: FontWeight.bold,
+                        color: metric.color,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      tr(metric.titleKey),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontSize: isMobile ? 16 : 20,
+                            height: 1.1,
+                          ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(

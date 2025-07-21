@@ -10,6 +10,7 @@ class DashboardMetric {
   final String route; // المسار الذي ينتقل إليه عند الضغط
   final double Function(Map<String, dynamic>)
       progressBuilder; // دالة لحساب نسبة التقدم
+  final String defaultMenuType;
 
   DashboardMetric({
     required this.titleKey,
@@ -18,6 +19,7 @@ class DashboardMetric {
     required this.color,
     required this.route,
     required this.progressBuilder,
+    this.defaultMenuType = 'short',
   });
 }
 
@@ -34,6 +36,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 100; // مثلا الحد الأعلى لتدرج النسبة
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_suppliers',
@@ -46,6 +49,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 100;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_orders',
@@ -58,6 +62,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 1000;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_amount',
@@ -70,6 +75,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 100000.0;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'long', // short, long, أو custom
   ),
   // أضف باقي العناصر بنفس النمط حسب البيانات التي لديك
   DashboardMetric(
@@ -83,6 +89,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 500;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_stock_movements',
@@ -95,6 +102,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 300;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_manufacturing_orders',
@@ -107,6 +115,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 200;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_finished_products',
@@ -119,6 +128,7 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 400;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
     titleKey: 'total_factories',
@@ -131,5 +141,6 @@ final List<DashboardMetric> dashboardMetrics = [
       final max = 50;
       return (value / max).clamp(0.0, 1.0);
     },
+    defaultMenuType: 'long', // short, long, أو custom
   ),
 ];

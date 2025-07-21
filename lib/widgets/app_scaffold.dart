@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
+import 'package:puresip_purchasing/pages/dashboard/dashboard_page.dart';
+import 'package:puresip_purchasing/pages/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -34,6 +37,7 @@ class _AppScaffoldState extends State<AppScaffold> {
     // Safe to use context after mounted check
     context.go('/login');
   }
+  
 
   Future<void> _handleLanguageChange(Locale locale) async {
     // Capture context before async operation
@@ -66,7 +70,6 @@ class _AppScaffoldState extends State<AppScaffold> {
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 69, 200, 218),
         title: Text(widget.title ?? tr('dashboard_title')),
-        
         leading: canGoBack
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -143,6 +146,30 @@ class _AppScaffoldState extends State<AppScaffold> {
             icon: Icons.shopping_cart,
             title: tr('view_purchase_orders'),
             onTap: () => context.go('/purchase-orders'),
+          ),
+          const Divider(),
+          _buildDrawerItem(
+            icon: Icons.settings,
+            title: tr('settings.title'),
+            onTap: () async {
+              Navigator.of(context).pop(); // إغلاق Drawer
+
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsPage(
+                    allCards: dashboardMetrics.map((e) => e.titleKey).toList(),
+                  ),
+                ),
+              );
+
+              if (!context.mounted) return;
+
+              if (result == true) {
+                final dashboardState =
+                    context.findAncestorStateOfType<DashboardPageState>();
+                dashboardState?.loadSettings();
+              }
+            },
           ),
           const Divider(),
           _buildDrawerItem(

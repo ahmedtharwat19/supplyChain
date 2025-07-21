@@ -308,5 +308,27 @@
   "order_saved": "Order saved successfully",
   "missing_fields": "Please enter supplier and order contents",
   "invalid_item": "Please enter a valid item name and quantity",
-  "save_error": "An error occurred while saving"
+  "save_error": "An error occurred while saving",
+  "reset": "Reset Settings",
+
+  "settings": {
+    "title": "Settings",
+    "choose_view": "Choose Dashboard View:",
+    "short_view": "Short",
+    "long_view": "Long",
+    "choose_cards": "Choose Cards to Display:",
+    "reset_done":" Settings reset successfully",
+    "reset_error": "Error resetting settings",
+    "reset_confirmation": "Are you sure you want to reset settings?",
+    "reset": "Reset",
+    "saved_successfully": "Settings saved successfully",
+    "long_selected": "Long view selected",
+    "short_selected": "Short view selected",
+    "restored_defaults": "Settings restored to defaults",
+    "restore_defaults": "Restore Defaults"
+
+  }
+
+
+
 }

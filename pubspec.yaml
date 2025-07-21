@@ -56,6 +56,7 @@ dependencies:
   # Icon Management
   flutter_launcher_icons: ^0.14.4
   firebase_app_check: ^0.3.2+9
+  pull_to_refresh: ^2.0.0
 
   # Optional Animation
   # rive: ^0.13.20

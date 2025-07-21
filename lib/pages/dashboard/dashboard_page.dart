@@ -4,17 +4,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_tile_widget.dart';
+import 'package:puresip_purchasing/pages/settings_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/user_local_storage.dart';
 import '../../widgets/app_scaffold.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<DashboardPage> createState() => DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+enum DashboardView { short, long }
+
+class DashboardPageState extends State<DashboardPage> {
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+// في _DashboardPageState أضف المتغيرات التالية:
+  DashboardView _dashboardView = DashboardView.short;
+  Set<String> _selectedCards = {};
+
   bool isLoading = true;
   double totalAmount = 0.0;
   int totalCompanies = 0;
@@ -33,6 +44,27 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _loadInitialData();
+    loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final viewString = prefs.getString(prefDashboardView) ?? 'short';
+    final selectedCards = prefs.getStringList(prefSelectedCards) ?? [];
+
+    if (!mounted) return;
+
+    setState(() {
+      _dashboardView =
+          viewString == 'long' ? DashboardView.long : DashboardView.short;
+      _selectedCards = selectedCards.toSet();
+    });
   }
 
   Future<void> _loadInitialData() async {
@@ -43,6 +75,8 @@ class _DashboardPageState extends State<DashboardPage> {
       userName = user['displayName'];
       userId = user['userId'];
       userCompanyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+      totalCompanies =
+          userCompanyIds.length; // Set early for better UI responsiveness
     });
 
     await _loadCachedData();
@@ -56,7 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!mounted) return;
 
     setState(() {
-      totalCompanies = userCompanyIds.length;
+      // We keep totalCompanies from userCompanyIds length for consistency
       totalSuppliers = cached['totalSuppliers'] ?? 0;
       totalOrders = cached['totalOrders'] ?? 0;
       totalAmount = cached['totalAmount'] ?? 0.0;
@@ -83,10 +117,13 @@ class _DashboardPageState extends State<DashboardPage> {
       final updatedCompanyIds =
           (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
 
+      // Using Future.wait to parallel fetch counts
       final results = await Future.wait([
         _fetchCollectionCount('items'),
         _fetchCollectionCount('vendors'),
       ]);
+
+      if (!mounted) return;
 
       setState(() {
         userCompanyIds = updatedCompanyIds;
@@ -114,8 +151,12 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  // Fetch collection count using Firestore count() aggregation if available,
+  // fallback to current method if not supported (Firestore recent feature).
   Future<int> _fetchCollectionCount(String collection) async {
     try {
+      if (userId == null) return 0;
+      // You can replace below with count() aggregation when available:
       final snapshot = await FirebaseFirestore.instance
           .collection(collection)
           .where('user_id', isEqualTo: userId)
@@ -198,6 +239,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<Map<String, dynamic>> _getSubCollectionCount(
       String collection, String companyId) async {
     try {
+      if (userId == null) return {'count': 0, 'amount': 0.0};
+
       final snapshot = await FirebaseFirestore.instance
           .collection('companies/$companyId/$collection')
           .where('user_id', isEqualTo: userId)
@@ -238,6 +281,22 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Future<void> _handleRefresh() async {
+    try {
+      await fetchStats();
+      _refreshController.refreshCompleted();
+    } catch (e) {
+      debugPrint('❌ Refresh failed: $e');
+      _refreshController.refreshFailed();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('error_fetching_data'))),
+        );
+      }
+    }
+  }
+
   Widget _buildStatsGrid() {
     final stats = {
       'totalCompanies': userCompanyIds.length,
@@ -253,20 +312,45 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final isWide = MediaQuery.of(context).size.width > 600;
 
-    return GridView.count(
-      crossAxisCount: isWide ? 3 : 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 0.9, // isWide ? 1.8 : 1.4,
+    // إذا لم يحدد المستخدم أي بطاقة، عرض الكل
+    final filteredMetrics = _selectedCards.isEmpty
+        ? dashboardMetrics
+        : dashboardMetrics
+            .where((metric) => _selectedCards.contains(metric.titleKey))
+            .toList();
+    // ✅ تغيير عرض الشبكة حسب نوع العرض
+    int crossAxisCount;
+    double aspectRatio;
 
-      children: dashboardMetrics.map((metric) {
-        return DashboardTileWidget(
-          metric: metric,
-          data: stats,
-          highlight: metric.titleKey == 'totalCompanies',
-        );
-      }).toList(),
+    if (_dashboardView == DashboardView.short) {
+      crossAxisCount = isWide ? 3 : 2;
+      aspectRatio = isWide ? 1.8 : 1.4;
+    } else {
+      crossAxisCount = isWide ? 2 : 1;
+      aspectRatio = isWide ? 2.5 : 2;
+    }
+
+return GridView.builder(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: 300, // أقصى عرض لكل بطاقة
+    mainAxisExtent: 135, // 👈 مهم جداً لضبط الارتفاع
+    mainAxisSpacing: 12,
+    crossAxisSpacing: 12,
+    childAspectRatio: 1.6,
+  ),
+  itemCount: filteredMetrics.length,
+  itemBuilder: (context, index) {
+    final metric = filteredMetrics[index];
+    return DashboardTileWidget(
+      metric: metric,
+      data: stats,
+      highlight: metric.titleKey == 'totalCompanies',
     );
+  },
+);
+
   }
 
   @override
@@ -276,18 +360,23 @@ class _DashboardPageState extends State<DashboardPage> {
       userName: userName,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr('welcome_back', args: [userName ?? '']),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildStatsGrid(),
-                ],
+          : SmartRefresher(
+              controller: _refreshController,
+              onRefresh: _handleRefresh,
+              enablePullDown: true,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('welcome_back', args: [userName ?? '']),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStatsGrid(),
+                  ],
+                ),
               ),
             ),
     );
