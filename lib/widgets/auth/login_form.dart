@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../utils/user_local_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -54,6 +55,18 @@ class _LoginFormState extends State<LoginForm> {
         );
 
         debugPrint('✅ Google login: $name <$email>');
+        // إنشاء وثيقة المستخدم إذا لم تكن موجودة
+        final userDoc =
+            FirebaseFirestore.instance.collection('users').doc(user.uid);
+        if (!(await userDoc.get()).exists) {
+          await userDoc.set({
+            'userId': user.uid,
+            'companyIds': [],
+            'supplierIds': [], // ✅ أضف هذا السطر
+            'email': email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
 
       if (mounted) context.go('/dashboard');
@@ -71,7 +84,8 @@ class _LoginFormState extends State<LoginForm> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
-        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final credential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -92,6 +106,18 @@ class _LoginFormState extends State<LoginForm> {
           );
 
           debugPrint('✅ Logged in user: $name <$email>');
+// إنشاء وثيقة المستخدم إذا لم تكن موجودة
+          final userDoc =
+              FirebaseFirestore.instance.collection('users').doc(user.uid);
+          if (!(await userDoc.get()).exists) {
+            await userDoc.set({
+              'userId': user.uid,
+              'companyIds': [],
+              'supplierIds': [], // ✅ أضف هذا السطر
+              'email': email,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -154,10 +180,9 @@ class _LoginFormState extends State<LoginForm> {
                   focusNode: _emailFocusNode,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(labelText: 'email'.tr()),
-                  validator: (value) =>
-                      value != null && value.contains('@')
-                          ? null
-                          : 'invalid_email'.tr(),
+                  validator: (value) => value != null && value.contains('@')
+                      ? null
+                      : 'invalid_email'.tr(),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_passwordFocusNode);
                   },
@@ -169,10 +194,9 @@ class _LoginFormState extends State<LoginForm> {
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(labelText: 'password'.tr()),
-                  validator: (value) =>
-                      value != null && value.length >= 6
-                          ? null
-                          : 'short_password'.tr(),
+                  validator: (value) => value != null && value.length >= 6
+                      ? null
+                      : 'short_password'.tr(),
                   onFieldSubmitted: (_) => _loginWithEmailPassword(),
                 ),
                 const SizedBox(height: 20),

@@ -325,7 +325,8 @@
     "long_selected": "Long view selected",
     "short_selected": "Short view selected",
     "restored_defaults": "Settings restored to defaults",
-    "restore_defaults": "Restore Defaults"
+    "restore_defaults": "Restore Defaults",
+    "account_created_successfully": "Account was created successfully"
 
   }
 

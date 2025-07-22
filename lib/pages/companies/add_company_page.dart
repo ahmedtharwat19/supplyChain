@@ -8,8 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-// import 'company_added_page.dart';
-// import 'companies_page.dart';
 
 class AddCompanyPage extends StatefulWidget {
   const AddCompanyPage({super.key});
@@ -52,10 +50,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         _base64Logo = base64Encode(bytes);
       }
       setState(() {});
+      debugPrint('Logo selected and encoded.');
+    } else {
+      debugPrint('No logo image selected.');
     }
   }
 
   Future<bool> _isCompanyDuplicate(String nameAr, String nameEn) async {
+    debugPrint('Checking for duplicate company...');
     final querySnapshot =
         await FirebaseFirestore.instance.collection('companies').get();
 
@@ -73,9 +75,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           .toLowerCase();
 
       if (existingAr == normalizedAr || existingEn == normalizedEn) {
+        debugPrint('Duplicate company found: ${doc.id}');
         return true;
       }
     }
+    debugPrint('No duplicate company found.');
     return false;
   }
 
@@ -88,7 +92,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     final managerName = _managerNameController.text.trim();
     final managerPhone = _managerPhoneController.text.trim();
 
+    debugPrint('Starting company add process...');
+    debugPrint('Inputs: nameAr="$nameAr", nameEn="$nameEn", address="$address"');
+
     if (nameAr.isEmpty || nameEn.isEmpty || address.isEmpty) {
+      debugPrint('Validation failed: required fields missing.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('requierd_fields'.tr())),
       );
@@ -96,6 +104,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     }
 
     if (_base64Logo == null || _base64Logo!.isEmpty) {
+      debugPrint('Validation failed: logo is missing.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('please_select_logo'.tr())),
       );
@@ -105,9 +114,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     setState(() => _isLoading = true);
 
     try {
+      debugPrint('Checking duplicate...');
       final isDuplicate = await _isCompanyDuplicate(nameAr, nameEn);
       if (isDuplicate) {
         if (!mounted) return;
+        debugPrint('Duplicate company detected, aborting add.');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('⚠️ ${tr('company_already_exists')}')),
         );
@@ -118,11 +129,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (!mounted) return;
+        debugPrint('No authenticated user found.');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('login_first'.tr())),
         );
+        setState(() => _isLoading = false);
         return;
       }
+      debugPrint('Authenticated user: ${user.uid}');
 
       final companyData = {
         'name_ar': nameAr,
@@ -134,26 +148,33 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         'user_id': user.uid,
         'createdAt': Timestamp.now(),
       };
+      debugPrint('Company data prepared.');
 
       final docRef = await FirebaseFirestore.instance
           .collection('companies')
           .add(companyData);
+      debugPrint('Company added with id: ${docRef.id}');
 
       final userDocRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       final userDoc = await userDocRef.get();
+      debugPrint('Fetched user doc for company update.');
 
       if (userDoc.exists) {
+        debugPrint('User doc exists, updating companyIds array...');
         await userDocRef.update({
           'companyIds': FieldValue.arrayUnion([docRef.id]),
         });
       } else {
+        debugPrint('User doc does not exist, creating new with companyIds...');
         await userDocRef.set({
           'companyIds': [docRef.id],
         });
       }
 
       if (!mounted) return;
+
+      debugPrint('Company added and user updated successfully.');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('company_added_successfully'.tr())),
@@ -163,17 +184,21 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
       if (!mounted) return;
 
-      // إعادة تحميل البيانات لضمان التحديث
+      // إعادة تحميل الشبكة (يمكن حذفها إذا لم تكن ضرورية)
       await FirebaseFirestore.instance.disableNetwork();
       await FirebaseFirestore.instance.enableNetwork();
 
       if (!mounted) return;
+
       final uri = Uri(
         path: '/company-added/${docRef.id}',
         queryParameters: {'nameEn': nameEn},
       );
+      debugPrint('Navigating to company added page: $uri');
       context.go(uri.toString());
-    } catch (e) {
+    } catch (e, stacktrace) {
+      debugPrint('Error while adding company: $e');
+      debugPrint(stacktrace.toString());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${tr('error_while_adding_company')}: $e')),
@@ -182,6 +207,16 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _nameArController.dispose();
+    _nameEnController.dispose();
+    _addressController.dispose();
+    _managerNameController.dispose();
+    _managerPhoneController.dispose();
+    super.dispose();
   }
 
   @override
