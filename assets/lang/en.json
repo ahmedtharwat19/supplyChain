@@ -326,7 +326,10 @@
     "short_selected": "Short view selected",
     "restored_defaults": "Settings restored to defaults",
     "restore_defaults": "Restore Defaults",
-    "account_created_successfully": "Account was created successfully"
+    "account_created_successfully": "Account was created successfully",
+    "error_while_adding_company": "Error while adding the company",
+    "permission_denied_hint": "You don't have permission to perform this action.",
+    "network_error": "Network error occurred. Please check your connection."
 
   }
 

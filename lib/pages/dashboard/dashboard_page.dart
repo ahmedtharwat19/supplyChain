@@ -70,7 +70,7 @@ class DashboardPageState extends State<DashboardPage> {
   Future<void> _loadInitialData() async {
     final user = await UserLocalStorage.getUser();
     if (user == null || !mounted) return;
-
+    debugPrint('local user from dashboard $user');
     setState(() {
       userName = user['displayName'];
       userId = user['userId'];
