@@ -59,6 +59,7 @@ dependencies:
   pull_to_refresh: ^2.0.0
   excel: ^4.0.6
   file_picker: ^10.2.0
+  firebase_data_connect: ^0.1.5+4
 
   # Optional Animation
   # rive: ^0.13.20

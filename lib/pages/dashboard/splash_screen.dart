@@ -1,6 +1,188 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:puresip_purchasing/utils/user_local_storage.dart';
+import 'package:easy_localization/easy_localization.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+/*   @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_fadeController);
+    _fadeController.forward();
+
+    _startApp();
+  }
+ */
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_fadeController);
+
+    _fadeController.forward();
+
+    // بعد انتهاء التحريك، انتظر ثانية ثم ابدأ التنقل
+    _fadeController.addStatusListener((status) async {
+      if (status == AnimationStatus.completed) {
+        await Future.delayed(const Duration(seconds: 1));
+        _startApp(); // ← تابع تحميل التطبيق بعد الانتظار
+      }
+    });
+  }
+
+  Future<void> _startApp() async {
+    //  await Future.delayed(const Duration(seconds: 2));
+
+    final connectivityResult = await Connectivity().checkConnectivity();
+
+    debugPrint('📶 Connectivity result: ${connectivityResult.runtimeType}');
+    // المقارنة صحيحة لأن connectivityResult من نوع ConnectivityResult
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      _showErrorDialog('no_internet'.tr());
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      debugPrint('❌ ${'user_not_logged_in'.tr()}');
+      if (!mounted) return;
+      context.go('/login');
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!userDoc.exists || userDoc.data()?['is_active'] == false) {
+      debugPrint('⛔️ ${'account_inactive'.tr()}');
+      await FirebaseAuth.instance.signOut();
+      _showErrorDialog('account_inactive'.tr());
+      return;
+    }
+
+    final localUser = await UserLocalStorage.getUser();
+    if (localUser == null) {
+      await UserLocalStorage.saveUser(
+        userId: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? '',
+      );
+      debugPrint('📦 ${'local_user_saved'.tr()}');
+    } else {
+      debugPrint('📦 ${'local_user_exists'.tr(args: [
+            localUser['displayName'] ?? ''
+          ])}');
+    }
+
+    if (!mounted) return;
+    context.go('/dashboard');
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('error'.tr()),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _startApp(); // إعادة المحاولة
+            },
+            child: Text('retry'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: Image.asset(
+                  'assets/images/splash_screen.jpg',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Column(
+                children: [
+                  Text(
+                    'Ahmed Tharwat tech.',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'ALL RIGHTS ARE RESERVED',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+
+/* import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/utils/user_local_storage.dart';
 //import 'package:puresip_purchasing/services/user_local_storage.dart'; // تأكد من استيراد المسار الصحيح
@@ -374,4 +556,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
- */
+ */ */

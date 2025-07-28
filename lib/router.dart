@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/pages/companies/company_added_page.dart';
 import 'package:puresip_purchasing/pages/items/add_item_page.dart';
+import 'package:puresip_purchasing/pages/items/edit_item_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
@@ -82,12 +83,7 @@ final GoRouter appRouter = GoRouter(
       path: '/edit-vendor/:id',
       builder: (context, state) {
         final supplierId = state.pathParameters['id']!;
-        final extra = state.extra as Map<String, dynamic>? ?? {};
-        return EditSupplierPage(
-          supplierId: supplierId,
-          initialName: extra['name'] ?? '',
-          initialCompany: extra['company'] ?? '',
-        );
+        return EditSupplierPage(supplierId: supplierId);
       },
     ),
     GoRoute(
@@ -133,6 +129,14 @@ final GoRouter appRouter = GoRouter(
       path: '/items/add',
       builder: (context, state) => const AddItemPage(),
     ),
+    GoRoute(
+  path: '/edit-item/:id',
+  builder: (context, state) {
+    final itemId = state.pathParameters['id']!;
+    return EditItemPage(itemId: itemId);
+  },
+),
+
     GoRoute(
         path: '/factories', builder: (context, state) => const FactoriesPage()),
     GoRoute(

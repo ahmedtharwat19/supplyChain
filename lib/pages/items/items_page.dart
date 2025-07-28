@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/* import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
@@ -233,5 +233,668 @@ Future<List<String>> _getSupplierNames(List<dynamic> supplierIds) async {
       if (!mounted) return;
       setState(() {});
     }
+  }
+}
+ */
+
+/* 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import '../../widgets/app_scaffold.dart';
+
+class ItemsPage extends StatefulWidget {
+  const ItemsPage({super.key});
+
+  @override
+  State<ItemsPage> createState() => _ItemsPageState();
+}
+
+class _ItemsPageState extends State<ItemsPage> {
+  String searchQuery = '';
+  bool isLoading = true;
+  String? userId;
+  List<Map<String, dynamic>> items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndItems();
+  }
+
+  Future<void> _loadUserAndItems() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+    setState(() {
+      userId = user.uid;
+    });
+
+    await _fetchUserItems();
+  }
+
+  Future<void> _fetchUserItems() async {
+    if (userId == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final loadedItems = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          ...data,
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          items = loadedItems;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${tr('error_occurred')}: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteItem(String itemId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance.collection('items').doc(itemId).delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('item_deleted'))),
+          );
+          await _fetchUserItems();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${tr('delete_error')}: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _editItem(Map<String, dynamic> itemData) async {
+    await context.push('/edit-item/${itemData['id']}', extra: itemData);
+    if (mounted) _fetchUserItems();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredItems = items.where((item) {
+      final name = (item['name_ar'] ?? '').toString().toLowerCase();
+      return name.contains(searchQuery.toLowerCase());
+    }).toList();
+
+    return AppScaffold(
+      title: tr('items_list'),
+      userName: userId, // ممكن تعدل لتحمل اسم المستخدم مثل companies page
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: tr('search'),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onChanged: (value) => setState(() => searchQuery = value),
+                  ),
+                ),
+                Expanded(
+                  child: filteredItems.isEmpty
+                      ? Center(child: Text(tr('no_items_found')))
+                      : ListView.builder(
+                          itemCount: filteredItems.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredItems[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 2,
+                              child: ListTile(
+                                title: Text(item['name_ar'] ?? ''),
+                                subtitle: Text('${tr('unit_price')}: ${item['unit_price'] ?? '-'}'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
+                                      tooltip: tr('edit'),
+                                      onPressed: () => _editItem(item),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: tr('delete'),
+                                      onPressed: () => _confirmDeleteItem(item['id']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/items/add');
+          if (mounted) _fetchUserItems();
+        },
+        tooltip: tr('add_item'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+ */
+
+/* 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import '../../widgets/app_scaffold.dart';
+
+class ItemsPage extends StatefulWidget {
+  const ItemsPage({super.key});
+
+  @override
+  State<ItemsPage> createState() => _ItemsPageState();
+}
+
+class _ItemsPageState extends State<ItemsPage> {
+  String searchQuery = '';
+  bool isLoading = true;
+  String? userId;
+  List<Map<String, dynamic>> items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndItems();
+  }
+
+  Future<void> _loadUserAndItems() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+    setState(() {
+      userId = user.uid;
+    });
+
+    await _fetchUserItems();
+  }
+
+  Future<void> _fetchUserItems() async {
+    if (userId == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final loadedItems = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          ...data,
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          items = loadedItems;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${tr('error_occurred')}: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteItem(String itemId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance.collection('items').doc(itemId).delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('item_deleted'))),
+          );
+          await _fetchUserItems();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${tr('delete_error')}: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _editItem(Map<String, dynamic> itemData) async {
+    await context.push('/edit-item/${itemData['id']}', extra: itemData);
+    if (mounted) _fetchUserItems();
+  }
+
+  String _typeName(String type) {
+    return {
+      'raw_material': tr('raw_material'),
+      'packaging_material': tr('packaging_material'),
+    }[type] ?? type;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentLocale = context.locale.languageCode;
+    final filteredItems = items.where((item) {
+      final name = (currentLocale == 'ar' ? item['name_ar'] ?? '' : item['name_en'] ?? '').toString().toLowerCase();
+      return name.contains(searchQuery.toLowerCase());
+    }).toList();
+
+    return AppScaffold(
+      title: tr('items_list'),
+      userName: userId, // ممكن تعدل لتحمل اسم المستخدم مثل companies page
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: tr('search'),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onChanged: (value) => setState(() => searchQuery = value),
+                  ),
+                ),
+                Expanded(
+                  child: filteredItems.isEmpty
+                      ? Center(child: Text(tr('no_items_found')))
+                      : ListView.builder(
+                          itemCount: filteredItems.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredItems[index];
+                            final itemName = currentLocale == 'ar'
+                                ? item['name_ar'] ?? ''
+                                : item['name_en'] ?? '';
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 2,
+                              child: ListTile(
+                                title: Text(itemName),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('${tr('unit_price')}: ${item['unit_price'] ?? '-'}'),
+                                    if (item['unit'] != null)
+                                      Text('${tr('unit')}: ${item['unit']}'),
+                                    if (item['type'] != null)
+                                      Text('${tr('item_type')}: ${_typeName(item['type'])}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
+                                      tooltip: tr('edit'),
+                                      onPressed: () => _editItem(item),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: tr('delete'),
+                                      onPressed: () => _confirmDeleteItem(item['id']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/items/add');
+          if (mounted) _fetchUserItems();
+        },
+        tooltip: tr('add_item'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+ */
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import '../../widgets/app_scaffold.dart';
+
+class ItemsPage extends StatefulWidget {
+  const ItemsPage({super.key});
+
+  @override
+  State<ItemsPage> createState() => _ItemsPageState();
+}
+
+class _ItemsPageState extends State<ItemsPage> {
+  String searchQuery = '';
+  bool isLoading = true;
+  String? userId;
+  String? userName;
+  List<Map<String, dynamic>> items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndItems();
+  }
+
+  Future<void> _loadUserAndItems() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        userId = user.uid;
+        // خذ الاسم من displayName لو موجود، وإذا ما موجود استخدم جزء من الإيميل
+        userName = user.displayName != null && user.displayName!.isNotEmpty
+            ? user.displayName
+            : user.email?.split('@')[0];
+      });
+
+      await _fetchUserItems();
+    } else {
+      if (mounted) context.go('/login');
+    }
+  }
+
+  Future<void> _fetchUserItems() async {
+    if (userId == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final loadedItems = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          ...data,
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          items = loadedItems;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${tr('error_occurred')}: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteItem(String itemId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('items')
+            .doc(itemId)
+            .delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('item_deleted'))),
+          );
+          await _fetchUserItems();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${tr('delete_error')}: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _editItem(Map<String, dynamic> itemData) async {
+    await context.push('/edit-item/${itemData['id']}', extra: itemData);
+    if (mounted) _fetchUserItems();
+  }
+
+  String _typeName(String type) {
+    return {
+          'raw_material': tr('raw_material'),
+          'packaging_material': tr('packaging_material'),
+        }[type] ??
+        type;
+  }
+
+  String _categoryName(String category) {
+    return {
+          'raw_material': tr('raw_material'),
+          'packaging': tr('packaging'),
+          'finished_product': tr('finished_product'),
+          'service': tr('service'),
+          'accessory': tr('accessory'),
+          'other': tr('other'),
+        }[category] ??
+        category;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentLocale = context.locale.languageCode;
+    final filteredItems = items.where((item) {
+      final name = (currentLocale == 'ar'
+              ? item['name_ar'] ?? ''
+              : item['name_en'] ?? '')
+          .toString()
+          .toLowerCase();
+      return name.contains(searchQuery.toLowerCase());
+    }).toList();
+
+    return AppScaffold(
+      title: tr('items_list'),
+      userName: userName,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: tr('search'),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onChanged: (value) => setState(() => searchQuery = value),
+                  ),
+                ),
+                Expanded(
+                  child: filteredItems.isEmpty
+                      ? Center(child: Text(tr('no_items_found')))
+                      : ListView.builder(
+                          itemCount: filteredItems.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredItems[index];
+                            final itemName = currentLocale == 'ar'
+                                ? item['name_ar'] ?? ''
+                                : item['name_en'] ?? '';
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              elevation: 2,
+                              child: ListTile(
+                                title: Text(itemName),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                        '${tr('unit_price')}: ${item['unit_price'] ?? '-'}'),
+                                    if (item['unit'] != null)
+                                      Text('${tr('unit')}: ${item['unit']}'),
+                                    if (item['type'] != null)
+                                      Text(
+                                          '${tr('item_type')}: ${_typeName(item['type'])}'),
+                                    if (item['category'] != null)
+                                      Text(
+                                          '${tr('category')}: ${_categoryName(item['category'])}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blue),
+                                      tooltip: tr('edit'),
+                                      onPressed: () => _editItem(item),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      tooltip: tr('delete'),
+                                      onPressed: () =>
+                                          _confirmDeleteItem(item['id']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/items/add');
+          if (mounted) _fetchUserItems();
+        },
+        tooltip: tr('add_item'),
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 }

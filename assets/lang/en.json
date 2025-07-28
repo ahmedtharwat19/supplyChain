@@ -298,8 +298,8 @@
   "dateRange": "Date Range",
   "factory": "Factory",
   "item": "Item",
-    "edit_purchase_order": "Edit Purchase Order",
-
+  "edit_purchase_order": "Edit Purchase Order",
+  "notes": "Notes",
 
   "qty": "Quantity",
 
@@ -310,6 +310,47 @@
   "invalid_item": "Please enter a valid item name and quantity",
   "save_error": "An error occurred while saving",
   "reset": "Reset Settings",
+  "confirm_password": "Confirm Password",
+  "account_created_successfully": "Account created successfully",
+  "passwords_do_not_match": "Passwords do not match",
+  "no_internet": "No internet connection. Please check your network and try again.",
+  "error": "Error",
+  "retry": "Retry",
+  "account_inactive": "Your account is inactive. Please contact the administration.",
+  "user_not_logged_in": "You are not logged in. Please log in to continue.",
+  "settings_title": "Settings",
+  "please_verify_email":" Please verify your email address to activate your account.",
+  "email_verification_sent": "A verification email has been sent to your email address.",
+  "permission_denied_hint": "You do not have permission to perform this action.",
+  "network_error": "Network error occurred. Please check your connection.",
+  "loading_message": "Loading, please wait...",
+  "local_user_exists": "Local user already exists. Please log in.",
+  "local_user_not_found": "Local user not found. Please sign up.",
+  "update_profile": "Update Profile",
+  "profile_updated": "Profile updated successfully",
+  "update": "Update",
+  "profile_picture": "Profile Picture",
+  "items_list": "Items List",
+  "name_arabic": "Name (Arabic)",
+  "name_english": "Name (English)",
+  "description": "Description",
+  "category": "Category",
+  "please_enter_price": "Please enter unit price",
+  "invalid_price": "Invalid price",
+  "item_updated_successfully": "Item updated successfully",
+  "item_already_exists": "Item already exists.",
+  "item_deleted_successfully": "Item deleted successfully",
+  "edit_item": "Edit Item",
+  "factories_list": "Factories List",
+  "no_factories_linked": "No factories linked",
+  "location": "Location",
+  "manager_name": "Manager Name",
+  "manager_phone": "Manager Phone",
+  "factory_added_successfully": "Factory added successfully",
+  "factory_updated_successfully": "Factory updated successfully",
+  "factory_not_found": "Factory not found",
+
+
 
   "settings": {
     "title": "Settings",
@@ -329,7 +370,8 @@
     "account_created_successfully": "Account was created successfully",
     "error_while_adding_company": "Error while adding the company",
     "permission_denied_hint": "You don't have permission to perform this action.",
-    "network_error": "Network error occurred. Please check your connection."
+    "network_error": "Network error occurred. Please check your connection.",
+    "custom_selection_note": "Custom selection active"
 
   }
 

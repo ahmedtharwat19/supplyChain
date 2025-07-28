@@ -10,7 +10,7 @@ class DashboardMetric {
   final String route; // المسار الذي ينتقل إليه عند الضغط
   final double Function(Map<String, dynamic>)
       progressBuilder; // دالة لحساب نسبة التقدم
-  final String defaultMenuType;
+  final String  defaultMenuType;
 
   DashboardMetric({
     required this.titleKey,
@@ -19,7 +19,7 @@ class DashboardMetric {
     required this.color,
     required this.route,
     required this.progressBuilder,
-    this.defaultMenuType = 'short',
+    required this.defaultMenuType,
   });
 }
 

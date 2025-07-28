@@ -9,6 +9,7 @@ class Item {
   static const fieldDescription = 'description';
   static const fieldUserId = 'user_id';
   static const fieldCreatedAt = 'createdAt';
+  static const fieldUnitPrice = 'unit_price'; // 🆕 مضاف
 
   // ➤ القيم المسموح بها لطبيعة الصنف
   static const List<String> allowedCategories = [
@@ -39,6 +40,7 @@ class Item {
   final String category;
   final String unit;
   final String? description;
+  final double? unitPrice; // 🆕 مضاف
   final String userId;
   final Timestamp createdAt;
 
@@ -49,6 +51,7 @@ class Item {
     required this.category,
     required this.unit,
     this.description,
+    this.unitPrice, // 🆕
     required this.userId,
     required this.createdAt,
   });
@@ -62,6 +65,9 @@ class Item {
       category: data[fieldCategory] ?? '',
       unit: data[fieldUnit] ?? '',
       description: data[fieldDescription],
+      unitPrice: (data[fieldUnitPrice] != null)
+          ? (data[fieldUnitPrice] as num).toDouble()
+          : null, // 🆕 يدعم التحويل من num إلى double
       userId: data[fieldUserId] ?? '',
       createdAt: data[fieldCreatedAt] ?? Timestamp.now(),
     );
@@ -75,6 +81,7 @@ class Item {
       fieldCategory: category,
       fieldUnit: unit,
       fieldDescription: description,
+      fieldUnitPrice: unitPrice, // 🆕
       fieldUserId: userId,
       fieldCreatedAt: createdAt,
     };

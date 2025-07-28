@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/* import 'package:flutter/material.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -222,6 +222,261 @@ void _onViewChanged(DashboardView? value) async {
                       await _saveSettings();
                       if (!context.mounted) return;
                       Navigator.pop(context, true); // عودة للـ dashboard
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.restore),
+                    label: Text(tr('settings.reset')),
+                    onPressed: _resetToDefaults,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+ */
+
+import 'package:flutter/material.dart';
+import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
+import 'package:puresip_purchasing/widgets/app_scaffold.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
+
+const String prefDashboardView = 'dashboard_view';
+const String prefSelectedCards = 'selected_cards';
+
+enum DashboardView { short, long }
+
+class SettingsPage extends StatefulWidget {
+  final List<String> allCards;
+
+  const SettingsPage({super.key, required this.allCards});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  DashboardView? _selectedView; // يمكن يكون null لو يدوي
+  Set<String> _selectedCards = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final viewString = prefs.getString(prefDashboardView);
+    final selectedCards = prefs.getStringList(prefSelectedCards) ?? [];
+
+    Set<String> cardsSet = selectedCards.toSet();
+
+    // تحديد view مع مراعاة التعديل اليدوي
+    DashboardView? loadedView;
+
+    if (viewString == 'short') {
+      loadedView = DashboardView.short;
+    } else if (viewString == 'long') {
+      loadedView = DashboardView.long;
+    } else {
+      loadedView = null;
+    }
+
+    // تحقق هل الكروت المختارة تتطابق مع عرض short أو long + short
+    bool matchesShort = cardsSet.length ==
+            dashboardMetrics
+                .where((m) => m.defaultMenuType == 'short')
+                .map((m) => m.titleKey)
+                .toSet()
+                .length &&
+        cardsSet.containsAll(dashboardMetrics
+            .where((m) => m.defaultMenuType == 'short')
+            .map((m) => m.titleKey));
+
+    bool matchesLong = cardsSet.length ==
+            dashboardMetrics
+                .where((m) =>
+                    m.defaultMenuType == 'long' || m.defaultMenuType == 'short')
+                .map((m) => m.titleKey)
+                .toSet()
+                .length &&
+        cardsSet.containsAll(dashboardMetrics
+            .where((m) =>
+                m.defaultMenuType == 'long' || m.defaultMenuType == 'short')
+            .map((m) => m.titleKey));
+
+    // لو الكروت المختارة ما تتطابق مع short ولا مع long => تعديل يدوي => نضع view null
+    if (!(matchesShort && loadedView == DashboardView.short) &&
+        !(matchesLong && loadedView == DashboardView.long)) {
+      loadedView = null;
+    }
+
+    setState(() {
+      _selectedView = loadedView;
+      _selectedCards = cardsSet;
+    });
+  }
+
+  Future<void> _saveSettings({bool showMessage = true}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_selectedView != null) {
+      await prefs.setString(prefDashboardView,
+          _selectedView == DashboardView.long ? 'long' : 'short');
+    } else {
+      await prefs.remove(prefDashboardView); // حذف القيمة لو يدوي
+    }
+    await prefs.setStringList(prefSelectedCards, _selectedCards.toList());
+
+    debugPrint('Saving settings: view=$_selectedView, cards=$_selectedCards');
+
+    if (mounted && showMessage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('settings.saved_successfully')),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 70, left: 16, right: 16),
+        ),
+      );
+    }
+  }
+
+  void _onViewChanged(DashboardView? value) {
+    if (value == null) return;
+
+    Set<String> selectedCards;
+
+    if (value == DashboardView.long) {
+      selectedCards = dashboardMetrics
+          .where((metric) =>
+              metric.defaultMenuType == 'long' ||
+              metric.defaultMenuType == 'short')
+          .map((metric) => metric.titleKey)
+          .toSet();
+    } else {
+      selectedCards = dashboardMetrics
+          .where((metric) => metric.defaultMenuType == 'short')
+          .map((metric) => metric.titleKey)
+          .toSet();
+    }
+
+    setState(() {
+      _selectedView = value;
+      _selectedCards = selectedCards;
+    });
+
+    _saveSettings(showMessage: true);
+  }
+
+  void _onCardToggle(String cardKey, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedCards.add(cardKey);
+      } else {
+        _selectedCards.remove(cardKey);
+      }
+      // لما يتم تعديل يدوي، نلغي تحديد العرض (null)
+      _selectedView = null;
+    });
+
+    _saveSettings(showMessage: false);
+  }
+
+  void _resetToDefaults() async {
+    setState(() {
+      _selectedView = DashboardView.short;
+      _selectedCards = dashboardMetrics
+          .where((metric) => metric.defaultMenuType == 'short')
+          .map((metric) => metric.titleKey)
+          .toSet();
+    });
+
+    await _saveSettings();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('settings.restored_defaults')),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 70, left: 16, right: 16),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      title: 'settings.title'.tr(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text('settings.choose_view',
+                    style: Theme.of(context).textTheme.headlineMedium)
+                .tr(),
+            ListTile(
+              title: Text('settings.short_view'.tr()),
+              leading: Radio<DashboardView>(
+                value: DashboardView.short,
+                groupValue: _selectedView,
+                onChanged: _onViewChanged,
+              ),
+            ),
+            ListTile(
+              title: Text('settings.long_view'.tr()),
+              leading: Radio<DashboardView>(
+                value: DashboardView.long,
+                groupValue: _selectedView,
+                onChanged: _onViewChanged,
+              ),
+            ),
+            if (_selectedView == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  tr('settings.custom_selection_note'), // مثلا "Custom selection active"
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            const Divider(height: 32),
+            Text('settings.choose_cards',
+                    style: Theme.of(context).textTheme.headlineSmall)
+                .tr(),
+            Expanded(
+              child: ListView(
+                children: widget.allCards.map((cardKey) {
+                  return CheckboxListTile(
+                    title: Text(cardKey).tr(),
+                    value: _selectedCards.contains(cardKey),
+                    onChanged: (val) {
+                      if (val == null) return;
+                      _onCardToggle(cardKey, val);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: Text(tr('save')),
+                    onPressed: () async {
+                      await _saveSettings();
+                      if (!context.mounted) return;
+                      Navigator.pop(context, true);
                     },
                   ),
                 ),

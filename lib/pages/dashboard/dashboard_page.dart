@@ -315,9 +315,14 @@ class DashboardPageState extends State<DashboardPage> {
     // إذا لم يحدد المستخدم أي بطاقة، عرض الكل
     final filteredMetrics = _selectedCards.isEmpty
         ? dashboardMetrics
+            .where((metric) =>
+                metric.defaultMenuType ==
+                (_dashboardView == DashboardView.long ? 'long' : 'short'))
+            .toList()
         : dashboardMetrics
             .where((metric) => _selectedCards.contains(metric.titleKey))
             .toList();
+
     // ✅ تغيير عرض الشبكة حسب نوع العرض
     int crossAxisCount;
     double aspectRatio;
@@ -330,27 +335,26 @@ class DashboardPageState extends State<DashboardPage> {
       aspectRatio = isWide ? 2.5 : 2;
     }
 
-return GridView.builder(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-    maxCrossAxisExtent: 300, // أقصى عرض لكل بطاقة
-    mainAxisExtent: 135, // 👈 مهم جداً لضبط الارتفاع
-    mainAxisSpacing: 12,
-    crossAxisSpacing: 12,
-    childAspectRatio: 1.6,
-  ),
-  itemCount: filteredMetrics.length,
-  itemBuilder: (context, index) {
-    final metric = filteredMetrics[index];
-    return DashboardTileWidget(
-      metric: metric,
-      data: stats,
-      highlight: metric.titleKey == 'totalCompanies',
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 300, // أقصى عرض لكل بطاقة
+        mainAxisExtent: 135, // 👈 مهم جداً لضبط الارتفاع
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.6,
+      ),
+      itemCount: filteredMetrics.length,
+      itemBuilder: (context, index) {
+        final metric = filteredMetrics[index];
+        return DashboardTileWidget(
+          metric: metric,
+          data: stats,
+          highlight: metric.titleKey == 'totalCompanies',
+        );
+      },
     );
-  },
-);
-
   }
 
   @override

@@ -1,49 +1,91 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <!-- قاعدة الرابط الجذري لتطبيق Flutter -->
-  <base href="$FLUTTER_BASE_HREF">
+  <head>
+    <base href="$FLUTTER_BASE_HREF">
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="PureSip Purchasing Web App">
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta name="description" content="PureSip Purchasing Web App" />
 
-  <!-- ✅ Firebase SDKs
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script> -->
+    <meta name="google-signin-client_id" content="80836764748-b9oa8c86ago3ckp801ogm5ol6ae5va3b.apps.googleusercontent.com" />
 
-  <!-- ✅ Firebase Configuration -->
-  <!--  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBLh1kz54d-85FzETal_pUp1hgizty_rFk",
-      authDomain: "puresip-purchasing.firebaseapp.com",
-      projectId: "puresip-purchasing",
-      storageBucket: "puresip-purchasing.appspot.com",
-      messagingSenderId: "80836764748",
-      appId: "1:80836764748:web:6c76e96f665112ce49c0e9"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script> -->
+    <!-- iOS meta tags & icons -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="PureSip Purchasing" />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-  <!-- ✅ Google Sign-In Client ID -->
-  <meta name="google-signin-client_id" content="80836764748-b9oa8c86ago3ckp801ogm5ol6ae5va3b.apps.googleusercontent.com" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="PureSip Purchasing">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <title>PureSip Purchasing</title>
 
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json">
+    <!-- ✅ شاشة تحميل مخصصة -->
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Arial', sans-serif;
+        background-color: #f2f2f2;
+      }
 
-  <title>PureSip Purchasing</title>
-</head>
-<body>
-  <!-- ✅ Bootstrap your Flutter App -->
-  <script src="flutter_bootstrap.js" async></script>
-</body>
+      #loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+      }
+
+      .logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .logo {
+        width: 100px;
+        margin-bottom: 20px;
+      }
+
+      .loading-text {
+        font-size: 18px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ✅ عنصر شاشة التحميل -->
+    <div id="loading">
+      <div class="logo-container">
+        <img src="assets/logo.png" alt="Logo" class="logo" />
+        <p id="loading-text" class="loading-text">Loading...</p>
+      </div>
+    </div>
+
+    <!-- ✅ تغيير لغة التحميل بناءً على المتصفح -->
+    <script>
+      const lang = navigator.language || navigator.userLanguage;
+
+      let loadingText = "Loading the app...";
+      if (lang.startsWith("ar")) {
+        loadingText = "جارٍ تحميل التطبيق...";
+        document.body.style.direction = "rtl";
+        document.body.style.fontFamily = "Cairo, sans-serif";
+      }
+
+      document.getElementById("loading-text").innerText = loadingText;
+
+      // إخفاء شاشة التحميل بعد بدء تشغيل فلاتر
+      window.addEventListener('flutter-first-frame', function () {
+        const loader = document.getElementById('loading');
+        if (loader) loader.remove();
+      });
+    </script>
+
+    <!-- ✅ تحميل تطبيق Flutter -->
+    <script src="flutter_bootstrap.js" async></script>
+  </body>
 </html>

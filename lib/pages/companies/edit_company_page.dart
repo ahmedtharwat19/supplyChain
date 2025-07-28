@@ -1,4 +1,4 @@
-import 'dart:convert';
+/* import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -243,6 +243,355 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
                           ),
                   ],
                 ),
+              ),
+            ),
+    );
+  }
+}
+ */
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+
+class EditCompanyPage extends StatefulWidget {
+  final String companyId;
+  const EditCompanyPage({super.key, required this.companyId});
+
+  @override
+  State<EditCompanyPage> createState() => _EditCompanyPageState();
+}
+
+class _EditCompanyPageState extends State<EditCompanyPage> {
+  final _nameArController = TextEditingController();
+  final _nameEnController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _managerNameController = TextEditingController();
+  final _managerPhoneController = TextEditingController();
+
+  File? _logoImage;
+  Uint8List? _webImageBytes;
+  String? _base64Logo;
+
+  bool _isLoading = true; // بداية بنظهر تحميل لأننا بنجيب بيانات
+  bool _isSaving = false;
+  User? _currentUser;
+
+  final arabicOnlyFormatter =
+      FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FF\s]'));
+  final englishOnlyFormatter =
+      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'));
+  final numbersOnlyFormatter = FilteringTextInputFormatter.digitsOnly;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = FirebaseAuth.instance.currentUser;
+    _loadCompanyData();
+  }
+
+  @override
+  void dispose() {
+    _nameArController.dispose();
+    _nameEnController.dispose();
+    _addressController.dispose();
+    _managerNameController.dispose();
+    _managerPhoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCompanyData() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(widget.companyId)
+          .get();
+
+      if (!doc.exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('company_not_found'))),
+          );
+          context.pop();
+        }
+        return;
+      }
+
+      final data = doc.data()!;
+      _nameArController.text = data['name_ar'] ?? '';
+      _nameEnController.text = data['name_en'] ?? '';
+      _addressController.text = data['address'] ?? '';
+      _managerNameController.text = data['manager_name'] ?? '';
+      _managerPhoneController.text = data['manager_phone'] ?? '';
+      _base64Logo = data['logo_base64'];
+
+      if (_base64Logo != null && _base64Logo!.isNotEmpty) {
+        if (kIsWeb) {
+          _webImageBytes = base64Decode(_base64Logo!);
+        } else {
+          // بالنسبة للموبايل: ممكن نخزن الصورة مؤقتًا لكن هنا نعرض الصورة من base64 مباشرة
+          // لذلك نترك _logoImage = null ونستخدم _base64Logo فقط للعرض
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ خطأ في جلب بيانات الشركة: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('error_loading_company'))),
+        );
+        context.pop();
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<bool> _checkUserActive() async {
+    final userId = _currentUser?.uid;
+    if (userId == null) return false;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (!userDoc.exists) return false;
+      final isActive = userDoc.data()?['is_active'] ?? false;
+      return isActive == true;
+    } catch (e) {
+      debugPrint('❌ خطأ في التحقق من حالة المستخدم: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _isCompanyDuplicate(String nameAr, String nameEn) async {
+    final userId = _currentUser?.uid;
+    if (userId == null) return false;
+
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final companyIds = List<String>.from(userDoc.data()?['companyIds'] ?? []);
+
+    if (companyIds.isEmpty) return false;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('companies')
+        .where(FieldPath.documentId, whereIn: companyIds)
+        .get();
+
+    final normalizedAr = nameAr.trim().toLowerCase();
+    final normalizedEn = nameEn.trim().toLowerCase();
+
+    for (var doc in snapshot.docs) {
+      if (doc.id == widget.companyId) continue; // استثناء الشركة الحالية
+
+      final existingAr = (doc['name_ar'] ?? '').toString().trim().toLowerCase();
+      final existingEn = (doc['name_en'] ?? '').toString().trim().toLowerCase();
+      if (existingAr == normalizedAr || existingEn == normalizedEn) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _validateInputs() {
+    if (_nameArController.text.trim().isEmpty ||
+        _nameEnController.text.trim().isEmpty ||
+        _addressController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('required_fields'))),
+      );
+      return false;
+    }
+    if (_base64Logo == null || _base64Logo!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('please_select_logo'))),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _pickLogo() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile == null) {
+        debugPrint('❌ لم يتم اختيار صورة');
+        return;
+      }
+
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        _webImageBytes = bytes;
+        _base64Logo = base64Encode(bytes);
+      } else {
+        _logoImage = File(pickedFile.path);
+        final bytes = await _logoImage!.readAsBytes();
+        _base64Logo = base64Encode(bytes);
+      }
+      setState(() {});
+      debugPrint('✅ تم اختيار الشعار بنجاح');
+    } catch (e) {
+      debugPrint('❌ خطأ أثناء اختيار الشعار: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('error_selecting_logo'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateCompany() async {
+    if (!_validateInputs()) return;
+
+    final userId = _currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('user_not_logged_in'))),
+      );
+      return;
+    }
+
+    final isActive = await _checkUserActive();
+    if (!isActive) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('user_not_active'))),
+      );
+      return;
+    }
+
+    final isDuplicate = await _isCompanyDuplicate(
+        _nameArController.text, _nameEnController.text);
+    if (isDuplicate) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('company_already_exists'))),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final companyData = {
+        'name_ar': _nameArController.text.trim(),
+        'name_en': _nameEnController.text.trim(),
+        'address': _addressController.text.trim(),
+        'manager_name': _managerNameController.text.trim(),
+        'manager_phone': _managerPhoneController.text.trim(),
+        'logo_base64': _base64Logo,
+        'user_id': userId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(widget.companyId)
+          .update(companyData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('company_updated_successfully'))),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      debugPrint('❌ خطأ أثناء تحديث الشركة: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('error_while_updating_company'))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('edit_company'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(tr('edit_company')),
+      ),
+      body: _isSaving
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _nameArController,
+                    decoration:
+                        InputDecoration(labelText: tr('company_name_arabic')),
+                    inputFormatters: [arabicOnlyFormatter],
+                    textInputAction: TextInputAction.next,
+                  ),
+                  TextField(
+                    controller: _nameEnController,
+                    decoration:
+                        InputDecoration(labelText: tr('company_name_english')),
+                    inputFormatters: [englishOnlyFormatter],
+                    textInputAction: TextInputAction.next,
+                  ),
+                  TextField(
+                    controller: _addressController,
+                    decoration:
+                        InputDecoration(labelText: tr('company_address')),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  TextField(
+                    controller: _managerNameController,
+                    decoration:
+                        InputDecoration(labelText: tr('company_manager_name')),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  TextField(
+                    controller: _managerPhoneController,
+                    decoration:
+                        InputDecoration(labelText: tr('company_manager_phone')),
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [numbersOnlyFormatter],
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _pickLogo,
+                    icon: const Icon(Icons.image),
+                    label: Text(tr('please_select_logo')),
+                  ),
+                  if (_base64Logo != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: kIsWeb
+                          ? Image.memory(_webImageBytes!, height: 150)
+                          : (_logoImage != null
+                              ? Image.file(_logoImage!, height: 150)
+                              : Image.memory(base64Decode(_base64Logo!), height: 150)),
+                    ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _updateCompany,
+                    child: Text(tr('update_company')),
+                  ),
+                ],
               ),
             ),
     );
