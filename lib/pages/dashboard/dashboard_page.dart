@@ -43,8 +43,10 @@ class DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    loadSettings();
+    _syncUserData().then((_) {
+      _loadInitialData();
+      loadSettings();
+    });
   }
 
   @override
@@ -168,7 +170,7 @@ class DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<void> _fetchAdditionalData(List<String> companyIds) async {
+/*   Future<void> _fetchAdditionalData(List<String> companyIds) async {
     try {
       int orderCount = 0;
       double amountSum = 0.0;
@@ -204,6 +206,48 @@ class DashboardPageState extends State<DashboardPage> {
       debugPrint('❌ Error in _fetchAdditionalData: $e');
     }
   }
+ */
+
+  Future<void> _fetchAdditionalData(List<String> companyIds) async {
+    try {
+      int orderCount = 0;
+      double amountSum = 0.0;
+      int movementCount = 0;
+      int manufacturingCount = 0;
+      int finishedProductCount = 0;
+      int factoryCount = 0;
+
+      // جلب إحصائيات المصانع بشكل منفصل
+      factoryCount = await _fetchFactoriesCount();
+
+      if (companyIds.isNotEmpty) {
+        final companyResults = await Future.wait(
+          companyIds.map((companyId) => _getCompanyStats(companyId)),
+        );
+
+        for (final result in companyResults) {
+          orderCount += (result['orders'] as num).toInt();
+          amountSum += (result['amount'] as num).toDouble();
+          movementCount += (result['movements'] as num).toInt();
+          manufacturingCount += (result['manufacturing'] as num).toInt();
+          finishedProductCount += (result['finishedProducts'] as num).toInt();
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          totalOrders = orderCount;
+          totalAmount = amountSum;
+          totalMovements = movementCount;
+          totalManufacturingOrders = manufacturingCount;
+          totalFinishedProducts = finishedProductCount;
+          totalFactories = factoryCount; // يتم تعيين عدد المصانع هنا
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error in _fetchAdditionalData: $e');
+    }
+  }
 
   Future<Map<String, dynamic>> _getCompanyStats(String companyId) async {
     try {
@@ -212,7 +256,7 @@ class DashboardPageState extends State<DashboardPage> {
         _getSubCollectionCount('stock_movements', companyId),
         _getSubCollectionCount('manufacturing_orders', companyId),
         _getSubCollectionCount('finished_products', companyId),
-        _getSubCollectionCount('factories', companyId),
+        //     _getSubCollectionCount('factories', companyId),
       ]);
 
       return {
@@ -221,7 +265,7 @@ class DashboardPageState extends State<DashboardPage> {
         'movements': results[1]['count'],
         'manufacturing': results[2]['count'],
         'finishedProducts': results[3]['count'],
-        'factories': results[4]['count'],
+        //  'factories': results[4]['count'],
       };
     } catch (e) {
       debugPrint('❌ Error getting stats for company $companyId: $e');
@@ -231,7 +275,7 @@ class DashboardPageState extends State<DashboardPage> {
         'movements': 0,
         'manufacturing': 0,
         'finishedProducts': 0,
-        'factories': 0,
+        // 'factories': 0,
       };
     }
   }
@@ -261,6 +305,78 @@ class DashboardPageState extends State<DashboardPage> {
     } catch (e) {
       debugPrint('❌ Error fetching $collection: $e');
       return {'count': 0, 'amount': 0.0};
+    }
+  }
+
+/*   Future<int> _fetchFactoriesCount() async {
+    try {
+      if (userId == null) {
+        debugPrint('User ID is null');
+        return 0;
+      }
+      debugPrint('Fetching factories for user: $userId');
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('factories')
+          .where('user_id', isEqualTo: userId)
+          .get();
+
+      debugPrint('Found ${snapshot.size} factories');
+
+      return snapshot.size;
+    } catch (e) {
+      debugPrint('❌ Error fetching factories: $e');
+      return 0;
+    }
+  }
+ */
+  
+  Future<int> _fetchFactoriesCount() async {
+  try {
+    if (userId == null) return 0;
+    
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+        
+    final factoryIds = (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [];
+    
+    if (factoryIds.isEmpty) return 0;
+    
+    final factories = await FirebaseFirestore.instance
+        .collection('factories')
+        .where(FieldPath.documentId, whereIn: factoryIds)
+        .get();
+    
+    return factories.size;
+  } catch (e) {
+    debugPrint('❌ Error fetching factories: $e');
+    return 0;
+  }
+}
+
+  Future<void> _syncUserData() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (userDoc.exists) {
+      await UserLocalStorage.saveUser(
+        userId: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: firebaseUser.displayName,
+        companyIds:
+            (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [],
+        factoryIds:
+            (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [],
+        supplierIds:
+            (userDoc.data()?['supplierIds'] as List?)?.cast<String>() ?? [],
+      );
     }
   }
 

@@ -2,54 +2,66 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Factory {
   // ➤ ثابتات أسماء الحقول
-  static const fieldName = 'name';
-  static const fieldAddress = 'address';
-  static const fieldPhone = 'phone';
-  static const fieldCompanyId = 'company_id';
+  static const fieldNameAr = 'name_ar';
+  static const fieldNameEn = 'name_en';
+  static const fieldLocation = 'location';
+  static const fieldManagerPhone = 'manager_phone';
+  static const fieldManagerName = 'manager_name';
   static const fieldUserId = 'user_id';
+  static const fieldCompanyIds = 'companyIds';
   static const fieldCreatedAt = 'createdAt';
 
   // ➤ الخصائص
   final String? id;
-  final String name;
-  final String address;
-  final String phone;
-  final String companyId;
+  final String nameAr;
+  final String nameEn;
+  final String location;
+  final String managerName;
+  final String managerPhone;
   final String userId;
-  final Timestamp createdAt;
+  final DateTime? createdAt;
+  final List<String> companyIds;
 
   Factory({
     this.id,
-    required this.name,
-    required this.address,
-    required this.phone,
-    required this.companyId,
+    required this.nameAr,
+    required this.nameEn,
+    required this.location,
+    required this.managerName,
+    required this.managerPhone,
     required this.userId,
-    required this.createdAt,
+    this.createdAt,
+    required this.companyIds,
   });
 
   // ➤ من Firestore
-  factory Factory.fromMap(Map<String, dynamic> data, String documentId) {
+  factory Factory.fromMap(Map<String, dynamic> map, String id) {
     return Factory(
-      id: documentId,
-      name: data[fieldName] ?? '',
-      address: data[fieldAddress] ?? '',
-      phone: data[fieldPhone] ?? '',
-      companyId: data[fieldCompanyId] ?? '',
-      userId: data[fieldUserId] ?? '',
-      createdAt: data[fieldCreatedAt] ?? Timestamp.now(),
+      id: id,
+      nameAr: map[fieldNameAr] ?? '',
+      nameEn: map[fieldNameEn] ?? '',
+      location: map[fieldLocation] ?? '',
+      managerName: map[fieldManagerName] ?? '',
+      managerPhone: map[fieldManagerPhone] ?? '',
+      userId: map[fieldUserId] ?? '',
+      createdAt: map[fieldCreatedAt] != null
+          ? (map[fieldCreatedAt] as Timestamp).toDate()
+          : null,
+      companyIds: List<String>.from(map[fieldCompanyIds] ?? []),
     );
   }
 
   // ➤ إلى Firestore
   Map<String, dynamic> toMap() {
     return {
-      fieldName: name,
-      fieldAddress: address,
-      fieldPhone: phone,
-      fieldCompanyId: companyId,
+      fieldNameAr: nameAr,
+      fieldNameEn: nameEn,
+      fieldLocation: location,
+      fieldManagerName: managerName,
+      fieldManagerPhone: managerPhone,
       fieldUserId: userId,
-      fieldCreatedAt: createdAt,
+      fieldCreatedAt: createdAt != null ? Timestamp.fromDate(createdAt!) : null,
+      fieldCompanyIds: companyIds,
     };
   }
 }

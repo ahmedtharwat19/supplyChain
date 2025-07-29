@@ -26,7 +26,7 @@ class DashboardMetric {
 // قائمة العناصر التي سيتم عرضها في لوحة التحكم
 final List<DashboardMetric> dashboardMetrics = [
   DashboardMetric(
-    titleKey: 'total_companies',
+    titleKey: 'totalCompanies',
     valueBuilder: (data) => (data['totalCompanies'] ?? 0).toString(),
     icon: Icons.business,
     color: Colors.blue,
@@ -39,7 +39,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_suppliers',
+    titleKey: 'totalSuppliers',
     valueBuilder: (data) => (data['totalSuppliers'] ?? 0).toString(),
     icon: Icons.local_shipping,
     color: Colors.green,
@@ -52,7 +52,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_orders',
+    titleKey: 'totalOrders',
     valueBuilder: (data) => (data['totalOrders'] ?? 0).toString(),
     icon: Icons.shopping_cart,
     color: Colors.orange,
@@ -65,7 +65,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_amount',
+    titleKey: 'totalAmount',
     valueBuilder: (data) => (data['totalAmount'] ?? 0.0).toStringAsFixed(2),
     icon: Icons.attach_money,
     color: Colors.purple,
@@ -79,7 +79,7 @@ final List<DashboardMetric> dashboardMetrics = [
   ),
   // أضف باقي العناصر بنفس النمط حسب البيانات التي لديك
   DashboardMetric(
-    titleKey: 'total_items',
+    titleKey: 'totalItems',
     valueBuilder: (data) => (data['totalItems'] ?? 0).toString(),
     icon: Icons.inventory_2,
     color: Colors.teal,
@@ -92,7 +92,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_stock_movements',
+    titleKey: 'totalStockMovements',
     valueBuilder: (data) => (data['totalStockMovements'] ?? 0).toString(),
     icon: Icons.move_to_inbox,
     color: Colors.cyan,
@@ -105,7 +105,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_manufacturing_orders',
+    titleKey: 'totalManufacturingOrders',
     valueBuilder: (data) => (data['totalManufacturingOrders'] ?? 0).toString(),
     icon: Icons.precision_manufacturing,
     color: Colors.amber,
@@ -118,7 +118,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'long', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_finished_products',
+    titleKey: 'totalFinishedProducts',
     valueBuilder: (data) => (data['totalFinishedProducts'] ?? 0).toString(),
     icon: Icons.check_circle_outline,
     color: Colors.deepPurple,
@@ -131,7 +131,7 @@ final List<DashboardMetric> dashboardMetrics = [
     defaultMenuType: 'short', // short, long, أو custom
   ),
   DashboardMetric(
-    titleKey: 'total_factories',
+    titleKey: 'totalFactories',
     valueBuilder: (data) => (data['totalFactories'] ?? 0).toString(),
     icon: Icons.factory,
     color: Colors.brown,

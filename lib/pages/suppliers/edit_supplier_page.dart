@@ -105,7 +105,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
     return null;
   }
 
-  Future<void> _updateSupplier() async {
+/*   Future<void> _updateSupplier() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
@@ -131,7 +131,78 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
           .collection('vendors')
           .doc(widget.supplierId)
           .update(supplier.toMap());
-          
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('supplier_updated'))),
+      );
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${tr('error_occurred')}: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+ */
+
+  Future<void> _updateSupplier() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final userData = await UserLocalStorage.getUser();
+      if (userData == null) throw Exception(tr('user_not_logged_in'));
+      final userId = userData['userId']!;
+
+      final supplier = Supplier(
+        id: widget.supplierId,
+        name: _nameController.text.trim(),
+        company: _companyController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        address: _addressController.text.trim(),
+        notes: _notesController.text.trim(),
+        userId: userId,
+        createdAt: Timestamp.now(), // احتفظ بالتاريخ القديم إذا رغبت
+      );
+
+      // تحديث بيانات المورد
+      await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(widget.supplierId)
+          .update(supplier.toMap());
+
+      // تحقق من supplierIds للمستخدم
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(userId);
+      final userDoc = await userRef.get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        final List<dynamic> supplierIds = data['supplierIds'] ?? [];
+
+        if (!supplierIds.contains(widget.supplierId)) {
+          await userRef.update({
+            'supplierIds': FieldValue.arrayUnion([widget.supplierId]),
+          });
+          final updatedSupplierIds = List<String>.from(supplierIds)
+            ..add(widget.supplierId);
+
+          await UserLocalStorage.saveUser(
+            userId: userId,
+            email: userData['email'] ?? '',
+            displayName: userData['displayName'],
+            companyIds: List<String>.from(userData['companyIds'] ?? []),
+            factoryIds: List<String>.from(userData['factoryIds'] ?? []),
+            supplierIds: updatedSupplierIds,
+          );
+        }
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr('supplier_updated'))),
@@ -186,18 +257,16 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _nameController,
                 focusNode: _nameFocus,
-        
                 decoration: InputDecoration(labelText: tr('name')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_companyFocus);
                 },
-                        textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.next,
               ),
               TextFormField(
                 controller: _companyController,
                 focusNode: _companyFocus,
-            
                 decoration: InputDecoration(labelText: tr('company')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
@@ -207,7 +276,6 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _phoneController,
                 focusNode: _phoneFocus,
-               
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(labelText: tr('phone')),
                 validator: _validatePhone,
@@ -219,7 +287,6 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _emailController,
                 focusNode: _emailFocus,
-                
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(labelText: tr('email')),
                 validator: _validateEmail,
@@ -231,7 +298,6 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _addressController,
                 focusNode: _addressFocus,
-   
                 decoration: InputDecoration(labelText: tr('address')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_notesFocus);
