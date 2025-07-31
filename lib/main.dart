@@ -32,6 +32,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
+
+  // Load Arabic font
+  await _loadArabicFont();
+  
   try {
     if (Firebase.apps.isEmpty) {
       if (kIsWeb ||
@@ -67,6 +71,7 @@ Future<void> main() async {
       ),
     ),
   );
+  
 }
 
 class MyApp extends StatelessWidget {
@@ -84,6 +89,15 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: context.localizationDelegates,
       routerConfig: appRouter,
     );
+  }
+}
+Future<void> _loadArabicFont() async {
+  try {
+    // No need to manually load if using Cairo font declared in pubspec.yaml
+    // Flutter will handle it automatically
+    debugPrint('Arabic fonts loaded successfully');
+  } catch (e) {
+    debugPrint('Error loading Arabic fonts: $e');
   }
 }
 

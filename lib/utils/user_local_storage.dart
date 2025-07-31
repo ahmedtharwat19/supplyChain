@@ -438,7 +438,7 @@ class UserLocalStorage {
   }
 }
  */ */
-
+/* 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -785,5 +785,331 @@ class UserLocalStorage {
     await clearFactoryInfo();
     await clearDashboardData();
     await clearExtendedStats();
+  }
+}
+
+ */
+
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class UserLocalStorage {
+  // ══════════════ Keys ══════════════
+  static const String _keyUserId = 'userId';
+  static const String _keyEmail = 'email';
+  static const String _keyDisplayName = 'displayName';
+
+  static const String _keyCompanyIds = 'companyIds';
+  static const String _keyFactoryIds = 'factoryIds';
+  static const String _keySupplierIds = 'supplierIds';
+
+  static const String _keyCurrentCompanyId = 'currentCompanyId';
+  static const String _keyCurrentFactoryId = 'currentFactoryId';
+
+  // Dashboard keys
+  static const String _keyTotalCompanies = 'totalCompanies';
+  static const String _keyTotalSuppliers = 'totalSuppliers';
+  static const String _keyTotalOrders = 'totalOrders';
+  static const String _keyTotalAmount = 'totalAmount';
+
+  // Extended stats keys
+  static const String _keyTotalFactories = 'totalFactories';
+  static const String _keyTotalItems = 'totalItems';
+  static const String _keyTotalStockMovements = 'totalStockMovements';
+  static const String _keyTotalManufacturingOrders = 'totalManufacturingOrders';
+  static const String _keyTotalFinishedProducts = 'totalFinishedProducts';
+
+  // New keys for settings
+  static const String _keyTheme = 'theme';             // e.g., "light" or "dark"
+  static const String _keyLanguageCode = 'languageCode'; // e.g., "en", "ar"
+  static const String _keyLastLogin = 'lastLogin';       // saved as ISO8601 string
+
+  // ══════════════ Helper to get SharedPreferences ══════════════
+  static Future<SharedPreferences?> _getPrefs() async {
+    try {
+      return await SharedPreferences.getInstance();
+    } catch (e) {
+      debugPrint('❌ SharedPreferences error: $e');
+      return null;
+    }
+  }
+
+  // ══════════════ User Info ══════════════
+
+  static Future<void> saveUser({
+    required String userId,
+    required String email,
+    String? displayName,
+    List<String>? companyIds,
+    List<String>? factoryIds,
+    List<String>? supplierIds,
+  }) async {
+    final nameToSave = (displayName?.trim().isNotEmpty ?? false)
+        ? displayName!
+        : email.split('@').first;
+
+    final userData = {
+      'userId': userId,
+      'email': email,
+      'displayName': nameToSave,
+      if (companyIds != null) 'companyIds': companyIds,
+      if (factoryIds != null) 'factoryIds': factoryIds,
+      if (supplierIds != null) 'supplierIds': supplierIds,
+    };
+
+    await setUser(userData);
+  }
+
+  static Future<void> setUser(Map<String, dynamic> userData) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    if (userData['userId'] != null) {
+      await prefs.setString(_keyUserId, userData['userId']);
+    }
+    if (userData['email'] != null) {
+      await prefs.setString(_keyEmail, userData['email']);
+    }
+    if (userData['displayName'] != null) {
+      await prefs.setString(_keyDisplayName, userData['displayName']);
+    }
+    if (userData['companyIds'] != null && userData['companyIds'] is List) {
+      final list = List<String>.from(userData['companyIds']);
+      await prefs.setStringList(_keyCompanyIds, list);
+    }
+    if (userData['factoryIds'] != null && userData['factoryIds'] is List) {
+      final list = List<String>.from(userData['factoryIds']);
+      await prefs.setStringList(_keyFactoryIds, list);
+    }
+    if (userData['supplierIds'] != null && userData['supplierIds'] is List) {
+      final list = List<String>.from(userData['supplierIds']);
+      await prefs.setStringList(_keySupplierIds, list);
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getUser() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+
+    final userId = prefs.getString(_keyUserId);
+    if (userId == null) return null;
+
+    return {
+      'userId': userId,
+      'email': prefs.getString(_keyEmail) ?? '',
+      'displayName': prefs.getString(_keyDisplayName) ?? '',
+      'companyIds': prefs.getStringList(_keyCompanyIds) ?? [],
+      'factoryIds': prefs.getStringList(_keyFactoryIds) ?? [],
+      'supplierIds': prefs.getStringList(_keySupplierIds) ?? [],
+    };
+  }
+
+  static Future<bool> hasUser() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return false;
+    return prefs.containsKey(_keyUserId);
+  }
+
+  static Future<void> clearUser() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.remove(_keyUserId);
+    await prefs.remove(_keyEmail);
+    await prefs.remove(_keyDisplayName);
+    await prefs.remove(_keyCompanyIds);
+    await prefs.remove(_keyFactoryIds);
+    await prefs.remove(_keySupplierIds);
+  }
+
+  // ══════════════ Company & Factory Info ══════════════
+
+  static Future<void> saveCurrentCompanyId(String companyId) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString(_keyCurrentCompanyId, companyId);
+  }
+
+  static Future<String?> getCurrentCompanyId() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+    return prefs.getString(_keyCurrentCompanyId);
+  }
+
+  static Future<void> saveCurrentFactoryId(String factoryId) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString(_keyCurrentFactoryId, factoryId);
+  }
+
+  static Future<String?> getCurrentFactoryId() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+    return prefs.getString(_keyCurrentFactoryId);
+  }
+
+  static Future<void> clearCompanyInfo() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.remove(_keyCompanyIds);
+    await prefs.remove(_keyCurrentCompanyId);
+  }
+
+  static Future<void> clearFactoryInfo() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.remove(_keyFactoryIds);
+    await prefs.remove(_keyCurrentFactoryId);
+  }
+
+  // ══════════════ Dashboard Data ══════════════
+
+  static Future<void> saveDashboardData({
+    required int totalCompanies,
+    required int totalSuppliers,
+    required int totalOrders,
+    required double totalAmount,
+  }) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.setInt(_keyTotalCompanies, totalCompanies);
+    await prefs.setInt(_keyTotalSuppliers, totalSuppliers);
+    await prefs.setInt(_keyTotalOrders, totalOrders);
+    await prefs.setDouble(_keyTotalAmount, totalAmount);
+  }
+
+  static Future<Map<String, dynamic>> getDashboardData() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return {};
+
+    return {
+      'totalCompanies': prefs.getInt(_keyTotalCompanies) ?? 0,
+      'totalSuppliers': prefs.getInt(_keyTotalSuppliers) ?? 0,
+      'totalOrders': prefs.getInt(_keyTotalOrders) ?? 0,
+      'totalAmount': prefs.getDouble(_keyTotalAmount) ?? 0.0,
+    };
+  }
+
+  static Future<void> clearDashboardData() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.remove(_keyTotalCompanies);
+    await prefs.remove(_keyTotalSuppliers);
+    await prefs.remove(_keyTotalOrders);
+    await prefs.remove(_keyTotalAmount);
+  }
+
+  // ══════════════ Extended Stats ══════════════
+
+  static Future<void> saveExtendedStats({
+    required int totalFactories,
+    required int totalItems,
+    required int totalStockMovements,
+    required int totalManufacturingOrders,
+    required int totalFinishedProducts,
+  }) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.setInt(_keyTotalFactories, totalFactories);
+    await prefs.setInt(_keyTotalItems, totalItems);
+    await prefs.setInt(_keyTotalStockMovements, totalStockMovements);
+    await prefs.setInt(_keyTotalManufacturingOrders, totalManufacturingOrders);
+    await prefs.setInt(_keyTotalFinishedProducts, totalFinishedProducts);
+  }
+
+  static Future<Map<String, int>> getExtendedStats() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return {};
+
+    return {
+      'totalFactories': prefs.getInt(_keyTotalFactories) ?? 0,
+      'totalItems': prefs.getInt(_keyTotalItems) ?? 0,
+      'totalStockMovements': prefs.getInt(_keyTotalStockMovements) ?? 0,
+      'totalManufacturingOrders': prefs.getInt(_keyTotalManufacturingOrders) ?? 0,
+      'totalFinishedProducts': prefs.getInt(_keyTotalFinishedProducts) ?? 0,
+    };
+  }
+
+  static Future<void> clearExtendedStats() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.remove(_keyTotalFactories);
+    await prefs.remove(_keyTotalItems);
+    await prefs.remove(_keyTotalStockMovements);
+    await prefs.remove(_keyTotalManufacturingOrders);
+    await prefs.remove(_keyTotalFinishedProducts);
+  }
+
+  // ══════════════ Settings (Theme, Language, Last Login) ══════════════
+
+  static Future<void> saveTheme(String theme) async {
+    // theme: "light" or "dark" (مثال)
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString(_keyTheme, theme);
+  }
+
+  static Future<String?> getTheme() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+    return prefs.getString(_keyTheme);
+  }
+
+  static Future<void> saveLanguageCode(String languageCode) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString(_keyLanguageCode, languageCode);
+  }
+
+  static Future<String?> getLanguageCode() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+    return prefs.getString(_keyLanguageCode);
+  }
+
+  static Future<void> saveLastLogin(DateTime dateTime) async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString(_keyLastLogin, dateTime.toIso8601String());
+  }
+
+  static Future<DateTime?> getLastLogin() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return null;
+
+    final isoString = prefs.getString(_keyLastLogin);
+    if (isoString == null) return null;
+
+    try {
+      return DateTime.parse(isoString);
+    } catch (e) {
+      debugPrint('❌ Failed to parse lastLogin: $e');
+      return null;
+    }
+  }
+
+  static Future<void> clearSettings() async {
+    final prefs = await _getPrefs();
+    if (prefs == null) return;
+
+    await prefs.remove(_keyTheme);
+    await prefs.remove(_keyLanguageCode);
+    await prefs.remove(_keyLastLogin);
+  }
+
+  // ══════════════ Clear Everything ══════════════
+
+  static Future<void> clearAll() async {
+    await clearUser();
+    await clearCompanyInfo();
+    await clearFactoryInfo();
+    await clearDashboardData();
+    await clearExtendedStats();
+    await clearSettings();
   }
 }

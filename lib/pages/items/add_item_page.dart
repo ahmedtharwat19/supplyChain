@@ -269,7 +269,7 @@ class _AddItemPageState extends State<AddItemPage> {
       _nameArController.text = item.nameAr;
       _nameEnController.text = item.nameEn;
       _descriptionController.text = item.description ?? '';
-      _priceController.text = item.unitPrice?.toString() ?? '';
+      _priceController.text = item.unitPrice.toString();
       _category = item.category;
       _unit = item.unit;
     }
@@ -328,7 +328,7 @@ class _AddItemPageState extends State<AddItemPage> {
           SnackBar(content: Text(tr('item_added_successfully'))),
         );
       } else {
-        await collection.doc(widget.existingItem!.id).update(itemData);
+        await collection.doc(widget.existingItem!.itemId).update(itemData);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(tr('item_updated_successfully'))),

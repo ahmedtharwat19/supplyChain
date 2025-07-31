@@ -48,12 +48,12 @@ class _EditItemPageState extends State<EditItemPage> {
         return;
       }
 
-      final item = Item.fromMap(doc.data()!, doc.id);
+      final item = Item.fromMap(doc.data()!);
 
       _nameArController.text = item.nameAr;
       _nameEnController.text = item.nameEn;
       _descriptionController.text = item.description ?? '';
-      _priceController.text = item.unitPrice?.toString() ?? '';
+      _priceController.text = item.unitPrice.toString();
 
       _category = Item.allowedCategories.contains(item.category)
           ? item.category
@@ -84,12 +84,16 @@ class _EditItemPageState extends State<EditItemPage> {
 
     try {
       final itemData = {
-        Item.fieldNameAr: _nameArController.text.trim(),
+        Item.fieldNameAr : _nameArController.text.trim(),
         Item.fieldNameEn: _nameEnController.text.trim(),
         Item.fieldDescription: _descriptionController.text.trim(),
         Item.fieldCategory: _category,
         Item.fieldUnit: _unit,
         Item.fieldUnitPrice: double.tryParse(_priceController.text.trim()) ?? 0,
+        Item.fieldIsTaxable: true, // Assuming items are taxable by default
+        Item.fieldCreatedAt: FieldValue.serverTimestamp(),
+        Item.fieldUserId: FirebaseFirestore.instance.app.options.projectId, // Assuming user ID is the project ID
+        // You might want to replace this with actual user ID logic
       };
 
       await FirebaseFirestore.instance

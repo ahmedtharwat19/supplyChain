@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 
-import '../../utils/pdf_exporter.dart';
 //import '../../../utils/pdf_exporter.dart';
 
 class PurchaseOrderDetailPage extends StatefulWidget {
@@ -110,7 +108,7 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
       appBar: AppBar(
         title: Text('طلب شراء #${widget.orderId}'),
         actions: [
-          IconButton(
+/*           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'تصدير إلى PDF',
             onPressed: () async {
@@ -123,7 +121,7 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
 
               await Printing.layoutPdf(onLayout: (format) async => pdf.save());
             },
-          )
+          ) */
         ],
       ),
       body: Padding(
@@ -202,11 +200,11 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
             const SizedBox(height: 20),
 
             // 🖨 زر إضافي للطباعة
-            Center(
+/*             Center(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.print),
                 label: const Text('طباعة / تصدير PDF'),
-                onPressed: () async {
+/*                 onPressed: () async {
                   final pdf = await generatePurchaseOrderPdf(
                     orderId: widget.orderId,
                     orderData: orderData!,
@@ -215,9 +213,9 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
                   );
                   await Printing.layoutPdf(
                       onLayout: (format) async => pdf.save());
-                },
+                }, */
               ),
-            )
+            ) */
           ],
         ),
       ),

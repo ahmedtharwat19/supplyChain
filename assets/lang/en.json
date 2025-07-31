@@ -390,7 +390,41 @@
     "network_error": "Network error occurred. Please check your connection.",
     "custom_selection_note": "Custom selection active"
 
-  }
+  },
+    "create_purchase_order": "Create Purchase Order",
+  "tax_rate": "Tax Rate",
+
+  "quantity": "Quantity",
+
+  "tax": "Tax",
+  "total_tax": "Total Tax",
+  "total_after_tax": "Total After Tax",
+  "save_order": "Save Order",
+  "purchase_order_saved": "✅ Purchase order saved successfully",
+  "missing_required_info": "⚠️ Please enter supplier and order contents",
+    "currency": "l.e",
+  "apply_tax": "Apply Tax",
+  "new_purchase_order": "New Purchase Order",
+  "order_date": "Order Date",
+  "tax_rate_percent": "Tax Rate (%)",
+  "delivered": "Delivered",
+  "add_items": "Add Items",
+  "order_summary": "Order Summary",
+  "subtotal": "Subtotal",
+  "save_order_error": "Error saving order",
+  "no_items_added": "No items added to the order",
+  "error_loading_orders": "Error loading orders",
+  "export_error": "Error exporting order",
+  "export_success": "Order exported successfully",
+  "invoice": "Purchase Invoice",
+  "price": "Price",
+  "total_amount": "Total Amount",
+  "thanks_message": "Thank you for your business",
+  "invoice_share_message": "Here is your purchase invoice",
+  "invoice_subject": "Purchase Invoice",
+  "search_hint": "Search by supplier, date, or status",
+  "error_loading_data": "Error loading data. Please try again."
+  
 
 
 

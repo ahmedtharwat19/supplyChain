@@ -1,3 +1,1295 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:path_provider/path_provider.dart';
+// import 'dart:io' show Platform;
+// import 'dart:html' as html; // فقط على web
+import 'package:puresip_purchasing/widgets/app_scaffold.dart';
+import 'package:puresip_purchasing/utils/pdf_exporter.dart';
+import 'package:share_plus/share_plus.dart';
+
+class PurchaseOrdersPage extends StatefulWidget {
+  const PurchaseOrdersPage({super.key});
+
+  @override
+  State<PurchaseOrdersPage> createState() => _PurchaseOrdersPageState();
+}
+
+class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
+  String searchQuery = '';
+  bool isLoading = true;
+  String? userName;
+  final List<Map<String, dynamic>> _allOrders = [];
+  bool _isSearching = false;
+  int _userCompaniesCount = 1;
+  bool get isArabic => Localizations.localeOf(context).languageCode == 'ar';
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserInfo();
+    _loadUserCompaniesCount();
+    _loadAllOrders();
+  }
+
+  Future<void> loadUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final email = user.email ?? '';
+      final name = user.displayName ?? '';
+      setState(() {
+        userName = name.isNotEmpty ? name : email.split('@')[0];
+        debugPrint('User name: $userName');
+      });
+    }
+  }
+
+  Future<void> _loadUserCompaniesCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final companyIds = (userDoc.data()?['companyIds'] as List?)?.length ?? 1;
+    setState(() => _userCompaniesCount = companyIds);
+  }
+
+  Future<void> _loadAllOrders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    if (mounted) setState(() => isLoading = true);
+
+    try {
+      final query = FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('orderDate', descending: true);
+
+      final querySnapshot = await query.get();
+
+      if (!mounted) return;
+
+      _allOrders.clear();
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final companyId = data['companyId'] as String? ?? '';
+        final supplierId = data['supplierId'] as String? ?? '';
+
+        final company = await _getCompanyName(companyId);
+        final supplier = await _getSupplierName(supplierId);
+
+        _allOrders.add({
+          ...data,
+          'id': doc.id,
+          'companyName': company,
+          'supplierName': supplier,
+        });
+      }
+
+      _allOrders.sort((a, b) {
+        final aDate = (a['orderDate'] as Timestamp).toDate();
+        final bDate = (b['orderDate'] as Timestamp).toDate();
+        return bDate.compareTo(aDate);
+      });
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_loading_orders'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<String> _getCompanyName(String companyId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(companyId)
+          .get();
+
+      if (isArabic) {
+        return doc.data()?['name_ar'] ?? companyId;
+      } else {
+        return doc.data()?['name_en'] ?? companyId;
+      }
+    } catch (e) {
+      return companyId;
+    }
+  }
+
+  Future<String> _getSupplierName(String supplierId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(supplierId)
+          .get();
+      return doc.data()?['name'] ?? supplierId;
+    } catch (e) {
+      return supplierId;
+    }
+  }
+
+  List<Map<String, dynamic>> _filterOrders(String query) {
+    if (query.isEmpty) return _allOrders;
+    final queryLower = query.toLowerCase();
+
+    return _allOrders.where((order) {
+      final poNumber =
+          (order['poNumber'] ?? order['id']).toString().toLowerCase();
+      final companyName = order['companyName'].toString().toLowerCase();
+      final supplierName = order['supplierName'].toString().toLowerCase();
+      final status = (order['status'] ?? 'pending').toString().toLowerCase();
+      final timestamp = order['orderDate'] as Timestamp?;
+      final dateMatch = _isDateMatch(timestamp, queryLower);
+
+      return poNumber.contains(queryLower) ||
+          companyName.contains(queryLower) ||
+          supplierName.contains(queryLower) ||
+          status.contains(queryLower) ||
+          dateMatch;
+    }).toList();
+  }
+
+  bool _isDateMatch(Timestamp? timestamp, String query) {
+    if (timestamp == null) return false;
+
+    final date = timestamp.toDate();
+    final formats = [
+      'yyyy-MM-dd',
+      'dd-MM-yyyy',
+      'dd/MM/yyyy',
+      'yyyy/MM/dd',
+      'MM-dd-yyyy',
+      'MM/dd/yyyy',
+    ];
+
+    if (query.length <= 2 && date.day.toString().contains(query)) return true;
+    if (query.length <= 2 && date.month.toString().contains(query)) return true;
+    if (query.length == 4 && date.year.toString().contains(query)) return true;
+
+    for (final format in formats) {
+      if (DateFormat(format).format(date).toLowerCase().contains(query)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading || _allOrders.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('purchase_orders'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final filteredOrders = _filterOrders(searchQuery);
+
+    return AppScaffold(
+      title: tr('purchase_orders'),
+      userName: userName,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: tr('search'),
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                hintText: tr('search_hint'),
+              ),
+              onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
+            ),
+          ),
+          Expanded(
+            child: _isSearching
+                ? const Center(child: CircularProgressIndicator())
+                : filteredOrders.isEmpty
+                    ? Center(child: Text(tr('no_match_search')))
+                    : ListView.builder(
+                        itemCount: filteredOrders.length,
+                        itemBuilder: (ctx, index) {
+                          final order = filteredOrders[index];
+                          final totalAmount =
+                              (order['totalAmountAfterTax'] ?? 0.0)
+                                  .toStringAsFixed(2);
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: _getStatusColor(order['status'])
+                                    .withAlpha(76),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        order['poNumber'] ??
+                                            'PO-${order['id']}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              _getStatusColor(order['status']),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          (order['status'] ?? 'pending')
+                                              .toString()
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (_userCompaniesCount > 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.business,
+                                              size: 16, color: Colors.grey),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            order['companyName'],
+                                            style: TextStyle(
+                                                color: Colors.grey.shade600),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.person,
+                                            size: 16, color: Colors.grey),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          order['supplierName'],
+                                          style: TextStyle(
+                                              color: Colors.grey.shade600),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider(height: 16, thickness: 1),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.calendar_today,
+                                              size: 16, color: Colors.grey),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            DateFormat('yyyy-MM-dd').format(
+                                                (order['orderDate']
+                                                        as Timestamp)
+                                                    .toDate()),
+                                            style: TextStyle(
+                                                color: Colors.grey.shade700),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '$totalAmount ${tr('currency')}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            size: 20, color: Colors.blue),
+                                        onPressed: () => _editOrder(order),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.picture_as_pdf,
+                                            size: 20, color: Colors.green),
+                                        onPressed: () => _exportOrder(order),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            size: 20, color: Colors.red),
+                                        onPressed: () =>
+                                            _confirmDeleteOrder(order),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/add-purchase-order');
+          if (mounted) await _loadAllOrders();
+        },
+        tooltip: tr('add_purchase_order'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> _editOrder(Map<String, dynamic> order) async {
+    final result = await context.push('/add-purchase-order', extra: {
+      'editMode': true,
+      'orderData': order,
+      'orderId': order['id'],
+    });
+    if (result == true && mounted) await _loadAllOrders();
+  }
+
+/*   Future<void> _exportOrder(Map<String, dynamic> order) async {
+    setState(() => _isSearching = true);
+    try {
+      final compD = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(order['companyId'])
+          .get();
+      final vendD = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(order['supplierId'])
+          .get();
+
+      final pdf = await PdfExporter.generatePurchaseOrderPdf(
+        orderId: order['id'],
+        orderData: order,
+        supplierData: vendD.data() ?? {},
+        companyData: compD.data() ?? {},
+      );
+
+      await Printing.layoutPdf(onLayout: (format) async => pdf);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('export_error'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+ */
+
+/*   Future<void> _exportOrder(Map<String, dynamic> order) async {
+  setState(() => _isSearching = true);
+  try {
+    final compD = await FirebaseFirestore.instance
+        .collection('companies')
+        .doc(order['companyId'])
+        .get();
+    final vendD = await FirebaseFirestore.instance
+        .collection('vendors')
+        .doc(order['supplierId'])
+        .get();
+
+    final pdf = await generatePurchaseOrderPdf(
+      orderId: order['id'],
+      orderData: order,
+      supplierData: vendD.data() ?? {},
+      companyData: compD.data() ?? {},
+    );
+
+    // حفظ الملف محلياً ومشاركته
+    final bytes = await pdf.save();
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/order_${order['id']}.pdf');
+    await file.writeAsBytes(bytes);
+    
+    await SharePlus.instance.share(
+      files: [XFile(file.path)],
+      text: 'invoice_share_message'.tr(),
+      subject: 'invoice_subject'.tr(),
+    );
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('export_error'.tr())),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isSearching = false);
+  }
+}
+   */
+
+  Future<void> _exportOrder(Map<String, dynamic> order) async {
+    setState(() => _isSearching = true);
+    try {
+      final compD = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(order['companyId'])
+          .get();
+      final vendD = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(order['supplierId'])
+          .get();
+
+      final pdf = await generatePurchaseOrderPdf(
+        orderId: order['id'],
+        orderData: order,
+        supplierData: vendD.data() ?? {},
+        companyData: compD.data() ?? {},
+      );
+
+      // Save file locally and share
+      final bytes = await pdf.save();
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/order_${order['id']}.pdf');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'invoice_share_message'.tr(),
+        subject: 'invoice_subject'.tr(),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('export_error'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _confirmDeleteOrder(Map<String, dynamic> order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isSearching = true);
+      try {
+        await FirebaseFirestore.instance
+            .collection('purchase_orders')
+            .doc(order['id'])
+            .delete();
+
+        await _loadAllOrders();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('delete_error'.tr())),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isSearching = false);
+      }
+    }
+  }
+}
+
+
+/* import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
+import 'package:puresip_purchasing/widgets/app_scaffold.dart';
+import 'package:puresip_purchasing/utils/pdf_exporter.dart';
+
+class PurchaseOrdersPage extends StatefulWidget {
+  const PurchaseOrdersPage({super.key});
+
+  @override
+  State<PurchaseOrdersPage> createState() => _PurchaseOrdersPageState();
+}
+
+class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
+  String searchQuery = '';
+  bool isLoading = true;
+  String? userName;
+  List<String> userOrderIds = [];
+  final List<Map<String, dynamic>> _allOrders = [];
+  bool _isSearching = false;
+  bool get isArabic => Localizations.localeOf(context).languageCode == 'ar';
+
+  /*  @override
+  void initState() {
+    super.initState();
+    loadUserInfo();
+    loadUserOrders();
+  }
+ */
+  Future<void> loadUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final email = user.email ?? '';
+      final name = user.displayName ?? '';
+      setState(() {
+        userName = name.isNotEmpty ? name : email.split('@')[0];
+      });
+    }
+  }
+
+/*   Future<void> loadUserOrders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: user.uid)
+          //    .orderBy('orderDate', descending: true)
+          .get();
+
+      if (!mounted) return;
+
+      userOrderIds = query.docs.map((doc) => doc.id).toList();
+
+      debugPrint('Loaded order IDs for user: $userOrderIds');
+
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_loading_orders'.tr())),
+        );
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  } */
+
+  Future<void> _loadAllOrders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) context.go('/login');
+      return;
+    }
+
+    if (mounted) setState(() => isLoading = true);
+
+    try {
+      final query = FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('orderDate', descending: true);
+
+      final querySnapshot = await query.get();
+
+      if (!mounted) return;
+
+      _allOrders.clear();
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        // تحقق من أن البيانات ليست فارغة
+        final companyId = data['companyId'] as String? ?? '';
+        final supplierId = data['supplierId'] as String? ?? '';
+
+        final company = await _getCompanyName(companyId);
+        final supplier = await _getSupplierName(supplierId);
+
+        _allOrders.add({
+          ...data, // استخدام الناشر الآمن للقيم الفارغة
+          'id': doc.id,
+          'companyName': company,
+          'supplierName': supplier,
+        });
+            }
+
+      // فرز النتائج يدوياً إذا لزم الأمر
+      _allOrders.sort((a, b) {
+        final aDate =
+            (a['orderDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final bDate =
+            (b['orderDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+        return bDate.compareTo(aDate);
+      });
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_loading_orders'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+/*    Future<void> _loadAllOrders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('orderDate', descending: true)
+          .get();
+
+      _allOrders.clear();
+      for (final doc in query.docs) {
+        final data = doc.data();// as Map<String, dynamic>;
+        final company = await _getCompanyName(data['companyId']);
+        final supplier = await _getSupplierName(data['supplierId']);
+        
+        _allOrders.add({
+          ...data,
+          'id': doc.id,
+          'companyName': company,
+          'supplierName': supplier,
+        });
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
+    }
+  }
+ */
+  /* Future<String> _getCompanyName(String companyId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(companyId)
+          .get();
+      return isArabic ? doc.data()?['name_ar'] ?? companyId 
+                   : doc.data()?['name_en'] ?? companyId;
+    } catch (e) {
+      return companyId;
+    }
+  } */
+
+  Future<String> _getCompanyName(String companyId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(companyId)
+          .get();
+
+      if (isArabic) {
+        return doc.data()?['name_ar'] ?? companyId;
+      } else {
+        return doc.data()?['name_en'] ?? companyId;
+      }
+    } catch (e) {
+      return companyId;
+    }
+  }
+
+  Future<String> _getSupplierName(String supplierId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(supplierId)
+          .get();
+      return doc.data()?['name'] ?? supplierId;
+    } catch (e) {
+      return supplierId;
+    }
+  }
+
+  List<Map<String, dynamic>> _filterOrders(String query) {
+    if (query.isEmpty) return _allOrders;
+  final queryLower = query.toLowerCase();
+
+    return _allOrders.where((order) {
+      final poNumber =
+          (order['poNumber'] ?? order['id']).toString().toLowerCase();
+      final companyName = order['companyName'].toString().toLowerCase();
+      final supplierName = order['supplierName'].toString().toLowerCase();
+      // final orderDate = DateFormat('yyyy-MM-dd')
+      //     .format((order['orderDate'] as Timestamp).toDate())
+      //     .toLowerCase();
+      final status = (order['status'] ?? 'pending').toString().toLowerCase();
+      final timestamp = order['orderDate'] as Timestamp?;
+      final dateMatch = _isDateMatch(timestamp, queryLower);
+
+      return poNumber.contains(query) ||
+          companyName.contains(query) ||
+          supplierName.contains(query) ||
+          //orderDate.contains(query) ||
+          status.contains(query) ||
+           dateMatch;
+    }).toList();
+  }
+  // دالة مساعدة للبحث المرن بالتاريخ
+bool _isDateMatch(Timestamp? timestamp, String query) {
+  if (timestamp == null) return false;
+  
+  final date = timestamp.toDate();
+  final formats = [
+    'yyyy-MM-dd', // 2023-12-31
+    'dd-MM-yyyy', // 31-12-2023
+    'dd/MM/yyyy', // 31/12/2023
+    'yyyy/MM/dd', // 2023/12/31
+    'MM-dd-yyyy', // 12-31-2023
+    'MM/dd/yyyy', // 12/31/2023
+  ];
+
+  // البحث بأي جزء من التاريخ (يوم، شهر، سنة)
+  if (query.length <= 2 && date.day.toString().contains(query)) return true;
+  if (query.length <= 2 && date.month.toString().contains(query)) return true;
+  if (query.length == 4 && date.year.toString().contains(query)) return true;
+
+  // البحث بالتنسيقات الكاملة
+  for (final format in formats) {
+    if (DateFormat(format).format(date).toLowerCase().contains(query)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserInfo();
+    //  loadUserOrders();
+    _loadAllOrders();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading || _allOrders.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('purchase_orders'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final filteredOrders = _filterOrders(searchQuery);
+
+    return AppScaffold(
+      title: tr('purchase_orders'),
+      userName: userName,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: tr('search'),
+                prefixIcon: const Icon(Icons.search),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
+            ),
+          ),
+          Expanded(
+            child: _isSearching
+                ? const Center(child: CircularProgressIndicator())
+                : filteredOrders.isEmpty
+                    ? Center(child: Text(tr('no_match_search')))
+                    : ListView.builder(
+                        itemCount: filteredOrders.length,
+                        itemBuilder: (ctx, index) {
+                          final order = filteredOrders[index];
+                          final totalAmount =
+                              (order['totalAmountAfterTax'] ?? 0.0)
+                                  .toStringAsFixed(2);
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            child: ListTile(
+                              title:
+                                  Text(order['poNumber'] ?? '${order['id']}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      '${tr('company')}: ${order['companyName']}'),
+                                  Text(
+                                      '${tr('supplier')}: ${order['supplierName']}'),
+                                  Text(
+                                      '${tr('date')}: ${DateFormat('yyyy-MM-dd').format((order['orderDate'] as Timestamp).toDate())}'),
+                                  Text(
+                                      '${tr('total')}: $totalAmount ${tr('currency')}'),
+                                  Text(
+                                      '${tr('status')}: ${order['status'] ?? 'pending'}'),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
+                                    onPressed: () => _editOrder(order),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.picture_as_pdf,
+                                        color: Colors.green),
+                                    onPressed: () => _exportOrder(order),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    onPressed: () => _confirmDeleteOrder(order),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/add-purchase-order');
+          if (mounted) await _loadAllOrders();
+        },
+        tooltip: tr('add_purchase_order'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> _editOrder(Map<String, dynamic> order) async {
+    final result = await context.push('/add-purchase-order', extra: {
+      'editMode': true,
+      'orderData': order,
+      'orderId': order['id'],
+    });
+    if (result == true && mounted) await _loadAllOrders();
+  }
+
+  Future<void> _exportOrder(Map<String, dynamic> order) async {
+    setState(() => _isSearching = true);
+    try {
+      final compD = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(order['companyId'])
+          .get();
+      final vendD = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(order['supplierId'])
+          .get();
+
+      final pdf = await PdfExporter.generatePurchaseOrderPdf(
+        orderId: order['id'],
+        orderData: order,
+        supplierData: vendD.data() ?? {},
+        companyData: compD.data() ?? {},
+      );
+
+      await Printing.layoutPdf(onLayout: (format) async => pdf);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('export_error'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _confirmDeleteOrder(Map<String, dynamic> order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isSearching = true);
+      try {
+        await FirebaseFirestore.instance
+            .collection('purchase_orders')
+            .doc(order['id'])
+            .delete();
+
+        await _loadAllOrders();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('delete_error'.tr())),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isSearching = false);
+      }
+    }
+  }
+}
+ */
+/* 
+  Future<void> _confirmDeleteOrder(DocumentSnapshot orderDoc) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(tr('confirm_delete_title')),
+        content: Text(tr('confirm_delete_message')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr('cancel'))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                Text(tr('delete'), style: const TextStyle(color: Colors.red)),
+          )
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await orderDoc.reference.delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('order_deleted'))),
+          );
+          await loadUserOrders();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('delete_error'.tr())),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _editOrder(DocumentSnapshot orderDoc) async {
+    final data = orderDoc.data() as Map<String, dynamic>;
+    await context.push('/add-purchase-order', extra: {
+      'editMode': true,
+      'orderData': data,
+      'orderId': orderDoc.id,
+    });
+    if (mounted) loadUserOrders();
+  }
+
+  Future<void> _exportOrder(DocumentSnapshot orderDoc) async {
+    final data = orderDoc.data() as Map<String, dynamic>;
+    try {
+      final compD = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(data['companyId'])
+          .get();
+      final vendD = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(data['supplierId'])
+          .get();
+
+      final pdf = await PdfExporter.generatePurchaseOrderPdf(
+        orderId: orderDoc.id,
+        orderData: data,
+        supplierData: vendD.data() ?? {},
+        companyData: compD.data() ?? {},
+      );
+
+      await Printing.layoutPdf(onLayout: (format) async => pdf);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('export_error'.tr())),
+        );
+      }
+    }
+  }
+
+  Future<Map<String, String>> _getCompanyAndSupplierNames(
+      String orderId) async {
+    try {
+      final orderDoc = await FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .doc(orderId)
+          .get();
+
+      final orderData = orderDoc.data() as Map<String, dynamic>;
+      final companyId = orderData['companyId'];
+      final supplierId = orderData['supplierId'];
+
+      final companyFuture = FirebaseFirestore.instance
+          .collection('companies')
+          .doc(companyId)
+          .get();
+
+      final supplierFuture = FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(supplierId)
+          .get();
+
+      final results = await Future.wait([companyFuture, supplierFuture]);
+
+      return {
+        'companyName': results[0].data()?['name_ar'] ?? 'غير معروف',
+        'supplierName': results[1].data()?['name'] ?? 'غير معروف',
+      };
+    } catch (e) {
+      debugPrint('Error fetching names: $e');
+      return {
+        'companyName': 'غير معروف',
+        'supplierName': 'غير معروف',
+      };
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('purchase_orders'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (userOrderIds.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('purchase_orders'))),
+        body: Center(child: Text(tr('no_orders_found'))),
+      );
+    }
+
+    return AppScaffold(
+      title: tr('purchase_orders'),
+      userName: userName,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: tr('search'),
+                prefixIcon: const Icon(Icons.search),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('purchase_orders')
+                  .where(FieldPath.documentId, whereIn: userOrderIds)
+                  .orderBy('orderDate', descending: true)
+                  .snapshots(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  debugPrint('StreamBuilder error: ${snap.error}');
+                  return Center(
+                      child: Text('${tr('error_occurred')}: ${snap.error}'));
+                }
+
+                final orders = (snap.data?.docs ?? []).where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final poNumber =
+                      (data['poNumber'] ?? doc.id).toString().toLowerCase();
+                  final orderDate = DateFormat('yyyy-MM-dd')
+                      .format((data['orderDate'] as Timestamp).toDate())
+                      .toLowerCase();
+                  final status =
+                      (data['status'] ?? 'pending').toString().toLowerCase();
+
+                  return poNumber.contains(searchQuery) ||
+                      orderDate.contains(searchQuery) ||
+                      status.contains(searchQuery);
+                }).toList();
+
+                if (orders.isEmpty) {
+                  return Center(child: Text(tr('no_match_search')));
+                }
+
+                return ListView.builder(
+                  itemCount: orders.length,
+                  itemBuilder: (ctx, index) {
+                    final doc = orders[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final totalAmount =
+                        (data['totalAmountAfterTax'] ?? 0.0).toStringAsFixed(2);
+
+                    return FutureBuilder<Map<String, String>>(
+                      future: _getCompanyAndSupplierNames(doc.id),
+                      builder: (context, nameSnapshot) {
+                        if (nameSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        final names = nameSnapshot.data ??
+                            {
+                              'companyName': 'جاري التحميل...',
+                              'supplierName': 'جاري التحميل...'
+                            };
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: ListTile(
+                            title: Text(data['poNumber'] ?? 'PO-${doc.id}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                    '${tr('company')}: ${names['companyName']}'),
+                                Text(
+                                    '${tr('supplier')}: ${names['supplierName']}'),
+                                Text(
+                                    '${tr('date')}: ${DateFormat('yyyy-MM-dd').format((data['orderDate'] as Timestamp).toDate())}'),
+                                Text(
+                                    '${tr('total')}: $totalAmount ${tr('currency')}'),
+                                Text(
+                                    '${tr('status')}: ${data['status'] ?? 'pending'}'),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.blue),
+                                  onPressed: () => _editOrder(doc),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.picture_as_pdf,
+                                      color: Colors.green),
+                                  onPressed: () => _exportOrder(doc),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () => _confirmDeleteOrder(doc),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/add-purchase-order');
+          if (mounted) await loadUserOrders();
+        },
+        tooltip: tr('add_purchase_order'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+ */
 /* import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -36,9 +1328,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   @override
   void initState() {
     super.initState();
-    // _loadUserId();
     _loadUserId().then((_) => _verifyUserAccess());
     _loadFilterOptions();
+    //_purchaseOrdersStream(); // تأكد إنها هنا أو في build عبر StreamBuilder
   }
 
   Future<void> _loadUserId() async {
@@ -53,14 +1345,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
     setState(() {
       _userId = userId;
-      // Set the first company as default if none selected
       if (selectedCompanyFilter == null && userCompanyIds.isNotEmpty) {
         selectedCompanyFilter = userCompanyIds.first;
       }
     });
 
-    debugPrint('User $_userId has access to companies: $userCompanyIds'); // هنا
-    debugPrint('Trying to access company: $selectedCompanyFilter'); // وهنا
+    debugPrint('User $_userId has access to companies: $userCompanyIds');
+    debugPrint('Trying to access company: $selectedCompanyFilter');
   }
 
   Future<void> _loadFilterOptions() async {
@@ -70,35 +1361,52 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         await FirebaseFirestore.instance.collection('users').doc(_userId).get();
     final userCompanyIds =
         (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
-    debugPrint('User $_userId has access to companies: $userCompanyIds');
-    final cs = await FirebaseFirestore.instance
+
+    final companiesSnap = await FirebaseFirestore.instance
         .collection('companies')
         .where(FieldPath.documentId, whereIn: userCompanyIds)
         .get();
-    debugPrint('Available companies count: ${cs.docs.length}');
-    final vs = await FirebaseFirestore.instance.collection('vendors').get();
-    final ins = await FirebaseFirestore.instance.collectionGroup('items').get();
-    final fs = await FirebaseFirestore.instance.collection('factories').get();
 
+    final vendorsSnap =
+        await FirebaseFirestore.instance.collection('vendors').get();
+    final itemsSnap =
+        await FirebaseFirestore.instance.collectionGroup('items').get();
+    final factoriesSnap =
+        await FirebaseFirestore.instance.collection('factories').get();
+      debugPrint('Loaded companies: $allCompanies');
+      debugPrint('Loaded suppliers: $allSuppliers');
+      debugPrint('Loaded items: $allItems');
+      debugPrint('Loaded factories: $allFactories');
     setState(() {
-      allCompanies = cs.docs
+      allCompanies = companiesSnap.docs
           .map((d) => {'id': d.id, 'name_ar': d['name_ar'] ?? d.id})
           .toList();
-      allSuppliers =
-          vs.docs.map((d) => d['name']?.toString() ?? d.id).toSet().toList();
-      allItems =
-          ins.docs.map((d) => d['name']?.toString() ?? '').toSet().toList();
-      allFactories = fs.docs
+
+      allSuppliers = vendorsSnap.docs
+          .map((d) => d['name']?.toString() ?? d.id)
+          .toSet()
+          .toList();
+
+      allItems = itemsSnap.docs
+          .map((d) => d['name_en']?.toString() ?? '')
+          .toSet()
+          .toList();
+
+      allFactories = factoriesSnap.docs
           .map((d) => {'id': d.id, 'name_ar': d['name_ar'] ?? d.id})
           .toList();
+
+      debugPrint('Loaded companies: $allCompanies');
+      debugPrint('Loaded suppliers: $allSuppliers');
+      debugPrint('Loaded items: $allItems');
+      debugPrint('Loaded factories: $allFactories');
     });
   }
 
-  Future<void> deleteOrder(String companyId, String orderId) async {
+  Future<void> deleteOrder(String orderId) async {
     try {
-      final ref = FirebaseFirestore.instance
-          .collection('companies/$companyId/purchase_orders')
-          .doc(orderId);
+      final ref =
+          FirebaseFirestore.instance.collection('purchase_orders').doc(orderId);
       final doc = await ref.get();
 
       if (!mounted) return;
@@ -146,19 +1454,17 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     });
   }
 
-  Stream<QuerySnapshot> _purchaseOrdersStream() {
+/*   Stream<QuerySnapshot> _purchaseOrdersStream() {
     debugPrint('Stream requested for company: $selectedCompanyFilter');
 
     if (selectedCompanyFilter != null && selectedCompanyFilter!.isNotEmpty) {
       try {
         final stream = FirebaseFirestore.instance
-            .collection('companies')
-            .doc(selectedCompanyFilter!)
             .collection('purchase_orders')
+            .where('companyId', isEqualTo: selectedCompanyFilter!)
             .orderBy('createdAt', descending: true)
             .snapshots();
 
-        // إضافة listener للتحقق من الأخطاء
         stream.listen(
           (querySnapshot) =>
               debugPrint('Got ${querySnapshot.docs.length} orders'),
@@ -172,11 +1478,38 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       }
     }
     return const Stream.empty();
+  } */
+
+  Stream<QuerySnapshot> _purchaseOrdersStream() {
+    debugPrint(
+        'Loading orders for user: $_userId and company: $selectedCompanyFilter');
+    if (_userId == null || selectedCompanyFilter == null) {
+      return const Stream.empty();
+    }
+    try {
+      final stream = FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: _userId)
+          .orderBy('orderDate', descending: true)
+          .snapshots();
+      debugPrint('Loading stream for user====> : $stream');
+      stream.listen(
+        (querySnapshot) =>
+            debugPrint('Got ${querySnapshot.docs.length} orders for user'),
+        onError: (e) => debugPrint('Stream error: $e'),
+      );
+
+      return stream;
+    } catch (e) {
+      debugPrint('Error creating stream: $e');
+      return const Stream.empty();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Current selected company: $selectedCompanyFilter'); // هنا
+    debugPrint('Current selected company: $selectedCompanyFilter');
+
     return AppScaffold(
       title: 'purchase_orders'.tr(),
       floatingActionButton: FloatingActionButton(
@@ -292,8 +1625,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                   data['supplierName'] ?? data['supplierId'],
                               onEdit: () => context.push(
                                   '/add-purchase-order?companyId=${data['companyId']}&editOrderId=${doc.id}'),
-                              onDelete: () =>
-                                  deleteOrder(data['companyId'], doc.id),
+                              onDelete: () => deleteOrder(doc.id),
                               onExport: () async {
                                 final compD = await FirebaseFirestore.instance
                                     .collection('companies')
@@ -303,15 +1635,21 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                     .collection('vendors')
                                     .doc(data['supplierId'])
                                     .get();
-                                final pdf = await generatePurchaseOrderPdf(
+                                final pdf =
+                                    await PdfExporter.generatePurchaseOrderPdf(
                                   orderId: doc.id,
-                                  orderData: data,
+                                  orderData: {
+                                    ...data,
+                                  },
                                   supplierData: vendD.data() ?? {},
                                   companyData: compD.data() ?? {},
                                 );
                                 await Printing.layoutPdf(
-                                    onLayout: (f) async => pdf.save());
+                                    onLayout: (format) async => pdf);
                               },
+                              poNumber: data['poNumber'] ?? doc.id,
+                              supplierName: data['supplierName'] ?? 'Unknown',
+                              isArabic: data['isArabic'] ?? false,
                             );
                           },
                         );
@@ -324,515 +1662,238 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 }
  */
-
+ 
+/* 
 import 'package:flutter/material.dart';
 import 'package:puresip_purchasing/models/purchase_order.dart';
-import 'package:puresip_purchasing/pages/purchasing/add_purchase_order_page.dart';
+import 'package:puresip_purchasing/services/purchase_order_service.dart';
+import 'package:puresip_purchasing/utils/purchase_order_utils.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/utils/user_local_storage.dart';
 
-class PurchaseOrdersScreen extends StatefulWidget {
-  const PurchaseOrdersScreen({super.key});
+class PurchaseOrdersPage extends StatefulWidget {
+  const PurchaseOrdersPage({super.key});
 
   @override
-  State<PurchaseOrdersScreen> createState() => _PurchaseOrdersScreenState();
+  State<PurchaseOrdersPage> createState() => _PurchaseOrdersPageState();
 }
 
-class _PurchaseOrdersScreenState extends State<PurchaseOrdersScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  String? _selectedCompanyId;
-  String? _selectedFactoryId;
-  String _filterStatus = 'all';
-  bool _showOnlyUndelivered = false;
-  List<PurchaseOrder> _orders = [];
-  bool _isLoading = true;
+class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
+  List<Item> _items = [];
+  double _taxRate = 14.0;
+
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers
+  final _itemNameController = TextEditingController();
+  final _itemQtyController = TextEditingController();
+  final _itemUnitController = TextEditingController();
+  final _itemPriceController = TextEditingController();
+
+  // بيانات المستخدم
+  String? _userId;
+  String? _companyId;
+  String? _factoryId;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _loadUserContext();
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _loadUserContext() async {
     final user = await UserLocalStorage.getUser();
-    if (user == null || !mounted) return;
+    _userId = user?['userId'];
+
+    _companyId = await UserLocalStorage.getCurrentCompanyId();
+    _factoryId = await UserLocalStorage.getCurrentFactoryId();
+    setState(() {});
+  }
+
+  void _addItem() {
+    final name = _itemNameController.text.trim();
+    final qty = double.tryParse(_itemQtyController.text) ?? 0.0;
+    final unit = _itemUnitController.text.trim();
+    final price = double.tryParse(_itemPriceController.text) ?? 0.0;
+
+    if (name.isEmpty || qty <= 0 || price <= 0 || unit.isEmpty) return;
+
+    final total = qty * price;
+    final tax = total * (_taxRate / 100);
+    final totalWithTax = total + tax;
+
+    final item = Item(
+      itemId: 'item-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      quantity: qty,
+      unit: unit,
+      unitPrice: price,
+      totalPrice: total,
+      taxAmount: tax,
+      totalAfterTaxAmount: totalWithTax,
+    );
 
     setState(() {
-      _selectedCompanyId = user['companyIds'].isNotEmpty 
-          ? user['companyIds'].first 
-          : null;
+      _items.add(item);
+      _itemNameController.clear();
+      _itemQtyController.clear();
+      _itemUnitController.clear();
+      _itemPriceController.clear();
     });
-
-    await _loadOrders();
   }
 
-  Future<void> _loadOrders() async {
-    if (_selectedCompanyId == null) {
-      setState(() {
-        _orders = [];
-        _isLoading = false;
-      });
+  void _submit() async {
+    if (_items.isEmpty || _userId == null || _companyId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('missing_required_info'))),
+      );
       return;
     }
 
-    setState(() => _isLoading = true);
+    final recalculatedItems = PurchaseOrderUtils.recalculateItemsWithTax(
+      items: _items,
+      taxRate: _taxRate,
+    );
 
-    try {
-      Query query = _firestore
-          .collection('companies/$_selectedCompanyId/purchase_orders')
-          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid);
+    final order = PurchaseOrder(
+      id: 'PO-${DateTime.now().millisecondsSinceEpoch}',
+      userId: _userId!,
+      companyId: _companyId!,
+      factoryId: _factoryId,
+      supplierId: 'supplier-1', // لاحقًا يمكن جعله قابل للاختيار
+      orderDate: DateTime.now(),
+      deliveryDate: null,
+      status: 'pending',
+      items: recalculatedItems,
+      totalAmount: PurchaseOrderUtils.calculateTotal(recalculatedItems),
+      totalTax: PurchaseOrderUtils.calculateTotalTax(recalculatedItems),
+      totalAmountAfterTax:
+          PurchaseOrderUtils.calculateTotalAfterTax(recalculatedItems),
+      isDelivered: false,
+      deliveryNotes: null,
+      taxRate: _taxRate,
+      finishedProductId: null,
+    );
 
-      // تطبيق الفلتر حسب المصنع
-      if (_selectedFactoryId != null) {
-        query = query.where('factoryId', isEqualTo: _selectedFactoryId);
-      }
+    await PurchaseOrderService.createPurchaseOrder(order);
+if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(tr('purchase_order_saved'))),
+    );
 
-      // تطبيق الفلتر حسب الحالة
-      if (_filterStatus != 'all') {
-        query = query.where('status', isEqualTo: _filterStatus);
-      }
-
-      // تطبيق فلتر التسليم
-      if (_showOnlyUndelivered) {
-        query = query.where('isDelivered', isEqualTo: false);
-      }
-
-      final snapshot = await query
-          .orderBy('orderDate', descending: true)
-          .get();
-
-      final orders = snapshot.docs
-          .map((doc) => PurchaseOrder.fromFirestore(doc))
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          _orders = orders;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load orders: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _updateDeliveryStatus(String orderId, bool isDelivered) async {
-    if (_selectedCompanyId == null) return;
-
-    try {
-      await _firestore
-          .collection('companies/$_selectedCompanyId/purchase_orders')
-          .doc(orderId)
-          .update({
-            'isDelivered': isDelivered,
-            'deliveryDate': isDelivered ? Timestamp.now() : null,
-          });
-
-      await _loadOrders();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status: $e')),
-      );
-    }
+    setState(() {
+      _items = [];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<User?>();
-    if (user == null) return const Center(child: Text('Please sign in'));
+    final total = PurchaseOrderUtils.calculateTotal(_items);
+    final totalTax = PurchaseOrderUtils.calculateTotalTax(_items);
+    final totalAfterTax = PurchaseOrderUtils.calculateTotalAfterTax(_items);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Purchase Orders'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadOrders,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // فلاتر البحث
-          _buildFilters(),
-          // قائمة الأوامر
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _orders.isEmpty
-                    ? const Center(child: Text('No orders found'))
-                    : ListView.builder(
-                        itemCount: _orders.length,
-                        itemBuilder: (context, index) {
-                          final order = _orders[index];
-                          return _buildOrderCard(order);
-                        },
-                      ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddOrder(),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildFilters() {
-    return Card(
-      margin: const EdgeInsets.all(8),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+      appBar: AppBar(title: Text(tr('create_purchase_order'))),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // فلتر الشركة
-            FutureBuilder<List<String>>(
-              future: UserLocalStorage.getCompanyIds(),
-              builder: (context, snapshot) {
-                final companies = snapshot.data ?? [];
-                return DropdownButtonFormField<String>(
-                  value: _selectedCompanyId,
-                  items: companies
-                      .map((id) => DropdownMenuItem(
-                            value: id,
-                            child: FutureBuilder<DocumentSnapshot>(
-                              future: _firestore.collection('companies').doc(id).get(),
-                              builder: (context, snapshot) {
-                                final name = snapshot.data?['name'] ?? 'Unknown Company';
-                                return Text(name);
-                              },
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCompanyId = value;
-                      _selectedFactoryId = null;
-                    });
-                    _loadOrders();
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Company',
-                    border: OutlineInputBorder(),
-                  ),
-                );
+            TextFormField(
+              initialValue: _taxRate.toString(),
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: tr('tax_rate')),
+              onChanged: (val) {
+                setState(() {
+                  _taxRate = double.tryParse(val) ?? 14.0;
+                });
               },
             ),
-            const SizedBox(height: 8),
-            // فلتر المصنع (يظهر فقط إذا تم تحديد شركة)
-            if (_selectedCompanyId != null)
-              FutureBuilder<List<String>>(
-                future: _getFactoryIdsForCompany(_selectedCompanyId!),
-                builder: (context, snapshot) {
-                  final factories = snapshot.data ?? [];
-                  return DropdownButtonFormField<String>(
-                    value: _selectedFactoryId,
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('All Factories'),
+            const SizedBox(height: 20),
+            // ➕ إضافة صنف
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _itemNameController,
+                        decoration: InputDecoration(labelText: tr('item_name')),
                       ),
-                      ...factories.map((id) => DropdownMenuItem(
-                            value: id,
-                            child: FutureBuilder<DocumentSnapshot>(
-                              future: _firestore.collection('factories').doc(id).get(),
-                              builder: (context, snapshot) {
-                                final name = snapshot.data?['name'] ?? 'Unknown Factory';
-                                return Text(name);
-                              },
-                            ),
-                          )),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedFactoryId = value);
-                      _loadOrders();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Factory (Optional)',
-                      border: OutlineInputBorder(),
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _itemQtyController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(labelText: tr('quantity')),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _itemUnitController,
+                        decoration: InputDecoration(labelText: tr('unit')),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _itemPriceController,
+                        keyboardType: TextInputType.number,
+                        decoration:
+                            InputDecoration(labelText: tr('unit_price')),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: _addItem,
+                    icon: const Icon(Icons.add),
+                    label: Text(tr('add_item')),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _items.length,
+                itemBuilder: (_, index) {
+                  final item = _items[index];
+                  return ListTile(
+                    title: Text('${item.name} - ${item.quantity} ${item.unit}'),
+                    subtitle: Text(
+                        '${tr('tax')}: ${item.taxAmount.toStringAsFixed(2)}'),
+                    trailing:
+                        Text(item.totalAfterTaxAmount.toStringAsFixed(2)),
                   );
                 },
               ),
-            const SizedBox(height: 8),
-            // فلتر الحالة
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _filterStatus,
-                    items: [
-                      'all',
-                      'pending',
-                      'approved',
-                      'delivered',
-                      'cancelled',
-                    ].map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(
-                          status == 'all' ? 'All Statuses' : status.capitalize(),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() => _filterStatus = value!);
-                      _loadOrders();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // فلتر التسليم
-                FilterChip(
-                  label: const Text('Undelivered Only'),
-                  selected: _showOnlyUndelivered,
-                  onSelected: (value) {
-                    setState(() => _showOnlyUndelivered = value);
-                    _loadOrders();
-                  },
-                ),
-              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(PurchaseOrder order) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ExpansionTile(
-        leading: Icon(
-          order.isDelivered ? Icons.check_circle : Icons.pending,
-          color: order.isDelivered ? Colors.green : Colors.orange,
-        ),
-        title: Text('Order #${order.id.substring(0, 8)}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Supplier: ${order.supplierId}'),
-            Text('Date: ${DateFormat('yyyy-MM-dd').format(order.orderDate)}'),
-            Text('Total: ${order.totalAmount.toStringAsFixed(2)}'),
-            Text('Status: ${order.status.capitalize()}'),
-          ],
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // تفاصيل الأصناف
-                const Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...order.items.map((item) => ListTile(
-                      title: Text(item.name),
-                      subtitle: Text('${item.quantity} ${item.unit} x ${item.unitPrice}'),
-                      trailing: Text(item.totalPrice.toStringAsFixed(2)),
-                    )),
-                const Divider(),
-                // معلومات التسليم
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Delivered: ${order.isDelivered ? 'Yes' : 'No'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: order.isDelivered ? Colors.green : Colors.red,
-                      ),
-                    ),
-                    if (order.isDelivered)
-                      Text(
-                        'on ${DateFormat('yyyy-MM-dd').format(order.deliveryDate!)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                  ],
-                ),
-                if (order.deliveryNotes?.isNotEmpty ?? false)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text('Notes: ${order.deliveryNotes}'),
-                  ),
-                const SizedBox(height: 8),
-                // أزرار التحكم
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (!order.isDelivered)
-                      TextButton(
-                        onPressed: () => _markAsDelivered(order),
-                        child: const Text('Mark as Delivered'),
-                      ),
-                    if (order.isDelivered)
-                      TextButton(
-                        onPressed: () => _undoDelivery(order),
-                        child: const Text('Undo Delivery'),
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _editOrder(order),
-                    ),
-                  ],
-                ),
+                Text('${tr('total')}: ${total.toStringAsFixed(2)}'),
+                Text('${tr('total_tax')}: ${totalTax.toStringAsFixed(2)}'),
+                Text(
+                    '${tr('total_after_tax')}: ${totalAfterTax.toStringAsFixed(2)}'),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<List<String>> _getFactoryIdsForCompany(String companyId) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return [];
-
-      final snapshot = await _firestore
-          .collection('factories')
-          .where('companyId', isEqualTo: companyId)
-          .where('userId', isEqualTo: user.uid)
-          .get();
-
-      return snapshot.docs.map((doc) => doc.id).toList();
-    } catch (e) {
-      debugPrint('Error fetching factories: $e');
-      return [];
-    }
-  }
-
-  Future<void> _markAsDelivered(PurchaseOrder order) async {
-    final notes = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delivery Notes'),
-        content: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Enter any delivery notes...',
-          ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = (context
-                  .findAncestorWidgetOfExactType<TextField>()!
-                  .controller!
-                  .text);
-              Navigator.pop(context, text);
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-
-    if (_selectedCompanyId == null) return;
-
-    try {
-      await _firestore
-          .collection('companies/$_selectedCompanyId/purchase_orders')
-          .doc(order.id)
-          .update({
-            'isDelivered': true,
-            'deliveryDate': Timestamp.now(),
-            'deliveryNotes': notes,
-            'status': 'delivered',
-          });
-
-      await _loadOrders();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update delivery status: $e')),
-      );
-    }
-  }
-
-  Future<void> _undoDelivery(PurchaseOrder order) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Undo Delivery'),
-        content: const Text('Are you sure you want to undo delivery status?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || _selectedCompanyId == null) return;
-
-    try {
-      await _firestore
-          .collection('companies/$_selectedCompanyId/purchase_orders')
-          .doc(order.id)
-          .update({
-            'isDelivered': false,
-            'deliveryDate': null,
-            'status': 'approved',
-          });
-
-      await _loadOrders();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to undo delivery: $e')),
-      );
-    }
-  }
-
-  Future<void> _navigateToAddOrder() async {
-    if (_selectedCompanyId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a company first')),
-      );
-      return;
-    }
-
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddPurchaseOrderPage(
-          companyId: _selectedCompanyId!, selectedCompany: '', orderToEdit: null,
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _submit,
+              icon: const Icon(Icons.save),
+              label: Text(tr('save_order')),
+              style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50)),
+            ),
+          ],
         ),
       ),
     );
-
-    if (result == true) {
-      await _loadOrders();
-    }
-  }
-
-  Future<void> _editOrder(PurchaseOrder order) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddPurchaseOrderPage(
-          companyId: _selectedCompanyId!,
-          orderToEdit: order,
-        ),
-      ),
-    );
-
-    if (result == true) {
-      await _loadOrders();
-    }
   }
 }
+ */

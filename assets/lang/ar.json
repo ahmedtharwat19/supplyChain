@@ -467,10 +467,42 @@
     "reset_confirmation": "هل أنت متأكد أنك تريد إعادة تعيين الإعدادات إلى",
     "account_created_successfully":" تم إنشاء الحساب بنجاح",
     "custom_selection_note": "التحديد المخصص نشط"
-  }
+  },
 
 
+  "create_purchase_order": "إنشاء أمر شراء",
+  "tax_rate": "نسبة الضريبة",
 
+  "quantity": "الكمية",
+
+  "tax": "الضريبة",
+  "total_tax": "إجمالي الضريبة",
+  "total_after_tax": "الإجمالي بعد الضريبة",
+  "save_order": "حفظ أمر الشراء",
+  "purchase_order_saved": "✅ تم حفظ أمر الشراء",
+  "missing_required_info": "⚠️ تأكد من وجود مستخدم وعناصر مدخلة",
+    "currency": "ج.م",
+  "apply_tax": "تطبيق الضريبة",
+
+  "order_date": "تاريخ الطلب",
+  "tax_rate_percent": "معدل الضريبة (%)",
+  "delivered": "تم التوصيل",
+  "add_items": "إضافة عناصر",
+  "order_summary": "ملخص الطلب",
+  "subtotal": "المجموع الفرعي",
+  "save_order_error": "خطأ في حفظ الطلب",
+  "no_items_added": "لم يتم إضافة أي عناصر إلى الطلب",
+  "error_loading_orders": "خطأ في تحميل الطلبات",
+  "export_error": "خطأ في تصدير الطلب",
+  "export_success": "تم تصدير الطلب بنجاح",
+  "exporting_order": "جارٍ تصدير الطلب...",
+  "invoice": "فاتورة شراء",
+  "price": "السعر",
+  "thanks_message": "شكراً لتعاملكم معنا",
+  "invoice_share_message": "مرفق طيه فاتورة الشراء رقم",
+  "invoice_subject": "فاتورة شراء",
+  "search_hint": "ابحث عن طلبات الشراء",
+  "error_loading_data": "حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى."
   
 
 }

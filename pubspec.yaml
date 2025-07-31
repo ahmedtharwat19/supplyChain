@@ -60,6 +60,14 @@ dependencies:
   excel: ^4.0.6
   file_picker: ^10.2.0
   firebase_data_connect: ^0.1.5+4
+  qr_flutter: ^4.1.0
+  flutter_to_pdf: ^0.4.1
+  qr: ^3.0.2
+  share_plus: ^7.0.0
+  path_provider: ^2.1.2
+  flutter_pdfview: ^1.4.1+1
+  http: ^1.1.0
+  image: ^4.3.0
 
   # Optional Animation
   # rive: ^0.13.20

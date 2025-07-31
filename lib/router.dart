@@ -104,21 +104,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/add-purchase-order',
       builder: (context, state) {
-        final companyId = state.uri.queryParameters['companyId'];
-        final editOrderId = state.uri.queryParameters['editOrderId'];
-
-        if (companyId == null || companyId.isEmpty) {
-          return const Scaffold(
-            body: Center(
-              child: Text('Missing companyId'),
-            ),
-          );
-        }
-
-        return AddPurchaseOrderPage(
-          selectedCompany: companyId,
-          editOrderId: editOrderId,
-        );
+        final selectedCompany = state.uri.queryParameters['selectedCompany'] ?? '';
+        return AddPurchaseOrderPage(selectedCompany: selectedCompany);
       },
     ),
     GoRoute(
@@ -130,13 +117,12 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AddItemPage(),
     ),
     GoRoute(
-  path: '/edit-item/:id',
-  builder: (context, state) {
-    final itemId = state.pathParameters['id']!;
-    return EditItemPage(itemId: itemId);
-  },
-),
-
+      path: '/edit-item/:id',
+      builder: (context, state) {
+        final itemId = state.pathParameters['id']!;
+        return EditItemPage(itemId: itemId);
+      },
+    ),
     GoRoute(
         path: '/factories', builder: (context, state) => const FactoriesPage()),
     GoRoute(
