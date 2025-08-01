@@ -69,7 +69,7 @@ final List<DashboardMetric> dashboardMetrics = [
     valueBuilder: (data) => (data['totalAmount'] ?? 0.0).toStringAsFixed(2),
     icon: Icons.attach_money,
     color: Colors.purple,
-    route: '/amount',
+    route: '/purchase-orders',
     progressBuilder: (data) {
       final value = (data['totalAmount'] ?? 0.0) as double;
       final max = 100000.0;

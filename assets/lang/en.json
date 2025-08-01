@@ -423,8 +423,9 @@
   "invoice_share_message": "Here is your purchase invoice",
   "invoice_subject": "Purchase Invoice",
   "search_hint": "Search by supplier, date, or status",
-  "error_loading_data": "Error loading data. Please try again."
-  
+  "error_loading_data": "Error loading data. Please try again.",
+  "sort_options":"sort optopns",
+  "multiple_companies":"multiple companies"
 
 
 

@@ -502,7 +502,9 @@
   "invoice_share_message": "مرفق طيه فاتورة الشراء رقم",
   "invoice_subject": "فاتورة شراء",
   "search_hint": "ابحث عن طلبات الشراء",
-  "error_loading_data": "حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى."
+  "error_loading_data": "حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.",
+  "sort_options":"فرز ",
+  "multiple_companies":"اكثر من شركة"
   
 
 }

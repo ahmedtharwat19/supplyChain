@@ -669,7 +669,6 @@ bool _hasDifferences(Map<String, dynamic> oldData, Map<String, dynamic> newData)
  */
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -788,7 +787,7 @@ class DashboardPageState extends State<DashboardPage> {
         _fetchCollectionCount('items'),
         _fetchCollectionCount('vendors'),
       ]);
-
+ final poStats = await _fetchPoStats();
       // Fetch company-specific stats
       int orderCount = 0;
       double amountSum = 0.0;
@@ -802,8 +801,8 @@ class DashboardPageState extends State<DashboardPage> {
         );
 
         for (final result in companyResults) {
-          orderCount += (result['orders'] as num).toInt();
-          amountSum += (result['amount'] as num).toDouble();
+          orderCount =poStats['count']; // += (result['orders'] as num).toInt();
+          amountSum = poStats['totalAmount']; // += (result['amount'] as num).toDouble();
           movementCount += (result['movements'] as num).toInt();
           manufacturingCount += (result['manufacturing'] as num).toInt();
           finishedProductCount += (result['finishedProducts'] as num).toInt();
@@ -866,24 +865,24 @@ class DashboardPageState extends State<DashboardPage> {
   Future<Map<String, dynamic>> _getCompanyStats(String companyId) async {
     try {
       final results = await Future.wait([
-        _getSubCollectionCount('purchase_orders', companyId),
+  //      _getSubCollectionCount('purchase_orders', companyId),
         _getSubCollectionCount('stock_movements', companyId),
         _getSubCollectionCount('manufacturing_orders', companyId),
         _getSubCollectionCount('finished_products', companyId),
       ]);
 
       return {
-        'orders': results[0]['count'],
-        'amount': results[0]['amount'],
-        'movements': results[1]['count'],
-        'manufacturing': results[2]['count'],
-        'finishedProducts': results[3]['count'],
+   //     'orders': results[0]['count'],
+    //    'amount': results[0]['amount'],
+        'movements': results[0]['count'],
+        'manufacturing': results[1]['count'],
+        'finishedProducts': results[2]['count'],
       };
     } catch (e) {
       debugPrint('❌ Error getting stats for company $companyId: $e');
       return {
-        'orders': 0,
-        'amount': 0.0,
+    //    'orders': 0,
+   //     'amount': 0.0,
         'movements': 0,
         'manufacturing': 0,
         'finishedProducts': 0,
@@ -914,6 +913,36 @@ class DashboardPageState extends State<DashboardPage> {
       return {'count': 0, 'amount': 0.0};
     }
   }
+
+
+ Future<Map<String, dynamic>> _fetchPoStats() async {
+  try {
+    if (userId == null) return {'count': 0, 'totalAmount': 0.0};
+    
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('purchase_orders')
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending')
+        .get();
+    
+    // حساب القيمة الإجمالية
+    double totalAmount = querySnapshot.docs.fold(0.0, (sTotal, doc) {
+      final amount = doc.data()['totalAmountAfterTax'] ?? 0.0;
+      return sTotal + (amount is num ? amount.toDouble() : 0.0);
+    });
+    
+    return {
+      'count': querySnapshot.size,
+      'totalAmount': totalAmount,
+    };
+  } catch (e) {
+    debugPrint('❌ Error fetching PURCHASE_ORDERS: $e');
+    return {'count': 0, 'totalAmount': 0.0};
+  }
+}
+
+
+
 
   Future<int> _fetchFactoriesCount() async {
     try {
@@ -995,7 +1024,7 @@ class DashboardPageState extends State<DashboardPage> {
 
   Widget _buildStatsGrid() {
     final statsMap = _stats.toMap();
-    final isWide = MediaQuery.of(context).size.width > 600;
+    // final isWide = MediaQuery.of(context).size.width > 600;
 
     final filteredMetrics = _selectedCards.isEmpty
         ? dashboardMetrics.where((metric) =>

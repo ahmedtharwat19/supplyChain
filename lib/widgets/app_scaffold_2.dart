@@ -11,6 +11,8 @@ class AppScaffold extends StatelessWidget {
   final String? title;
   final bool isDashboard;
   final FloatingActionButton? floatingActionButton;
+  
+  final dynamic actions;
 
   const AppScaffold({
     super.key,
@@ -19,6 +21,8 @@ class AppScaffold extends StatelessWidget {
     this.title,
     this.isDashboard = false,
     this.floatingActionButton,
+     this.actions,
+    
   });
 
   // ignore: unused_element
