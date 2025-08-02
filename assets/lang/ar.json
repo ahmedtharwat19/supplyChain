@@ -17,6 +17,7 @@
   "have_account": "لديك حساب بالفعل؟ تسجيل الدخول",
   "no_account": "ليس لديك حساب؟ سجل الآن",
   "welcome": "مرحباً",
+  "purchase_order":"أمر شراء",
   "purchase_orders": "أوامر الشراء",
   "select_company_first": "يرجى اختيار الشركة أولاً",
   "supplier_filter": "فلترة حسب المورد",

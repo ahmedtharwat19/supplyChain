@@ -533,7 +533,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
 
     for (var item in orderItems) {
-      final itemId = item['nameId'];
+      final itemId = item['itemId'];
       if (itemId != null && itemId.isNotEmpty) {
         try {
           final itemSnapshot = await FirebaseFirestore.instance

@@ -303,7 +303,7 @@
 
   "qty": "Quantity",
 
-
+  "purchase_order":"Purchase Order",
   "save": "Save",
   "order_saved": "Order saved successfully",
   "missing_fields": "Please enter supplier and order contents",

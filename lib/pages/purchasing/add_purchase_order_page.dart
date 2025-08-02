@@ -2686,13 +2686,13 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   }
 
   double _calculateTotal() =>
-      _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+      _items.fold(0.0, (sTotal, item) => sTotal + item.totalPrice);
 
   double _calculateTotalTax() =>
-      _items.fold(0.0, (sum, item) => sum + item.taxAmount);
+      _items.fold(0.0, (sTotal, item) => sTotal + item.taxAmount);
 
   double _calculateTotalAfterTax() =>
-      _items.fold(0.0, (sum, item) => sum + item.totalAfterTaxAmount);
+      _items.fold(0.0, (sTotal, item) => sTotal + item.totalAfterTaxAmount);
 
   void _showErrorSnackbar(String message) {
     if (!mounted) return;
