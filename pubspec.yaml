@@ -14,12 +14,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-
   # Firebase Core & Features
   firebase_core: ^3.14.0
   firebase_auth: ^5.6.0
   cloud_firestore: ^5.6.9
   firebase_storage: ^12.4.8
+  firebase_app_check: ^0.3.2+9
+  firebase_data_connect: ^0.1.5+4
 
   # Authentication & Sign-in
   google_sign_in: ^7.1.0
@@ -35,12 +36,15 @@ dependencies:
   # PDF & Printing
   printing: ^5.14.2
   pdf: ^3.10.4
+  flutter_pdfview: ^1.4.1+1
+  flutter_to_pdf: ^0.4.1
 
   # UI & Design
   flutter_svg: ^2.2.0
   image_picker: ^1.1.0
   flutter_screenutil: ^5.9.3
   gap: ^3.0.1
+  google_fonts: ^6.3.0
 
   # Routing
   go_router: ^16.0.0
@@ -55,25 +59,19 @@ dependencies:
 
   # Icon Management
   flutter_launcher_icons: ^0.14.4
-  firebase_app_check: ^0.3.2+9
+
+  # Other Features
   pull_to_refresh: ^2.0.0
   excel: ^4.0.6
   file_picker: ^10.2.0
-  firebase_data_connect: ^0.1.5+4
   qr_flutter: ^4.1.0
-  flutter_to_pdf: ^0.4.1
   qr: ^3.0.2
   share_plus: ^7.0.0
   path_provider: ^2.1.2
-  flutter_pdfview: ^1.4.1+1
   http: ^1.1.0
   image: ^4.3.0
   universal_html: ^2.2.4
-  google_fonts: ^6.3.0
-
-  # Optional Animation
-  # rive: ^0.13.20
-  # rive_common: ^0.3.0
+  cupertino_icons: ^1.0.8
 
 # -----------------------------
 # Dev Dependencies
@@ -109,7 +107,6 @@ flutter_launcher_icons:
     generate: true
     image_path: "assets/logo.png"
 
-
 # -----------------------------
 # Flutter Assets & Fonts
 # -----------------------------
@@ -132,7 +129,9 @@ flutter:
           weight: 700
         - asset: assets/fonts/Cairo-Light.ttf
           weight: 300
-        - asset: "assets/fonts/Tajawal-Regular.ttf"  
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Regular.ttf
 
 # -----------------------------
 # Optional Rive Override (for Windows compatibility)

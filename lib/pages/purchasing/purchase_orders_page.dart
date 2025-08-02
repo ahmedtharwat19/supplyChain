@@ -421,7 +421,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     context.push('/edit-purchase-order/${order['id']}');
   }
 
-  Future<void> _exportOrder(Map<String, dynamic> order) async {
+/*   Future<void> _exportOrder(Map<String, dynamic> order) async {
     setState(() => _isSearching = true);
     try {
       final companyData = await FirebaseFirestore.instance
@@ -434,8 +434,32 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .doc(order['supplierId'])
           .get();
 
+    // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
+    List<dynamic> orderItems = List.from(order['items'] ?? []);
+    Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
+
+    for (var item in orderItems) {
+      final itemId = item['nameId'];
+      if (itemId != null) {
+        final itemSnapshot = await FirebaseFirestore.instance
+            .collection('items')
+            .doc(itemId)
+            .get();
+
+        final itemData = itemSnapshot.data();
+        if (itemData != null) {
+          // أضف اسم الصنف حسب اللغة داخل العنصر مباشرة
+          item['name_ar'] = itemData['name_ar'];
+          item['name_en'] = itemData['name_en'];
+          itemsDataMap[itemId] = itemData;
+        }
+      }
+    }
+
+    // تحديث order بعد تعديل العناصر
+    order['items'] = orderItems;
       final companyDataMap = companyData.data() ?? {};
- //     final logoBytes = await _getCompanyLogo(companyData.id);
+      //     final logoBytes = await _getCompanyLogo(companyData.id);
       final base64Logo = companyDataMap['logo_base64'] as String?;
 
       final pdf = await PdfExporter.generatePurchaseOrderPdf(
@@ -443,6 +467,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         orderData: order,
         supplierData: supplierData.data() ?? {},
         companyData: companyData.data() ?? {},
+        itemData: itemsDataMap,
         base64Logo: base64Logo,
         isArabic: isArabic,
         //   qrData: order['poNumber'] ?? order['id'],
@@ -487,6 +512,111 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     }
   }
 
+ */
+
+ 
+ Future<void> _exportOrder(Map<String, dynamic> order) async {
+  setState(() => _isSearching = true);
+  try {
+    final companyData = await FirebaseFirestore.instance
+        .collection('companies')
+        .doc(order['companyId'])
+        .get();
+
+    final supplierData = await FirebaseFirestore.instance
+        .collection('vendors')
+        .doc(order['supplierId'])
+        .get();
+
+    // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
+    List<dynamic> orderItems = List.from(order['items'] ?? []);
+    Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
+
+    for (var item in orderItems) {
+      final itemId = item['nameId'];
+      if (itemId != null && itemId.isNotEmpty) {
+        try {
+          final itemSnapshot = await FirebaseFirestore.instance
+              .collection('items')
+              .doc(itemId) // تم التصحيح هنا لاستخدام itemId مباشرة
+              .get();
+
+          if (itemSnapshot.exists) {
+            final itemData = itemSnapshot.data();
+            // أضف اسم الصنف حسب اللغة داخل العنصر مباشرة
+            item['name_ar'] = itemData?['name_ar'] ?? 'غير متوفر';
+            item['name_en'] = itemData?['name_en'] ?? 'Not available';
+            itemsDataMap[itemId] = itemData;
+          } else {
+            debugPrint('Item document $itemId does not exist');
+            item['name_ar'] = 'صنف غير موجود';
+            item['name_en'] = 'Item not found';
+          }
+        } catch (e) {
+          debugPrint('Error fetching item $itemId: $e');
+          item['name_ar'] = 'خطأ في جلب البيانات';
+          item['name_en'] = 'Error loading data';
+        }
+      } else {
+        item['name_ar'] = 'لا يوجد كود صنف';
+        item['name_en'] = 'No item code';
+      }
+    }
+
+    // تحديث order بعد تعديل العناصر
+    order['items'] = orderItems;
+    final companyDataMap = companyData.data() ?? {};
+    final base64Logo = companyDataMap['logo_base64'] as String?;
+
+    final pdf = await PdfExporter.generatePurchaseOrderPdf(
+      orderId: order['id'],
+      orderData: order,
+      supplierData: supplierData.data() ?? {},
+      companyData: companyData.data() ?? {},
+      itemData: itemsDataMap,
+      base64Logo: base64Logo,
+      isArabic: isArabic,
+    );
+
+    final bytes = await pdf.save();
+
+    if (kIsWeb) {
+      final blob = html.Blob([bytes], 'application/pdf');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..download = 'order_${order['poNumber'] ?? order['id']}.pdf'
+        ..style.display = 'none';
+
+      html.document.body?.children.add(anchor);
+      anchor.click();
+      html.document.body?.children.remove(anchor);
+      html.Url.revokeObjectUrl(url);
+    } else {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/order_${order['poNumber'] ?? order['id']}.pdf');
+      await file.writeAsBytes(bytes);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'order_${order['poNumber'] ?? order['id']}.pdf',
+      );
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${'export_error'.tr()}: $e'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+    debugPrint('PDF Export Error: $e');
+  } finally {
+    if (mounted) setState(() => _isSearching = false);
+  }
+}
+ 
+ 
   void _confirmDeleteOrder(Map<String, dynamic> order) {
     showDialog(
       context: context,
