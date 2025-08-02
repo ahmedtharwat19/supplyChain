@@ -346,7 +346,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
     return invoiceContent;
   }
 
-  static pw.Widget _buildInvoiceTitle(bool isArabic, pw.Font arabicFont) {
+/*   static pw.Widget _buildInvoiceTitle(bool isArabic, pw.Font arabicFont) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.center,
       children: [
@@ -362,7 +362,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
       ],
     );
   }
-
+ */
   // دالة لإنشاء رابط تنزيل PDF
   static Future<String> generatePdfDownloadUrl(
     String orderId,
