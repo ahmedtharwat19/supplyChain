@@ -1,4 +1,4 @@
-//import 'dart:io';
+/* //import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,7 +14,7 @@ class AppScaffold extends StatelessWidget {
   
   final dynamic actions;
 
-  const AppScaffold({
+  const AppScaffold(required String title, {
     super.key,
     required this.body,
     this.userName,
@@ -176,3 +176,4 @@ class AppScaffold extends StatelessWidget {
     );
   }
 }
+ */

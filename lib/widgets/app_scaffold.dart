@@ -13,6 +13,7 @@ class AppScaffold extends StatefulWidget {
   final String? title;
   final bool isDashboard;
   final FloatingActionButton? floatingActionButton;
+  final List<Widget>? actions;
 
   const AppScaffold({
     super.key,
@@ -21,6 +22,7 @@ class AppScaffold extends StatefulWidget {
     this.title,
     this.isDashboard = false,
     this.floatingActionButton,
+    this.actions,
   });
 
   @override
@@ -37,7 +39,6 @@ class _AppScaffoldState extends State<AppScaffold> {
     // Safe to use context after mounted check
     context.go('/login');
   }
-  
 
   Future<void> _handleLanguageChange(Locale locale) async {
     // Capture context before async operation
@@ -76,7 +77,11 @@ class _AppScaffoldState extends State<AppScaffold> {
                 onPressed: () => _handleBackNavigation(context),
               )
             : null,
-        actions: _buildAppBarActions(context),
+        actions: [
+          ..._buildAppBarActions(context),
+          if (widget.actions != null) ...widget.actions!,
+        ],
+//_buildAppBarActions(context),
       ),
       drawer: _buildDrawer(context),
       body: SafeArea(child: widget.body),
@@ -84,7 +89,7 @@ class _AppScaffoldState extends State<AppScaffold> {
     );
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context) {
+/*   List<Widget> _buildAppBarActions(BuildContext context) {
     return [
       if (widget.userName != null)
         Padding(
@@ -115,6 +120,41 @@ class _AppScaffoldState extends State<AppScaffold> {
       ),
     ];
   }
+ */
+ 
+ List<Widget> _buildAppBarActions(BuildContext context) {
+  if (!widget.isDashboard) return [];
+
+  return [
+    if (widget.userName != null)
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Center(
+          child: Text(
+            '${tr('hello')}, ${widget.userName}',
+            style: const TextStyle(fontSize: 16, color: Colors.white),
+          ),
+        ),
+      ),
+    PopupMenuButton<Locale>(
+      icon: const Icon(Icons.language, color: Colors.white),
+      tooltip: tr('change_language'),
+      onSelected: _handleLanguageChange,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: const Locale('en'),
+          child:
+              Text('English', style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        PopupMenuItem(
+          value: const Locale('ar'),
+          child:
+              Text('العربية', style: Theme.of(context).textTheme.bodyMedium),
+        ),
+      ],
+    ),
+  ];
+}
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(

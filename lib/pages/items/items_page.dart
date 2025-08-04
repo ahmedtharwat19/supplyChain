@@ -725,7 +725,9 @@ class _ItemsPageState extends State<ItemsPage> {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${tr('error_occurred')}: $e')),
+          
         );
+        debugPrint("❌ Error fetching items: $e");
       }
     }
   }

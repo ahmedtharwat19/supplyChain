@@ -475,16 +475,16 @@
   "tax_rate": "نسبة الضريبة",
 
   "quantity": "الكمية",
-
+  "missing_required_fields": "⚠️ يرجى ملء جميع الحقول المطلوبة",
   "tax": "الضريبة",
   "total_tax": "إجمالي الضريبة",
   "total_after_tax": "الإجمالي بعد الضريبة",
   "save_order": "حفظ أمر الشراء",
   "purchase_order_saved": "✅ تم حفظ أمر الشراء",
   "missing_required_info": "⚠️ تأكد من وجود مستخدم وعناصر مدخلة",
-    "currency": "ج.م",
+  "currency": "ج.م",
   "apply_tax": "تطبيق الضريبة",
-
+  "show_all": "عرض الكل",
   "order_date": "تاريخ الطلب",
   "tax_rate_percent": "معدل الضريبة (%)",
   "delivered": "تم التوصيل",
@@ -505,7 +505,15 @@
   "search_hint": "ابحث عن طلبات الشراء",
   "error_loading_data": "حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.",
   "sort_options":"فرز ",
-  "multiple_companies":"اكثر من شركة"
+  "multiple_companies":"اكثر من شركة",
+  "sort": "ترتيب",
+  "filter": "تصفية",
+  "search_any_field": "ابحث في أي حقل",
+  "search_hint_date_number": "أدخل تاريخًا أو رقمًا",
+  "sort_by_date_desc": "ترتيب حسب التاريخ (تنازلي)",
+  "sort_by_date_asc": "ترتيب حسب التاريخ (تصاعدي)", 
+  "sort_by_amount_desc": "ترتيب حسب المبلغ (تنازلي)",
+  "sort_by_amount_asc": "ترتيب حسب المبلغ (تصاعدي)"
   
 
 }

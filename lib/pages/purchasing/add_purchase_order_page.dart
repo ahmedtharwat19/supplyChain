@@ -2412,6 +2412,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 
  */
 
+/* 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -2481,6 +2482,11 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+    debugPrint('Initial data loaded: '
+        'Companies: ${_companies.length}, '
+        'Suppliers: ${_suppliers.length}, '
+        'Items: ${_allItems.length}, '
+        'Factories: ${_factories.length}');
   }
 
   Future<void> _loadCompanies(Map<String, dynamic> user) async {
@@ -2491,6 +2497,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       collectionPath: 'companies',
       userId: user['userId'],
     );
+    debugPrint('Loaded companies: ${docs.length}');
 
     if (!mounted) return;
 
@@ -2500,6 +2507,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
               Company.fromMap(doc.data() as Map<String, dynamic>, doc.id))
           .toList();
     });
+    debugPrint('Loaded companies: ${_companies.length}');
   }
 
   Future<void> _loadSuppliers(Map<String, dynamic> user) async {
@@ -2775,13 +2783,16 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
         if (value == null) return;
         setState(() => _selectedCompanyId = value);
         await _loadFactoriesForCompany(value);
+         debugPrint('Loaded companies: ${_companies.length}');
       },
       decoration: InputDecoration(
         labelText: 'company'.tr(),
         border: const OutlineInputBorder(),
       ),
       validator: (value) => value == null ? 'required_field'.tr() : null,
+      
     );
+   
   }
 
   Widget _buildFactoryDropdown() {
@@ -3065,6 +3076,474 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
       child: Text('save_order'.tr()),
+    );
+  }
+}
+
+ */
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/models/company.dart';
+import 'package:puresip_purchasing/models/factory.dart';
+import 'package:puresip_purchasing/models/item.dart';
+import 'package:puresip_purchasing/models/purchase_order.dart';
+import 'package:puresip_purchasing/models/supplier.dart';
+import '../../services/firestore_service.dart';
+import '../../utils/user_local_storage.dart';
+import './item_selection_dialog.dart';
+
+class AddPurchaseOrderPage extends StatefulWidget {
+  final String? selectedCompany;
+  const AddPurchaseOrderPage({super.key, this.selectedCompany});
+
+  @override
+  State<AddPurchaseOrderPage> createState() => _AddPurchaseOrderPageState();
+}
+
+class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
+  final _formKey = GlobalKey<FormState>();
+  final FirestoreService _firestoreService = FirestoreService();
+  final _auth = FirebaseAuth.instance;
+
+  double _taxRate = 14.0;
+  final List<Item> _items = [];
+  List<Company> _companies = [];
+  List<Factory> _factories = [];
+  List<Supplier> _suppliers = [];
+  List<Item> _allItems = [];
+
+  String? _selectedCompanyId;
+  String? _selectedFactoryId;
+  String? _selectedSupplierId;
+  DateTime _orderDate = DateTime.now();
+  bool _isLoading = false;
+  final bool _isDelivered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCompanyId = widget.selectedCompany;
+    _loadInitialData();
+  }
+/* 
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await UserLocalStorage.getUser();
+      final userIdX = user?['userId'];
+      debugPrint('🚀 userId: $userIdX');
+      if (user == null) return;
+
+      final userId = user['userId'] as String;
+      final companyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+      debugPrint('🚀 companyIds: $companyIds');
+      if (companyIds.isEmpty) return;
+
+      // تحميل البيانات حسب الهيكل الصحيح
+      final companies = await _firestoreService.getUserCompanies(companyIds);
+      debugPrint('✅ Loaded companies count: ${companies.length}');
+
+      final suppliers = await _firestoreService.getUserVendors(userId); // ✅
+      final items = await _firestoreService.getUserItems(companyIds); // ✅
+
+      List<Factory> factories = [];
+      if (_selectedCompanyId != null) {
+        factories = await _firestoreService
+            .getUserFactories(userId, companyIds) // ✅ هذا يرجع Stream
+            .first; // ✅ أخذ أول نتيجة من الـ Stream
+            debugPrint('✅ Loaded factories count: ${factories.length}');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _companies = companies;
+        _suppliers = suppliers;
+        _allItems = items;
+        _factories = factories;
+
+        if (_factories.isNotEmpty && _selectedFactoryId == null) {
+          _selectedFactoryId = _factories.first.id;
+        }
+      });
+
+      debugPrint('User data: $user');
+      debugPrint('Company IDs: $companyIds');
+      debugPrint('Companies count: ${companies.length}');
+      debugPrint('Suppliers count: ${suppliers.length}');
+      debugPrint('Items count: ${items.length}');
+    } catch (e) {
+      _showErrorSnackbar('error_loading_data'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+ */
+
+/* Future<void> _loadInitialData() async {
+  setState(() => _isLoading = true);
+  try {
+    final user = await UserLocalStorage.getUser();
+    if (user == null) return;
+
+    final userId = user['userId'] as String;
+    final companyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+    if (companyIds.isEmpty) return;
+
+    final companies = await _firestoreService.getUserCompanies(companyIds);
+
+    final suppliers = await _firestoreService.getUserVendors(userId);
+    final items = await _firestoreService.getUserItems(companyIds);
+
+    List<Factory> factories = [];
+    if (_selectedCompanyId != null) {
+      factories = await _firestoreService
+          .getUserFactories(userId, companyIds)
+          .first;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _companies = companies;
+      _suppliers = suppliers;
+      _allItems = items;
+      _factories = factories;
+
+      // تعيين الشركة المختارة إلى أول شركة إذا لم تكن موجودة أصلاً
+      if (_companies.isNotEmpty &&
+          (_selectedCompanyId == null ||
+           !_companies.any((c) => c.id == _selectedCompanyId))) {
+        _selectedCompanyId = _companies.first.id;
+      }
+
+      if (_factories.isNotEmpty && _selectedFactoryId == null) {
+        _selectedFactoryId = _factories.first.id;
+      }
+    });
+
+  } catch (e) {
+    _showErrorSnackbar('error_loading_data'.tr());
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+  */
+  Future<void> _loadInitialData() async {
+    debugPrint('⬇️ Start loading initial data...');
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await UserLocalStorage.getUser();
+      debugPrint('🧑 user from storage: $user');
+
+      if (user == null) {
+        debugPrint('❌ User is null, stopping load.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final userId = user['userId'] as String;
+      final companyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+      debugPrint('🚀 userId: $userId');
+      debugPrint('🚀 companyIds: $companyIds');
+      final currentUser = FirebaseAuth.instance.currentUser;
+      debugPrint('Current Firebase userId: ${currentUser?.uid}');
+      debugPrint('UserId from local storage: $userId');
+      if (companyIds.isEmpty) {
+        debugPrint('❌ companyIds is empty, stopping load.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final companies = await _firestoreService.getUserCompanies(companyIds);
+      debugPrint('✅ Loaded companies count: ${companies.length}');
+
+      final suppliers = await _firestoreService.getUserVendors(
+        userId,
+        (user['supplierIds'] as List?)?.cast<String>() ?? [],
+      );
+
+      debugPrint('✅ Loaded suppliers count: ${suppliers.length}'); 
+//الكود يطبع حتى هنا فقط ...
+//يتجاهل بعد ذلك
+      final items = await _firestoreService.getUserItems(userId);
+      debugPrint('✅ Loaded items count: ${items.length}'); // لا يطبع
+      
+      List<Factory> factories = [];
+      if (_selectedCompanyId != null) {
+        factories =
+            await _firestoreService.getUserFactories(userId, companyIds).first;
+        debugPrint('✅ Loaded factories count: ${factories.length}');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _companies = companies;
+        _suppliers = suppliers;
+        _allItems = items;
+        _factories = factories;
+
+        // تعيين الشركة المحددة إذا لم تكن موجودة أو غير معروفة
+        if (_companies.isNotEmpty &&
+            (_selectedCompanyId == null ||
+                !_companies.any((c) => c.id == _selectedCompanyId))) {
+          _selectedCompanyId = _companies.first.id;
+          debugPrint(
+              'ℹ️ _selectedCompanyId was reset to first company: $_selectedCompanyId');
+        }
+
+        if (_factories.isNotEmpty && _selectedFactoryId == null) {
+          _selectedFactoryId = _factories.first.id;
+          debugPrint(
+              'ℹ️ _selectedFactoryId was set to first factory: $_selectedFactoryId');
+        }
+      });
+
+      debugPrint('📊 State after loading:');
+      debugPrint('  _companies.length: ${_companies.length}');
+      debugPrint('  _suppliers.length: ${_suppliers.length}');
+      debugPrint('  _allItems.length: ${_allItems.length}');
+      debugPrint('  _factories.length: ${_factories.length}');
+      debugPrint('  _selectedCompanyId: $_selectedCompanyId');
+      debugPrint('  _selectedFactoryId: $_selectedFactoryId');
+    } catch (e, st) {
+      debugPrint('❌ Exception in _loadInitialData: $e');
+      debugPrint(st.toString());
+      _showErrorSnackbar('error_loading_data'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+      debugPrint('⬆️ Finished loading initial data.');
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _buildCompanyDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _companies.any((c) => c.id == _selectedCompanyId)
+          ? _selectedCompanyId
+          : null,
+      decoration: InputDecoration(
+        labelText: 'company'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _companies
+          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nameAr)))
+          .toList(),
+      onChanged: (val) async {
+        if (val == null) return;
+        setState(() => _selectedCompanyId = val);
+        final user = await UserLocalStorage.getUser();
+        final companyIds = (user?['companyIds'] as List?)?.cast<String>() ?? [];
+        final userId = user?['userId'];
+        debugPrint('🚀 userId: $userId');
+        debugPrint('🚀 companyIds: $companyIds');
+        final factories = await _firestoreService
+            .getUserFactories(user?['userId'] ?? '', companyIds)
+            .first;
+        if (!mounted) return;
+        setState(() {
+          _factories =
+              factories.where((f) => f.companyIds.contains(val)).toList();
+          _selectedFactoryId =
+              _factories.isNotEmpty ? _factories.first.id : null;
+        });
+      },
+      validator: (val) => val == null ? 'required_field'.tr() : null,
+    );
+  }
+
+  Widget _buildFactoryDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedFactoryId,
+      decoration: InputDecoration(
+        labelText: 'factory'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _factories
+          .map((f) => DropdownMenuItem(value: f.id, child: Text(f.nameAr)))
+          .toList(),
+      onChanged: (val) => setState(() => _selectedFactoryId = val),
+    );
+  }
+
+  Widget _buildSupplierDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedSupplierId,
+      decoration: InputDecoration(
+        labelText: 'supplier'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _suppliers
+          .map((v) => DropdownMenuItem(
+              value: v.id, child: Text('${v.name} (${v.company})')))
+          .toList(),
+      onChanged: (val) => setState(() => _selectedSupplierId = val),
+      validator: (val) => val == null ? 'required_field'.tr() : null,
+    );
+  }
+
+  Future<void> _showItemSelectionDialog() async {
+    final selected = await showDialog<List<Item>>(
+      context: context,
+      builder: (_) => ItemSelectionDialog(
+        allItems: _allItems,
+        preSelectedItems: _items.map((i) => i.itemId).toList(),
+      ),
+    );
+    if (selected == null || selected.isEmpty) return;
+    setState(() {
+      for (var i in selected) {
+        if (!_items.any((e) => e.itemId == i.itemId)) {
+          _items.add(i);
+        }
+      }
+    });
+  }
+
+  bool _validateForm() {
+    if (_selectedCompanyId == null ||
+        _selectedSupplierId == null ||
+        _items.isEmpty) {
+      _showErrorSnackbar('missing_required_fields'.tr());
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _submitOrder() async {
+    if (!_validateForm()) return;
+    setState(() => _isLoading = true);
+    try {
+      final order = PurchaseOrder(
+        id: '',
+        poNumber: '',
+        userId: _auth.currentUser?.uid ?? '',
+        companyId: _selectedCompanyId!,
+        factoryId: _selectedFactoryId,
+        supplierId: _selectedSupplierId!,
+        orderDate: _orderDate,
+        status: 'pending',
+        items: _items,
+        taxRate: _taxRate,
+        totalAmount: _items.fold(0, (sum, item) => sum + item.totalPrice),
+        totalTax: _items.fold(0, (sum, item) => sum + item.taxAmount),
+        totalAmountAfterTax:
+            _items.fold(0, (sum, item) => sum + item.totalAfterTaxAmount),
+        isDelivered: _isDelivered,
+      );
+      await _firestoreService.createPurchaseOrder(order);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('order_saved'.tr())));
+      Navigator.pop(context, true);
+    } catch (e) {
+      _showErrorSnackbar('save_order_error'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text('new_purchase_order'.tr())),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    debugPrint('📦 building main UI');
+    debugPrint('📦 companies length: ${_companies.length}');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('new_purchase_order'.tr()),
+        actions: [
+          IconButton(icon: const Icon(Icons.save), onPressed: _submitOrder),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildCompanyDropdown(),
+              const SizedBox(height: 16),
+              if (_selectedCompanyId != null) _buildFactoryDropdown(),
+              const SizedBox(height: 16),
+              _buildSupplierDropdown(),
+              const SizedBox(height: 16),
+              ListTile(
+                title: Text('order_date'.tr()),
+                subtitle: Text(DateFormat.yMd().format(_orderDate)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _orderDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (d != null && mounted) setState(() => _orderDate = d);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: _taxRate.toString(),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'tax_rate_percent'.tr(),
+                  suffixText: '%',
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (v) {
+                  final rate = double.tryParse(v) ?? _taxRate;
+                  setState(() => _taxRate = rate);
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('items'.tr(),
+                      style: Theme.of(context).textTheme.headlineSmall),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: Text('add_items'.tr()),
+                    onPressed: _showItemSelectionDialog,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ..._items.map((i) => ListTile(
+                    title: Text(context.locale.languageCode == 'ar'
+                        ? i.nameAr
+                        : i.nameEn),
+                    subtitle: Text('${i.quantity} × ${i.unitPrice}'),
+                  )),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submitOrder,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text('save_order'.tr()),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

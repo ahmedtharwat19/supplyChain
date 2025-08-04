@@ -395,14 +395,14 @@
   "tax_rate": "Tax Rate",
 
   "quantity": "Quantity",
-
+  "missing_required_fields": "Please fill in all required fields",
   "tax": "Tax",
   "total_tax": "Total Tax",
   "total_after_tax": "Total After Tax",
   "save_order": "Save Order",
   "purchase_order_saved": "✅ Purchase order saved successfully",
   "missing_required_info": "⚠️ Please enter supplier and order contents",
-    "currency": "l.e",
+  "currency": "EGP",
   "apply_tax": "Apply Tax",
   "new_purchase_order": "New Purchase Order",
   "order_date": "Order Date",
@@ -425,7 +425,15 @@
   "search_hint": "Search by supplier, date, or status",
   "error_loading_data": "Error loading data. Please try again.",
   "sort_options":"sort optopns",
-  "multiple_companies":"multiple companies"
+  "multiple_companies":"multiple companies",
+  "show_all": "Show All",
+  "filter": "Filter",
+  "search_any_field": "Search any field",
+  "search_hint_date_number": "Enter date or number",
+  "sort_by_date_desc": "Sort by date (desc)",
+  "sort_by_date_asc": "Sort by date (asc)",
+  "sort_by_amount_desc": "Sort by amount (desc)",
+  "sort_by_amount_asc": "Sort by amount (asc)"
 
 
 
