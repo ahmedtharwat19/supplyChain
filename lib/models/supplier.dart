@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Supplier {
   // ➤ ثابتات أسماء الحقول
 
-  static const fieldName = 'name';
-  static const fieldCompany = 'company';
+  static const fieldNameAr = 'name_ar';
+  static const fieldNameEn = 'name_en';
   static const fieldPhone = 'phone';
   static const fieldEmail = 'email';
   static const fieldAddress = 'address';
@@ -15,8 +15,8 @@ class Supplier {
   // ➤ الخصائص
   final String? id;
 
-  final String name;
-  final String company;
+  final String nameAr;
+  final String nameEn;
   final String phone;
   final String email;
   final String address;
@@ -26,8 +26,8 @@ class Supplier {
 
   Supplier({
     this.id,
-    required this.name,
-    required this.company,
+    required this.nameAr,
+    required this.nameEn,
     required this.phone,
     required this.email,
     required this.address,
@@ -40,8 +40,8 @@ class Supplier {
   factory Supplier.fromMap(Map<String, dynamic> data, String documentId) {
     return Supplier(
       id: documentId,
-      name: data[fieldName] ?? '',
-      company: data[fieldCompany] ?? '',
+      nameAr: data[fieldNameAr] ?? '',
+      nameEn: data[fieldNameEn] ?? '',
       phone: data[fieldPhone] ?? '',
       email: data[fieldEmail] ?? '',
       address: data[fieldAddress] ?? '',
@@ -54,8 +54,8 @@ class Supplier {
   // ➤ إلى Firestore
   Map<String, dynamic> toMap() {
     return {
-      fieldName: name,
-      fieldCompany: company,
+      fieldNameAr: nameAr,
+      fieldNameEn: nameEn,
       fieldPhone: phone,
       fieldEmail: email,
       fieldAddress: address,

@@ -78,8 +78,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
   Future<void> _editSupplier(Supplier supplier) async {
     await context.push('/edit-vendor/${supplier.id}', extra: {
-      'name': supplier.name,
-      'company': supplier.company,
+      'name_ar': supplier.nameAr,
+      'name_en': supplier.nameEn,
     });
   }
 
@@ -119,7 +119,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
                       final suppliers = snapshot.data!.docs
                           .map((doc) => Supplier.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-                          .where((supplier) => supplier.name.toLowerCase().contains(searchQuery))
+                          .where((supplier) => supplier.nameAr.toLowerCase().contains(searchQuery))
                           .toList();
 
                       if (suppliers.isEmpty) {
@@ -139,12 +139,12 @@ class _SuppliersPageState extends State<SuppliersPage> {
                             elevation: 2,
                             child: ListTile(
                               leading: const Icon(Icons.person, size: 40),
-                              title: Text(supplier.name),
+                              title: Text(supplier.nameAr),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (supplier.company.isNotEmpty)
-                                    Text('🏢 ${supplier.company}'),
+                                  if (supplier.nameEn.isNotEmpty)
+                                    Text('🏢 ${supplier.nameEn}'),
                                   if (supplier.phone.isNotEmpty)
                                     Text('📞 ${supplier.phone}'),
                                 ],

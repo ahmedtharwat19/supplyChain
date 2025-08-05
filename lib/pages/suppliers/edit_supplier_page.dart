@@ -61,8 +61,8 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
 
       final supplier = Supplier.fromMap(doc.data()!, doc.id);
 
-      _nameController.text = supplier.name;
-      _companyController.text = supplier.company;
+      _nameController.text = supplier.nameAr;
+      _companyController.text = supplier.nameEn;
       _phoneController.text = supplier.phone;
       _emailController.text = supplier.email;
       _addressController.text = supplier.address;
@@ -160,8 +160,8 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
 
       final supplier = Supplier(
         id: widget.supplierId,
-        name: _nameController.text.trim(),
-        company: _companyController.text.trim(),
+        nameAr: _nameController.text.trim(),
+        nameEn: _companyController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         address: _addressController.text.trim(),
@@ -257,7 +257,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _nameController,
                 focusNode: _nameFocus,
-                decoration: InputDecoration(labelText: tr('name')),
+                decoration: InputDecoration(labelText: tr('supplier_name_arabic')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_companyFocus);
@@ -267,7 +267,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _companyController,
                 focusNode: _companyFocus,
-                decoration: InputDecoration(labelText: tr('company')),
+                decoration: InputDecoration(labelText: tr('supplier_name_english')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
                 },

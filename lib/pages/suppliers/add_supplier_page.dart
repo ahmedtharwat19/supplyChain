@@ -14,15 +14,15 @@ class AddSupplierPage extends StatefulWidget {
 class _AddSupplierPageState extends State<AddSupplierPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameFocus = FocusNode();
-  final _companyFocus = FocusNode();
+  final _nameArFocus = FocusNode();
+  final _nameEnFocus = FocusNode();
   final _phoneFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _addressFocus = FocusNode();
   final _notesFocus = FocusNode();
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _companyController = TextEditingController();
+  final TextEditingController _nameArController = TextEditingController();
+  final TextEditingController _nameEnController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -30,7 +30,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
 
   bool _isLoading = false;
 
-  Future<bool> _isSupplierDuplicate(String name) async {
+  Future<bool> _isSupplierDuplicate(String nameAr) async {
     final userData = await UserLocalStorage.getUser();
     if (userData == null) return false;
 
@@ -39,7 +39,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('vendors')
         .where(Supplier.fieldUserId, isEqualTo: userId)
-        .where(Supplier.fieldName, isEqualTo: name)
+        .where(Supplier.fieldNameAr, isEqualTo: nameAr)
         .get();
 
     return querySnapshot.docs.isNotEmpty;
@@ -85,7 +85,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
     }
     final userId = userData['userId']!;
 
-    final isDuplicate = await _isSupplierDuplicate(_nameController.text.trim());
+    final isDuplicate = await _isSupplierDuplicate(_nameArController.text.trim());
     if (isDuplicate) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,8 +98,8 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
 
     try {
       final supplier = Supplier(
-        name: _nameController.text.trim(),
-        company: _companyController.text.trim(),
+        nameAr: _nameArController.text.trim(),
+        nameEn: _nameEnController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         address: _addressController.text.trim(),
@@ -127,15 +127,15 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
 
   @override
   void dispose() {
-    _nameFocus.dispose();
-    _companyFocus.dispose();
+    _nameArFocus.dispose();
+    _nameEnFocus.dispose();
     _phoneFocus.dispose();
     _emailFocus.dispose();
     _addressFocus.dispose();
     _notesFocus.dispose();
 
-    _nameController.dispose();
-    _companyController.dispose();
+    _nameArController.dispose();
+    _nameEnController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _addressController.dispose();
@@ -155,20 +155,20 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
           child: ListView(
             children: [
               TextFormField(
-                controller: _nameController,
-                focusNode: _nameFocus,
+                controller: _nameArController,
+                focusNode: _nameArFocus,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: tr('name')),
+                decoration: InputDecoration(labelText: tr('supplier_name_arabic')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(_companyFocus);
+                  FocusScope.of(context).requestFocus(_nameArFocus);
                 },
               ),
               TextFormField(
-                controller: _companyController,
-                focusNode: _companyFocus,
+                controller: _nameEnController,
+                focusNode: _nameEnFocus,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: tr('company')),
+                decoration: InputDecoration(labelText: tr('supplier_name_english')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
                 },

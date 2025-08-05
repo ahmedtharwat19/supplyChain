@@ -220,6 +220,7 @@ class _AddItemPageState extends State<AddItemPage> {
 }
  */
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -244,7 +245,7 @@ class _AddItemPageState extends State<AddItemPage> {
   final _nameEnController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
-  
+
   FocusNode categoryFocusNode = FocusNode();
   FocusNode unitFocusNode = FocusNode();
 
@@ -299,6 +300,12 @@ class _AddItemPageState extends State<AddItemPage> {
     try {
       final user = await UserLocalStorage.getUser();
       final userId = user?['userId'];
+      debugPrint('Local User ID: $userId');
+
+    //       final authUser = FirebaseAuth.instance.currentUser;
+    // final userId = authUser?.uid;
+
+    // debugPrint('🔥 Auth UID: $userId');
       if (userId == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -318,6 +325,8 @@ class _AddItemPageState extends State<AddItemPage> {
         Item.fieldUnitPrice: double.tryParse(_priceController.text.trim()) ?? 0,
         Item.fieldCreatedAt: FieldValue.serverTimestamp(),
       };
+      debugPrint("🔥 Auth UID: ${FirebaseAuth.instance.currentUser?.uid}");
+      debugPrint("📦 itemData['user_id']: ${itemData[Item.fieldUserId]}");
 
       final collection = FirebaseFirestore.instance.collection('items');
 
@@ -362,8 +371,9 @@ class _AddItemPageState extends State<AddItemPage> {
               TextFormField(
                 controller: _nameArController,
                 decoration: InputDecoration(labelText: tr('name_arabic')),
-                validator: (value) =>
-                    value == null || value.isEmpty ? tr('required_field') : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? tr('required_field')
+                    : null,
                 inputFormatters: [arabicOnlyFormatter],
                 textInputAction: TextInputAction.next,
               ),
@@ -371,8 +381,9 @@ class _AddItemPageState extends State<AddItemPage> {
               TextFormField(
                 controller: _nameEnController,
                 decoration: InputDecoration(labelText: tr('name_english')),
-                validator: (value) =>
-                    value == null || value.isEmpty ? tr('required_field') : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? tr('required_field')
+                    : null,
                 inputFormatters: [englishOnlyFormatter],
                 textInputAction: TextInputAction.next,
               ),
@@ -448,7 +459,8 @@ class _AddItemPageState extends State<AddItemPage> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveItem,
-                child: Text(widget.existingItem == null ? tr('add') : tr('update')),
+                child: Text(
+                    widget.existingItem == null ? tr('add') : tr('update')),
               ),
             ],
           ),

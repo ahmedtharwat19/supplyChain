@@ -244,6 +244,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
  */
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import '../models/company.dart';
 import '../models/factory.dart';
 import '../models/finished_product.dart';
@@ -335,7 +336,7 @@ class FirestoreService {
   Future<void> addItem(Item item) async {
     await _firestore.collection('items').add(item.toMap());
   }
-
+/* 
   Future<List<Item>> getUserItems(String userId) async {
     final querySnapshot = await _firestore
         .collection('items')
@@ -344,7 +345,30 @@ class FirestoreService {
         .get();
 
     return querySnapshot.docs.map((doc) => Item.fromMap(doc.data())).toList();
+  } */
+
+Future<List<Item>> getUserItems(String userId) async {
+  try {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('items')
+        .where('user_id', isEqualTo: userId)
+        .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
+        .get();
+
+    debugPrint('✅ getUserItems: returned ${querySnapshot.docs.length} items');
+    return querySnapshot.docs
+        .map((doc) => Item.fromFirestore(doc.data(), doc.id))
+        .toList();
+  } catch (e, st) {
+    debugPrint('❌ Error in getUserItems: $e');
+    debugPrint(st.toString());
+    return [];
   }
+}
+
+
+
+
 
   /// ─────────────── أوامر الشراء ───────────────
   Future<void> addPurchaseOrder(PurchaseOrder order) async {

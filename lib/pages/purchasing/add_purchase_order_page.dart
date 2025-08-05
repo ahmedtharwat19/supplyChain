@@ -3081,52 +3081,6 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 }
 
  */
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:puresip_purchasing/models/company.dart';
-import 'package:puresip_purchasing/models/factory.dart';
-import 'package:puresip_purchasing/models/item.dart';
-import 'package:puresip_purchasing/models/purchase_order.dart';
-import 'package:puresip_purchasing/models/supplier.dart';
-import '../../services/firestore_service.dart';
-import '../../utils/user_local_storage.dart';
-import './item_selection_dialog.dart';
-
-class AddPurchaseOrderPage extends StatefulWidget {
-  final String? selectedCompany;
-  const AddPurchaseOrderPage({super.key, this.selectedCompany});
-
-  @override
-  State<AddPurchaseOrderPage> createState() => _AddPurchaseOrderPageState();
-}
-
-class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
-  final _formKey = GlobalKey<FormState>();
-  final FirestoreService _firestoreService = FirestoreService();
-  final _auth = FirebaseAuth.instance;
-
-  double _taxRate = 14.0;
-  final List<Item> _items = [];
-  List<Company> _companies = [];
-  List<Factory> _factories = [];
-  List<Supplier> _suppliers = [];
-  List<Item> _allItems = [];
-
-  String? _selectedCompanyId;
-  String? _selectedFactoryId;
-  String? _selectedSupplierId;
-  DateTime _orderDate = DateTime.now();
-  bool _isLoading = false;
-  final bool _isDelivered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCompanyId = widget.selectedCompany;
-    _loadInitialData();
-  }
 /* 
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
@@ -3230,6 +3184,54 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   }
 }
   */
+
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/models/company.dart';
+import 'package:puresip_purchasing/models/factory.dart';
+import 'package:puresip_purchasing/models/item.dart';
+import 'package:puresip_purchasing/models/purchase_order.dart';
+import 'package:puresip_purchasing/models/supplier.dart';
+import '../../services/firestore_service.dart';
+import '../../utils/user_local_storage.dart';
+import './item_selection_dialog.dart';
+
+class AddPurchaseOrderPage extends StatefulWidget {
+  final String? selectedCompany;
+  const AddPurchaseOrderPage({super.key, this.selectedCompany});
+
+  @override
+  State<AddPurchaseOrderPage> createState() => _AddPurchaseOrderPageState();
+}
+
+class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
+  final _formKey = GlobalKey<FormState>();
+  final FirestoreService _firestoreService = FirestoreService();
+  final _auth = FirebaseAuth.instance;
+
+  double _taxRate = 14.0;
+  final List<Item> _items = [];
+  List<Company> _companies = [];
+  List<Factory> _factories = [];
+  List<Supplier> _suppliers = [];
+  List<Item> _allItems = [];
+
+  String? _selectedCompanyId;
+  String? _selectedFactoryId;
+  String? _selectedSupplierId;
+  DateTime _orderDate = DateTime.now();
+  bool _isLoading = false;
+  final bool _isDelivered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCompanyId = widget.selectedCompany;
+    _loadInitialData();
+  }
+
   Future<void> _loadInitialData() async {
     debugPrint('⬇️ Start loading initial data...');
     setState(() => _isLoading = true);
@@ -3266,10 +3268,12 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       );
 
       debugPrint('✅ Loaded suppliers count: ${suppliers.length}'); 
+
 //الكود يطبع حتى هنا فقط ...
 //يتجاهل بعد ذلك
       final items = await _firestoreService.getUserItems(userId);
-      debugPrint('✅ Loaded items count: ${items.length}'); // لا يطبع
+      debugPrint('✅ Loaded items count: ${items.length}'); // تطبع 0
+
       
       List<Factory> factories = [];
       if (_selectedCompanyId != null) {
@@ -3383,7 +3387,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       ),
       items: _suppliers
           .map((v) => DropdownMenuItem(
-              value: v.id, child: Text('${v.name} (${v.company})')))
+              value: v.id, child: Text('${v.nameAr} (${v.nameEn})')))
           .toList(),
       onChanged: (val) => setState(() => _selectedSupplierId = val),
       validator: (val) => val == null ? 'required_field'.tr() : null,
@@ -3433,10 +3437,10 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
         status: 'pending',
         items: _items,
         taxRate: _taxRate,
-        totalAmount: _items.fold(0, (sum, item) => sum + item.totalPrice),
-        totalTax: _items.fold(0, (sum, item) => sum + item.taxAmount),
+        totalAmount: _items.fold(0, (sTotal, item) => sTotal + item.totalPrice),
+        totalTax: _items.fold(0, (sTotal, item) => sTotal + item.taxAmount),
         totalAmountAfterTax:
-            _items.fold(0, (sum, item) => sum + item.totalAfterTaxAmount),
+            _items.fold(0, (sTotal, item) => sTotal + item.totalAfterTaxAmount),
         isDelivered: _isDelivered,
       );
       await _firestoreService.createPurchaseOrder(order);

@@ -93,10 +93,8 @@ class Item {
 }
  */
 
-
-
 class Item {
-    static const String fieldNameAr = 'nameAr';
+  static const String fieldNameAr = 'nameAr';
   static const String fieldNameEn = 'nameEn';
   static const String fieldDescription = 'description';
   static const String fieldCategory = 'category';
@@ -104,7 +102,7 @@ class Item {
   static const String fieldUnitPrice = 'unitPrice';
   static const String fieldIsTaxable = 'isTaxable';
   static const String fieldCreatedAt = 'createdAt';
-  static const String fieldUserId = 'userId';
+  static const String fieldUserId = 'user_id';
   final String itemId;
   final String nameAr;
   final String nameEn;
@@ -116,7 +114,7 @@ class Item {
   final double taxRate;
   final double taxAmount;
   final double totalAfterTaxAmount;
-    final String? description;
+  final String? description;
   final String category;
 
   Item({
@@ -124,8 +122,8 @@ class Item {
     required this.nameAr,
     required this.nameEn,
     required this.quantity,
-        required this.category,
-        required this.description,
+    required this.category,
+    required this.description,
     required this.unit,
     required this.unitPrice,
     required this.totalPrice,
@@ -135,9 +133,7 @@ class Item {
     this.totalAfterTaxAmount = 0.0,
   });
 
-
-
-    // ➤ القيم المسموح بها لطبيعة الصنف
+  // ➤ القيم المسموح بها لطبيعة الصنف
   static const List<String> allowedCategories = [
     'raw_material',
     'packaging',
@@ -150,12 +146,10 @@ class Item {
   // ➤ القيم المسموح بها للوحدة
   static const List<String> allowedUnits = [
     'kg',
-    'g',
-    'lb',
+    'gram',
     'piece',
     'box',
     'liter',
-    'ml',
   ];
 
   factory Item.create({
@@ -295,5 +289,10 @@ class Item {
       taxAmount: newTaxAmount,
       totalAfterTaxAmount: newTotalAfterTax,
     );
+  }
+
+  /// تستخدم عند تحميل البيانات من Firestore
+  factory Item.fromFirestore(Map<String, dynamic> map, String docId) {
+    return Item.fromMap({...map, 'itemId': docId});
   }
 }
