@@ -139,7 +139,12 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .collection('vendors')
           .doc(supplierId)
           .get();
-      return doc.data()?['name'] ?? supplierId;
+                if (isArabic) {
+        return doc.data()?['name_ar'] ?? supplierId;
+      } else {
+        return doc.data()?['name_en'] ?? supplierId;
+      }
+   //   return doc.data()?['name_ar'] ?? supplierId;
     } catch (e) {
       return supplierId;
     }

@@ -300,6 +300,9 @@
   "item": "Item",
   "edit_purchase_order": "Edit Purchase Order",
   "notes": "Notes",
+  "membership_expired_title": "Membership Expired",
+  "membership_expired_message": "Access denied. Please renew your membership.",
+  "ok": "OK",
 
   "qty": "Quantity",
 
@@ -433,7 +436,22 @@
   "sort_by_date_desc": "Sort by date (desc)",
   "sort_by_date_asc": "Sort by date (asc)",
   "sort_by_amount_desc": "Sort by amount (desc)",
-  "sort_by_amount_asc": "Sort by amount (asc)"
+  "sort_by_amount_asc": "Sort by amount (asc)",
+
+  "email_verification": "Email Verification",
+  "verification_email_sent": "A verification email has been sent. Please check your inbox and confirm your email.",
+  "i_verified": "I Verified My Email",
+  "email_not_verified_yet": "Your email is not verified yet. Please check again.",
+  "verification_error": "An error occurred while checking verification",
+  "display_name": "Display Name",
+  "phone_number": "Phone Number",
+  "subscription_expires_soon": "Your subscription expires soon. Please renew to continue using the app.",
+ 
+  "renew_subscription": "Renew Subscription",
+
+"subscription_expired": "Your subscription has expired. Access will be restricted soon.",
+  "subscription_days_left": "You have {days} day(s) left before your subscription ends.",
+  "no_access_rights": "You do not have access rights to this feature. Please contact support for assistance."
 
 
 

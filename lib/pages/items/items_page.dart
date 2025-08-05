@@ -838,8 +838,8 @@ class _ItemsPageState extends State<ItemsPage> {
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
                             final itemName = currentLocale == 'ar'
-                                ? item['name_ar'] ?? ''
-                                : item['name_en'] ?? '';
+                                ? item['nameAr'] ?? ''
+                                : item['nameEn'] ?? '';
 
                             return Card(
                               margin: const EdgeInsets.symmetric(
@@ -853,7 +853,7 @@ class _ItemsPageState extends State<ItemsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                        '${tr('unit_price')}: ${item['unit_price'] ?? '-'}'),
+                                        '${tr('unit_price')}: ${item['unitPrice'] ?? '-'}'),
                                     if (item['unit'] != null)
                                       Text('${tr('unit')}: ${item['unit']}'),
                                     if (item['type'] != null)

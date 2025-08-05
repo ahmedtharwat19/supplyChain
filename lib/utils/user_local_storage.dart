@@ -790,15 +790,18 @@ class UserLocalStorage {
 
  */
 
-
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserLocalStorage {
   // ══════════════ Keys ══════════════
   static const String _keyUserId = 'userId';
   static const String _keyEmail = 'email';
   static const String _keyDisplayName = 'displayName';
+  static const String _keySubscriptionDuration = 'subscriptionDurationInDays';
+  static const String _keyCreatedAt = 'createdAt'; // لتخزين تاريخ الاشتراك
+  static const String _keyIsActive = 'isActive';
 
   static const String _keyCompanyIds = 'companyIds';
   static const String _keyFactoryIds = 'factoryIds';
@@ -821,9 +824,9 @@ class UserLocalStorage {
   static const String _keyTotalFinishedProducts = 'totalFinishedProducts';
 
   // New keys for settings
-  static const String _keyTheme = 'theme';             // e.g., "light" or "dark"
+  static const String _keyTheme = 'theme'; // e.g., "light" or "dark"
   static const String _keyLanguageCode = 'languageCode'; // e.g., "en", "ar"
-  static const String _keyLastLogin = 'lastLogin';       // saved as ISO8601 string
+  static const String _keyLastLogin = 'lastLogin'; // saved as ISO8601 string
 
   // ══════════════ Helper to get SharedPreferences ══════════════
   static Future<SharedPreferences?> _getPrefs() async {
@@ -844,6 +847,9 @@ class UserLocalStorage {
     List<String>? companyIds,
     List<String>? factoryIds,
     List<String>? supplierIds,
+    int? subscriptionDurationInDays,
+    DateTime? createdAt,
+    bool? isActive,
   }) async {
     final nameToSave = (displayName?.trim().isNotEmpty ?? false)
         ? displayName!
@@ -856,6 +862,10 @@ class UserLocalStorage {
       if (companyIds != null) 'companyIds': companyIds,
       if (factoryIds != null) 'factoryIds': factoryIds,
       if (supplierIds != null) 'supplierIds': supplierIds,
+      if (subscriptionDurationInDays != null)
+        'subscriptionDurationInDays': subscriptionDurationInDays,
+      if (createdAt != null) 'createdAt': createdAt.toIso8601String(),
+      if (isActive != null) 'isActive': isActive,
     };
 
     await setUser(userData);
@@ -886,6 +896,28 @@ class UserLocalStorage {
       final list = List<String>.from(userData['supplierIds']);
       await prefs.setStringList(_keySupplierIds, list);
     }
+    if (userData['subscriptionDurationInDays'] != null) {
+      await prefs.setInt(
+          _keySubscriptionDuration, userData['subscriptionDurationInDays']);
+    }
+/*     if (userData['createdAt'] != null) {
+      await prefs.setString(_keyCreatedAt, userData['createdAt']);
+    } */
+    if (userData['createdAt'] != null) {
+  final createdAt = userData['createdAt'];
+  if (createdAt is DateTime) {
+    await prefs.setString(_keyCreatedAt, createdAt.toIso8601String());
+  } else if (createdAt is Timestamp) {
+    await prefs.setString(_keyCreatedAt, createdAt.toDate().toIso8601String());
+  } else if (createdAt is String) {
+    // لو هي String فعلاً، خزّنها كما هي
+    await prefs.setString(_keyCreatedAt, createdAt);
+  }
+}
+
+    if (userData['isActive'] != null) {
+      await prefs.setBool(_keyIsActive, userData['isActive']);
+    }
   }
 
   static Future<Map<String, dynamic>?> getUser() async {
@@ -895,6 +927,15 @@ class UserLocalStorage {
     final userId = prefs.getString(_keyUserId);
     if (userId == null) return null;
 
+    final createdAtString = prefs.getString(_keyCreatedAt);
+    DateTime? createdAt;
+    if (createdAtString != null) {
+      try {
+        createdAt = DateTime.parse(createdAtString);
+      } catch (_) {
+        createdAt = null;
+      }
+    }
     return {
       'userId': userId,
       'email': prefs.getString(_keyEmail) ?? '',
@@ -902,6 +943,10 @@ class UserLocalStorage {
       'companyIds': prefs.getStringList(_keyCompanyIds) ?? [],
       'factoryIds': prefs.getStringList(_keyFactoryIds) ?? [],
       'supplierIds': prefs.getStringList(_keySupplierIds) ?? [],
+      'subscriptionDurationInDays':
+          prefs.getInt(_keySubscriptionDuration) ?? 30, // default value
+      'createdAt': createdAt, // as DateTime?
+      'isActive': prefs.getBool(_keyIsActive) ?? true, // القيمة الافتراضية true
     };
   }
 
@@ -921,6 +966,10 @@ class UserLocalStorage {
     await prefs.remove(_keyCompanyIds);
     await prefs.remove(_keyFactoryIds);
     await prefs.remove(_keySupplierIds);
+    await prefs.remove(_keySubscriptionDuration);
+    await prefs.remove(_keyCreatedAt);
+    await prefs.remove(_keyIsActive);
+
   }
 
   // ══════════════ Company & Factory Info ══════════════
@@ -1029,7 +1078,8 @@ class UserLocalStorage {
       'totalFactories': prefs.getInt(_keyTotalFactories) ?? 0,
       'totalItems': prefs.getInt(_keyTotalItems) ?? 0,
       'totalStockMovements': prefs.getInt(_keyTotalStockMovements) ?? 0,
-      'totalManufacturingOrders': prefs.getInt(_keyTotalManufacturingOrders) ?? 0,
+      'totalManufacturingOrders':
+          prefs.getInt(_keyTotalManufacturingOrders) ?? 0,
       'totalFinishedProducts': prefs.getInt(_keyTotalFinishedProducts) ?? 0,
     };
   }

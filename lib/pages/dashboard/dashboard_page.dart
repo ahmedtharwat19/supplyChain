@@ -691,13 +691,15 @@ enum DashboardView { short, long }
 
 class DashboardPageState extends State<DashboardPage> {
   // Controllers and State
-  final RefreshController _refreshController = RefreshController(initialRefresh: false);
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
   DashboardView _dashboardView = DashboardView.short;
   Set<String> _selectedCards = {};
 
   // Loading state
   bool isLoading = true;
-
+  bool isSubscriptionExpiringSoon = false;
+  bool isSubscriptionExpired = false;
   // Dashboard metrics
   final DashboardStats _stats = DashboardStats.empty();
 
@@ -710,6 +712,7 @@ class DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _initializeData();
+    _checkSubscriptionStatus();
   }
 
   @override
@@ -727,8 +730,8 @@ class DashboardPageState extends State<DashboardPage> {
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _dashboardView = prefs.getString(prefDashboardView) == 'long' 
-          ? DashboardView.long 
+      _dashboardView = prefs.getString(prefDashboardView) == 'long'
+          ? DashboardView.long
           : DashboardView.short;
       _selectedCards = (prefs.getStringList(prefSelectedCards) ?? []).toSet();
     });
@@ -747,6 +750,65 @@ class DashboardPageState extends State<DashboardPage> {
 
     await _loadCachedData();
     await fetchStats();
+  }
+
+  Future<void> _checkSubscriptionStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data();
+    if (data == null) return;
+
+    final Timestamp? createdAtTimestamp = data['createdAt'];
+    final int subscriptionDurationInDays = data['subscriptionDurationInDays'] ??
+        30; // القيمة من الحقل أو 30 افتراضياً
+    if (createdAtTimestamp == null) return;
+
+    final createdAt = createdAtTimestamp.toDate();
+
+    // تاريخ الانتهاء حسب مدة الاشتراك من الـ Firestore
+    final expirationDate =
+        createdAt.add(Duration(days: subscriptionDurationInDays));
+    final now = DateTime.now();
+
+    final daysLeft = expirationDate.difference(now).inDays;
+debugPrint(
+      'Subscription status: createdAt=$createdAt, expirationDate=$expirationDate, daysLeft=$daysLeft',
+    );
+    setState(() {
+      isSubscriptionExpiringSoon = daysLeft <= 3 && daysLeft >= 0;
+      isSubscriptionExpired = daysLeft < 0;
+      isLoading = false;
+    });
+    // ✅ إظهار Snackbar إذا كانت المدة أقل من 5 أيام ولم تنتهي بعد
+    if (mounted && daysLeft >= 0 && daysLeft < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('subscription_days_left',
+              namedArgs: {'days': daysLeft.toString()})),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+
+    // ✅ إظهار تنبيه بانتهاء الاشتراك
+    if (mounted && daysLeft < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('subscription_expired'.tr()),
+          backgroundColor: Colors.grey,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
   }
 
   Future<void> _loadCachedData() async {
@@ -780,14 +842,15 @@ class DashboardPageState extends State<DashboardPage> {
           .doc(user.uid)
           .get();
 
-      final updatedCompanyIds = (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
+      final updatedCompanyIds =
+          (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
 
       // Parallel fetch of basic counts
       final [itemsCount, suppliersCount] = await Future.wait([
         _fetchCollectionCount('items'),
         _fetchCollectionCount('vendors'),
       ]);
- final poStats = await _fetchPoStats();
+      final poStats = await _fetchPoStats();
       // Fetch company-specific stats
       int orderCount = 0;
       double amountSum = 0.0;
@@ -801,8 +864,10 @@ class DashboardPageState extends State<DashboardPage> {
         );
 
         for (final result in companyResults) {
-          orderCount =poStats['count']; // += (result['orders'] as num).toInt();
-          amountSum = poStats['totalAmount']; // += (result['amount'] as num).toDouble();
+          orderCount =
+              poStats['count']; // += (result['orders'] as num).toInt();
+          amountSum = poStats[
+              'totalAmount']; // += (result['amount'] as num).toDouble();
           movementCount += (result['movements'] as num).toInt();
           manufacturingCount += (result['manufacturing'] as num).toInt();
           finishedProductCount += (result['finishedProducts'] as num).toInt();
@@ -833,7 +898,6 @@ class DashboardPageState extends State<DashboardPage> {
         });
         await _saveToLocalStorage();
       }
-
     } catch (e) {
       debugPrint('❌ Error in fetchStats: $e');
       if (mounted) {
@@ -865,15 +929,15 @@ class DashboardPageState extends State<DashboardPage> {
   Future<Map<String, dynamic>> _getCompanyStats(String companyId) async {
     try {
       final results = await Future.wait([
-  //      _getSubCollectionCount('purchase_orders', companyId),
+        //      _getSubCollectionCount('purchase_orders', companyId),
         _getSubCollectionCount('stock_movements', companyId),
         _getSubCollectionCount('manufacturing_orders', companyId),
         _getSubCollectionCount('finished_products', companyId),
       ]);
 
       return {
-   //     'orders': results[0]['count'],
-    //    'amount': results[0]['amount'],
+        //     'orders': results[0]['count'],
+        //    'amount': results[0]['amount'],
         'movements': results[0]['count'],
         'manufacturing': results[1]['count'],
         'finishedProducts': results[2]['count'],
@@ -881,8 +945,8 @@ class DashboardPageState extends State<DashboardPage> {
     } catch (e) {
       debugPrint('❌ Error getting stats for company $companyId: $e');
       return {
-    //    'orders': 0,
-   //     'amount': 0.0,
+        //    'orders': 0,
+        //     'amount': 0.0,
         'movements': 0,
         'manufacturing': 0,
         'finishedProducts': 0,
@@ -890,7 +954,8 @@ class DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<Map<String, dynamic>> _getSubCollectionCount(String collection, String companyId) async {
+  Future<Map<String, dynamic>> _getSubCollectionCount(
+      String collection, String companyId) async {
     try {
       if (userId == null) return {'count': 0, 'amount': 0.0};
 
@@ -914,54 +979,51 @@ class DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<Map<String, dynamic>> _fetchPoStats() async {
+    try {
+      if (userId == null) return {'count': 0, 'totalAmount': 0.0};
 
- Future<Map<String, dynamic>> _fetchPoStats() async {
-  try {
-    if (userId == null) return {'count': 0, 'totalAmount': 0.0};
-    
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('purchase_orders')
-        .where('userId', isEqualTo: userId)
-        .where('status', isEqualTo: 'pending')
-        .get();
-    
-    // حساب القيمة الإجمالية
-    double totalAmount = querySnapshot.docs.fold(0.0, (sTotal, doc) {
-      final amount = doc.data()['totalAmountAfterTax'] ?? 0.0;
-      return sTotal + (amount is num ? amount.toDouble() : 0.0);
-    });
-    
-    return {
-      'count': querySnapshot.size,
-      'totalAmount': totalAmount,
-    };
-  } catch (e) {
-    debugPrint('❌ Error fetching PURCHASE_ORDERS: $e');
-    return {'count': 0, 'totalAmount': 0.0};
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .where('userId', isEqualTo: userId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      // حساب القيمة الإجمالية
+      double totalAmount = querySnapshot.docs.fold(0.0, (sTotal, doc) {
+        final amount = doc.data()['totalAmountAfterTax'] ?? 0.0;
+        return sTotal + (amount is num ? amount.toDouble() : 0.0);
+      });
+
+      return {
+        'count': querySnapshot.size,
+        'totalAmount': totalAmount,
+      };
+    } catch (e) {
+      debugPrint('❌ Error fetching PURCHASE_ORDERS: $e');
+      return {'count': 0, 'totalAmount': 0.0};
+    }
   }
-}
-
-
-
 
   Future<int> _fetchFactoriesCount() async {
     try {
       if (userId == null) return 0;
-      
+
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
-          
-      final factoryIds = (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [];
-      
+
+      final factoryIds =
+          (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [];
+
       if (factoryIds.isEmpty) return 0;
-      
+
       final factories = await FirebaseFirestore.instance
           .collection('factories')
           .where(FieldPath.documentId, whereIn: factoryIds)
           .get();
-      
+
       return factories.size;
     } catch (e) {
       debugPrint('❌ Error fetching factories: $e');
@@ -983,9 +1045,12 @@ class DashboardPageState extends State<DashboardPage> {
         userId: firebaseUser.uid,
         email: firebaseUser.email ?? '',
         displayName: firebaseUser.displayName,
-        companyIds: (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [],
-        factoryIds: (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [],
-        supplierIds: (userDoc.data()?['supplierIds'] as List?)?.cast<String>() ?? [],
+        companyIds:
+            (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [],
+        factoryIds:
+            (userDoc.data()?['factoryIds'] as List?)?.cast<String>() ?? [],
+        supplierIds:
+            (userDoc.data()?['supplierIds'] as List?)?.cast<String>() ?? [],
       );
     }
   }
@@ -1030,7 +1095,8 @@ class DashboardPageState extends State<DashboardPage> {
         ? dashboardMetrics.where((metric) =>
             metric.defaultMenuType ==
             (_dashboardView == DashboardView.long ? 'long' : 'short'))
-        : dashboardMetrics.where((metric) => _selectedCards.contains(metric.titleKey));
+        : dashboardMetrics
+            .where((metric) => _selectedCards.contains(metric.titleKey));
 
     return GridView.builder(
       shrinkWrap: true,
@@ -1059,6 +1125,9 @@ class DashboardPageState extends State<DashboardPage> {
     return AppScaffold(
       title: tr('dashboard'),
       userName: userName,
+      isSubscriptionExpiringSoon:
+          isSubscriptionExpiringSoon, // تمرير الحالة هنا
+      isSubscriptionExpired: isSubscriptionExpired,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SmartRefresher(
@@ -1108,16 +1177,16 @@ class DashboardStats {
   });
 
   factory DashboardStats.empty() => DashboardStats(
-    totalCompanies: 0,
-    totalSuppliers: 0,
-    totalOrders: 0,
-    totalAmount: 0.0,
-    totalItems: 0,
-    totalMovements: 0,
-    totalManufacturingOrders: 0,
-    totalFinishedProducts: 0,
-    totalFactories: 0,
-  );
+        totalCompanies: 0,
+        totalSuppliers: 0,
+        totalOrders: 0,
+        totalAmount: 0.0,
+        totalItems: 0,
+        totalMovements: 0,
+        totalManufacturingOrders: 0,
+        totalFinishedProducts: 0,
+        totalFactories: 0,
+      );
 
   void updateFrom(DashboardStats other) {
     totalCompanies = other.totalCompanies;

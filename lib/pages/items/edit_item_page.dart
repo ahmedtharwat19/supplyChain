@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:puresip_purchasing/models/item.dart';
+import 'package:puresip_purchasing/utils/user_local_storage.dart';
 
 class EditItemPage extends StatefulWidget {
   final String itemId;
@@ -81,7 +82,7 @@ class _EditItemPageState extends State<EditItemPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-
+  final userData = await UserLocalStorage.getUser();
     try {
       final itemData = {
         Item.fieldNameAr : _nameArController.text.trim(),
@@ -92,7 +93,7 @@ class _EditItemPageState extends State<EditItemPage> {
         Item.fieldUnitPrice: double.tryParse(_priceController.text.trim()) ?? 0,
         Item.fieldIsTaxable: true, // Assuming items are taxable by default
         Item.fieldCreatedAt: FieldValue.serverTimestamp(),
-        Item.fieldUserId: FirebaseFirestore.instance.app.options.projectId, // Assuming user ID is the project ID
+        Item.fieldUserId: userData?['userId'], // Assuming user ID is the project ID
         // You might want to replace this with actual user ID logic
       };
 
@@ -108,6 +109,7 @@ class _EditItemPageState extends State<EditItemPage> {
 
       Navigator.of(context).pop();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${tr('error_occurred')}: $e')),
       );

@@ -14,6 +14,8 @@ class AppScaffold extends StatefulWidget {
   final bool isDashboard;
   final FloatingActionButton? floatingActionButton;
   final List<Widget>? actions;
+  final bool isSubscriptionExpiringSoon;
+  final bool isSubscriptionExpired;
 
   const AppScaffold({
     super.key,
@@ -23,6 +25,8 @@ class AppScaffold extends StatefulWidget {
     this.isDashboard = false,
     this.floatingActionButton,
     this.actions,
+    this.isSubscriptionExpiringSoon = false,
+     this.isSubscriptionExpired= false,
   });
 
   @override
@@ -69,7 +73,9 @@ class _AppScaffoldState extends State<AppScaffold> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 69, 200, 218),
+        backgroundColor:widget.isSubscriptionExpiringSoon
+            ? Colors.red
+            : const Color.fromARGB(255, 69, 200, 218), // const Color.fromARGB(255, 69, 200, 218),
         title: Text(widget.title ?? tr('dashboard_title')),
         leading: canGoBack
             ? IconButton(
@@ -121,40 +127,40 @@ class _AppScaffoldState extends State<AppScaffold> {
     ];
   }
  */
- 
- List<Widget> _buildAppBarActions(BuildContext context) {
-  if (!widget.isDashboard) return [];
 
-  return [
-    if (widget.userName != null)
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Center(
-          child: Text(
-            '${tr('hello')}, ${widget.userName}',
-            style: const TextStyle(fontSize: 16, color: Colors.white),
+  List<Widget> _buildAppBarActions(BuildContext context) {
+    if (!widget.isDashboard) return [];
+
+    return [
+      if (widget.userName != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Center(
+            child: Text(
+              '${tr('hello')}, ${widget.userName}',
+              style: const TextStyle(fontSize: 16, color: Colors.white),
+            ),
           ),
         ),
+      PopupMenuButton<Locale>(
+        icon: const Icon(Icons.language, color: Colors.white),
+        tooltip: tr('change_language'),
+        onSelected: _handleLanguageChange,
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: const Locale('en'),
+            child:
+                Text('English', style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          PopupMenuItem(
+            value: const Locale('ar'),
+            child:
+                Text('العربية', style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
       ),
-    PopupMenuButton<Locale>(
-      icon: const Icon(Icons.language, color: Colors.white),
-      tooltip: tr('change_language'),
-      onSelected: _handleLanguageChange,
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: const Locale('en'),
-          child:
-              Text('English', style: Theme.of(context).textTheme.bodyMedium),
-        ),
-        PopupMenuItem(
-          value: const Locale('ar'),
-          child:
-              Text('العربية', style: Theme.of(context).textTheme.bodyMedium),
-        ),
-      ],
-    ),
-  ];
-}
+    ];
+  }
 
   Widget _buildDrawer(BuildContext context) {
     return Drawer(

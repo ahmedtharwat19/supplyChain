@@ -188,8 +188,8 @@ class Item {
   factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
       itemId: map['itemId'] ?? '',
-      nameAr: map['name_ar'] ?? '',
-      nameEn: map['name_en'] ?? '',
+      nameAr: map['nameAr'] ?? '',
+      nameEn: map['nameEn'] ?? '',
       quantity: (map['quantity'] ?? 0).toDouble(),
       unit: map['unit'] ?? '',
       unitPrice: (map['unitPrice'] ?? 0).toDouble(),
@@ -206,8 +206,8 @@ class Item {
   Map<String, dynamic> toMap() {
     return {
       'itemId': itemId,
-      'name_ar': nameAr,
-      'name_en': nameEn,
+      'nameAr': nameAr,
+      'nameEn': nameEn,
       'quantity': quantity,
       'unit': unit,
       'unitPrice': unitPrice,

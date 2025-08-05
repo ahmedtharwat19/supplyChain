@@ -57,14 +57,31 @@ class _LoginFormState extends State<LoginForm> {
             .doc(user.uid)
             .get();
         final userData = userDoc.data();
+        debugPrint('userData: $userData');
+        debugPrint('userData: ${userData?['is_active']}');
+        
+
         if (userData != null) {
+          final isActive = userData['is_active'];
+          if (isActive == false) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('no_access_rights'.tr())),
+              );
+            }
+            return;
+          }
+
           await UserLocalStorage.setUser(userData);
+          if (mounted) context.go('/dashboard');
         }
 
-        if (mounted) context.go('/dashboard');
+        //  if (mounted) context.go('/dashboard');
       }
     } catch (e) {
-      if (e is FirebaseAuthException && e.code == 'popup-closed-by-user') return;
+      if (e is FirebaseAuthException && e.code == 'popup-closed-by-user') {
+        return;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,18 +108,35 @@ class _LoginFormState extends State<LoginForm> {
               .collection('users')
               .doc(user.uid)
               .get();
+               debugPrint('userDoc: $userDoc');
           final userData = userDoc.data();
-
+          debugPrint('userData: $userData');
           if (userData != null) {
+            final isActive = userData['is_active'];
+
+            if (isActive == false) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('no_access_rights'.tr())),
+                );
+              }
+              return; // لا تسمح له بالاستمرار
+            }
             await UserLocalStorage.setUser(userData);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('login_success'.tr())),
+              );
+              context.go('/dashboard');
+            }
           }
 
-          if (mounted) {
+/*           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('login_success'.tr())),
             );
             context.go('/dashboard');
-          }
+          } */
         }
       } on FirebaseAuthException catch (e) {
         String message = 'login_error'.tr();
@@ -179,8 +213,9 @@ class _LoginFormState extends State<LoginForm> {
                   focusNode: _emailFocusNode,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(labelText: 'email'.tr()),
-                  validator: (value) =>
-                      value != null && value.contains('@') ? null : 'invalid_email'.tr(),
+                  validator: (value) => value != null && value.contains('@')
+                      ? null
+                      : 'invalid_email'.tr(),
                   onFieldSubmitted: (_) =>
                       FocusScope.of(context).requestFocus(_passwordFocusNode),
                 ),
@@ -194,15 +229,18 @@ class _LoginFormState extends State<LoginForm> {
                     labelText: 'password'.tr(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() => _obscurePassword = !_obscurePassword);
                       },
                     ),
                   ),
-                  validator: (value) =>
-                      value != null && value.length >= 6 ? null : 'short_password'.tr(),
+                  validator: (value) => value != null && value.length >= 6
+                      ? null
+                      : 'short_password'.tr(),
                   onFieldSubmitted: (_) => _loginWithEmailPassword(),
                 ),
                 const SizedBox(height: 20),

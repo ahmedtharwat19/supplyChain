@@ -571,6 +571,125 @@ class _FactoriesPageState extends State<FactoriesPage> {
       );
     }
 
+    return AppScaffold(
+      title: tr('factories_list'),
+      userName: userName,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: tr('search'),
+                prefixIcon: const Icon(Icons.search),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
+            ),
+          ),
+          Expanded(
+            child: userFactoryIds.isEmpty
+                ? Center(child: Text(tr('no_factories_linked')))
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('factories')
+                        .where(FieldPath.documentId,
+                            whereIn: userFactoryIds.isEmpty
+                                ? ['dummy']
+                                : userFactoryIds)
+                        .snapshots(),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snap.hasError) {
+                        return Center(
+                            child:
+                                Text('${tr('error_occurred')}: ${snap.error}'));
+                      }
+
+                      final factories = (snap.data?.docs ?? []).where((doc) {
+                        final data = doc.data() as Map<String, dynamic>? ?? {};
+                        final name =
+                            (data['name_ar'] ?? '').toString().toLowerCase();
+                        final nameEn =
+                            (data['name_en'] ?? '').toString().toLowerCase();
+                        return name.contains(searchQuery) ||
+                            nameEn.contains(searchQuery);
+                      }).toList();
+
+                      if (factories.isEmpty) {
+                        return Center(child: Text(tr('no_match_search')));
+                      }
+
+                      return ListView.builder(
+                        itemCount: factories.length,
+                        itemBuilder: (ctx, index) {
+                          final doc = factories[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            elevation: 2,
+                            child: ListTile(
+                              title: Text(
+                                  '${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (data['location'] != null)
+                                    Text('📍 ${data['location']}'),
+                                  if (data['manager_name'] != null)
+                                    Text('👤 ${data['manager_name']}'),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
+                                    onPressed: () => _editFactory(doc),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
+                                    onPressed: () => _confirmDeleteFactory(doc),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await context.push('/add-factory');
+          if (mounted) await loadUserFactories();
+        },
+        tooltip: tr('add_factory'),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+ /*  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(tr('factories_list'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     if (userFactoryIds.isEmpty) {
       debugPrint('User has no factories linked.');
       return Scaffold(
@@ -687,7 +806,7 @@ class _FactoriesPageState extends State<FactoriesPage> {
       ),
     );
   }
-}
+} */
       /* body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(

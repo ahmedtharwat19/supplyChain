@@ -311,6 +311,9 @@
 
   "item_code_required_message": "رمز الصنف مطلوب.",
   "item_price_required_message": "سعر الصنف مطلوب.",
+  "membership_expired_title": "انتهاء الصلاحية",
+  "membership_expired_message": "لا توجد صلاحية، برجاء تجديد العضوية.",
+  "ok": "موافق",
 
 
   "item_quantity_required_message": "كمية الصنف مطلوبة.",
@@ -513,7 +516,24 @@
   "sort_by_date_desc": "ترتيب حسب التاريخ (تنازلي)",
   "sort_by_date_asc": "ترتيب حسب التاريخ (تصاعدي)", 
   "sort_by_amount_desc": "ترتيب حسب المبلغ (تنازلي)",
-  "sort_by_amount_asc": "ترتيب حسب المبلغ (تصاعدي)"
+  "sort_by_amount_asc": "ترتيب حسب المبلغ (تصاعدي)",
+  
+  "email_verification": " تحقق البريد الإلكتروني",
+  "verification_email_sent": "تم إرسال بريد التحقق. يرجى التحقق من صندوق الوارد الخاص بك وتأكيد بريدك الإلكتروني.",
+  "i_verified": "لقد قمت بتأكيد بريدي الإلكتروني ",
+  "email_not_verified_yet": "بريدك الإلكتروني غير مؤكد بعد. يرجى التحقق مرة أخرى.",
+  "verification_error": "حدث خطأ أثناء التحقق من البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
+  "display_name": "اسم العرض",
+  "phone_number": "رقم الهاتف",
+  "subscription_expires_soon": "اشتراكك سينتهي قريبًا. يرجى تجديده للحفاظ على الوصول إلى الميزات.",
+
+  "renew_subscription": "تجديد الاشتراك",
+    "subscription_expired": "انتهت مدة الاشتراك، سيتم تقييد الوصول قريباً.",
+  "subscription_days_left": "تبقى {days} يوم/أيام قبل انتهاء الاشتراك.",
+  "no_access_rights": "ليس لديك حقوق الوصول لهذا المورد. يرجى الاتصال بالمسؤول."
+  
+
+
   
 
 }
