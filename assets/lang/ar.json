@@ -32,7 +32,7 @@
   "confirmed": "مؤكد",
   "not_confirmed": "غير مؤكد",
   "export_pdf": "تصدير PDF",
-  "edit_order": "تعديل الطلب",
+
   "delete_order": "حذف الطلب",
   "delete_confirmation": "تأكيد الحذف",
   "confirm_delete_message": "هل أنت متأكد أنك تريد حذف هذا الطلب؟",
@@ -530,10 +530,20 @@
   "renew_subscription": "تجديد الاشتراك",
     "subscription_expired": "انتهت مدة الاشتراك، سيتم تقييد الوصول قريباً.",
   "subscription_days_left": "تبقى {days} يوم/أيام قبل انتهاء الاشتراك.",
-  "no_access_rights": "ليس لديك حقوق الوصول لهذا المورد. يرجى الاتصال بالمسؤول."
-  
+  "no_access_rights": "ليس لديك حقوق الوصول لهذا المورد. يرجى الاتصال بالمسؤول.",
+  "no_items_added_to_order": "لم يتم إضافة أي عناصر إلى الطلب. يرجى إضافة عناصر قبل الحفظ.",
+  "is_taxable": "هل هذا خاضع للضريبة؟",
 
 
   
+  "edit_order": "تعديل أمر الشراء",
+  "order_updated": "تم تحديث الطلب بنجاح",
+  "update_error": "حدث خطأ أثناء التحديث",
+  "change_status": "تغيير الحالة",
+  "mark_as_completed": "تمييز كمكتمل",
+  "mark_as_cancelled": "تمييز كملغي",
+  "order_details": "تفاصيل الطلب",
+  "po_number": "رقم أمر الشراء"
+
 
 }

@@ -3788,9 +3788,13 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
     if (!_validateForm()) return;
     setState(() => _isLoading = true);
     try {
+      final poNumber =
+          await _firestoreService.generatePoNumber(_selectedCompanyId!);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final orderId = 'PO-$timestamp';
       final order = PurchaseOrder(
-        id: '',
-        poNumber: '',
+        id: orderId,
+        poNumber: poNumber,
         userId: _auth.currentUser?.uid ?? '',
         companyId: _selectedCompanyId!,
         factoryId: _selectedFactoryId,
@@ -3818,7 +3822,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   }
 
   // تعديل الكمية والسعر للوحدة في الأصناف
-  void _editItemQuantityAndPrice(int index) async {
+/*   void _editItemQuantityAndPrice(int index) async {
     final item = _items[index];
     double newQuantity = item.quantity;
     double newUnitPrice = item.unitPrice;
@@ -3894,7 +3898,95 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       });
     }
   }
+ */
+  final currencyFormat = NumberFormat.currency(locale: 'ar', symbol: 'ج.م');
+/*   void _editItemQuantityAndPrice(int index) async {
+    final item = _items[index];
+    double newQuantity = item.quantity;
+    double newUnitPrice = item.unitPrice;
+    bool isTaxable = item.isTaxable;
 
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('edit_item'.tr()),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: item.quantity.toString(),
+                  decoration: InputDecoration(labelText: 'quantity'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newQuantity = double.tryParse(v) ?? newQuantity;
+                  },
+                ),
+                TextFormField(
+                  initialValue: item.unitPrice.toString(),
+                  decoration: InputDecoration(labelText: 'unit_price'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newUnitPrice = double.tryParse(v) ?? newUnitPrice;
+                  },
+                ),
+                CheckboxListTile(
+                  title: Text('is_taxable'.tr()),
+                  value: isTaxable,
+                  onChanged: (val) {
+                    if (val != null) isTaxable = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('cancel'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: Text('save'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      setState(() {
+        var updatedItem = item
+            .updateQuantity(newQuantity)
+            .updateUnitPrice(newUnitPrice)
+            .updateTaxStatus(isTaxable, isTaxable ? _taxRate : 0.0);
+        _items[index] = updatedItem;
+      });
+    }
+  }
+ */
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -3983,7 +4075,149 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final item = _items[index];
+
                         return Card(
+                          color: Colors.grey[100],
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // اسم الصنف
+                                Text(
+                                  context.locale.languageCode == 'ar'
+                                      ? item.nameAr
+                                      : item.nameEn,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // الكمية والسعر في صف واحد
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue: item.quantity.toString(),
+                                        decoration: InputDecoration(
+                                          labelText: 'quantity'.tr(),
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (v) {
+                                          final newQty = double.tryParse(v) ??
+                                              item.quantity;
+                                          setState(() {
+                                            _items[index] = item
+                                                .updateQuantity(newQty)
+                                                .updateTaxStatus(
+                                                    item.isTaxable,
+                                                    item.isTaxable
+                                                        ? _taxRate
+                                                        : 0);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue:
+                                            item.unitPrice.toStringAsFixed(2),
+                                        decoration: InputDecoration(
+                                          labelText: 'unit_price'.tr(),
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (v) {
+                                          final newPrice = double.tryParse(v) ??
+                                              item.unitPrice;
+                                          setState(() {
+                                            _items[index] = item
+                                                .updateUnitPrice(newPrice)
+                                                .updateTaxStatus(
+                                                    item.isTaxable,
+                                                    item.isTaxable
+                                                        ? _taxRate
+                                                        : 0);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // مفتاح هل خاضع للضريبة
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text('is_taxable'.tr()),
+                                  value: item.isTaxable,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _items[index] = item.updateTaxStatus(
+                                          val, val ? _taxRate : 0);
+                                    });
+                                  },
+                                ),
+
+                                const Divider(),
+
+                                // تفاصيل المبلغ
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('${'tax'.tr()}:'),
+                                    Text(currencyFormat.format(item.taxAmount)),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('${'total'.tr()}:',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    Text(
+                                      currencyFormat
+                                          .format(item.totalAfterTaxAmount),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text('add_items'.tr()),
+                onPressed: _showItemSelectionDialog,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/*                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           child: ListTile(
                             title: Text(
@@ -4010,20 +4244,6 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
                             ),
                           ),
                         );
-                      },
-                    ),
+                    },  */ 
+          //         import 'package:intl/intl.dart';
 
-              const SizedBox(height: 16),
-
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text('add_items'.tr()),
-                onPressed: _showItemSelectionDialog,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

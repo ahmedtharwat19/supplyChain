@@ -1,12 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:puresip_purchasing/models/purchase_order.dart';
 import 'package:puresip_purchasing/pages/companies/company_added_page.dart';
 import 'package:puresip_purchasing/pages/items/add_item_page.dart';
 import 'package:puresip_purchasing/pages/items/edit_item_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
+import 'package:puresip_purchasing/pages/purchasing/edit_puchase_order_page.dart';
+import 'package:puresip_purchasing/services/order_service.dart';
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -20,7 +23,7 @@ import 'pages/suppliers/suppliers_page.dart';
 import 'pages/suppliers/add_supplier_page.dart';
 import 'pages/suppliers/edit_supplier_page.dart';
 import 'pages/purchasing/purchase_orders_page.dart';
-import 'pages/purchasing/purchase_order_detail_page.dart';
+import 'pages/purchasing/purchase_order_details_page.dart';
 import 'pages/purchasing/add_purchase_order_page.dart';
 import 'pages/items/items_page.dart';
 
@@ -90,7 +93,39 @@ final GoRouter appRouter = GoRouter(
       path: '/purchase-orders',
       builder: (context, state) => const PurchaseOrdersPage(),
     ),
-    GoRoute(
+GoRoute(
+      path: '/purchase/:id',
+      name: 'purchase',
+      builder: (context, state) {
+        // الحالة 1: إذا تم تمرير PurchaseOrder كـ extra
+        if (state.extra != null && state.extra is PurchaseOrder) {
+          final order = state.extra as PurchaseOrder;
+          return order.status == 'pending'
+              ? EditPurchaseOrderPage(order: order)
+              : PurchaseOrderDetailsPage(order: order);
+        }
+        // الحالة 2: إذا لم يتم تمرير order، جلبها من Firestore باستخدام ID
+        else {
+          final id = state.pathParameters['id']!;
+          return FutureBuilder<PurchaseOrder>(
+            future: OrderService.getOrderById(id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return const Center(child: Text('Order not found'));
+              }
+              final order = snapshot.data!;
+              return order.status == 'pending'
+                  ? EditPurchaseOrderPage(order: order)
+                  : PurchaseOrderDetailsPage(order: order);
+            },
+          );
+        }
+      },
+    ),
+/*     GoRoute(
       path: '/purchase-order-detail',
       builder: (context, state) {
         final companyId = state.uri.queryParameters['companyId'] ?? '';
@@ -100,11 +135,12 @@ final GoRouter appRouter = GoRouter(
           orderId: orderId,
         );
       },
-    ),
+    ), */
     GoRoute(
       path: '/add-purchase-order',
       builder: (context, state) {
-        final selectedCompany = state.uri.queryParameters['selectedCompany'] ?? '';
+        final selectedCompany =
+            state.uri.queryParameters['selectedCompany'] ?? '';
         return AddPurchaseOrderPage(selectedCompany: selectedCompany);
       },
     ),

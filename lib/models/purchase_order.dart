@@ -323,6 +323,7 @@ class PurchaseOrder {
 
   Map<String, dynamic> toMap() {
     return {
+      
       'userId': userId,
       'poNumber': poNumber,
       'companyId': companyId,
@@ -426,4 +427,26 @@ class PurchaseOrder {
       'created_at': FieldValue.serverTimestamp(),
     };
   }
+
+PurchaseOrder updateItemQuantity(int index, double quantity) {
+    final updatedItem = items[index].copyWith(quantity: quantity);
+    final updatedItems = [...items];
+    updatedItems[index] = updatedItem;
+    return copyWith(items: updatedItems);
+  }
+
+  PurchaseOrder updateItemUnitPrice(int index, double unitPrice) {
+    final updatedItem = items[index].copyWith(unitPrice: unitPrice);
+    final updatedItems = [...items];
+    updatedItems[index] = updatedItem;
+    return copyWith(items: updatedItems);
+  }
+
+  PurchaseOrder updateItemTaxable(int index, bool isTaxable) {
+    final updatedItem = items[index].copyWith(isTaxable: isTaxable);
+    final updatedItems = [...items];
+    updatedItems[index] = updatedItem;
+    return copyWith(items: updatedItems);
+  }
+
 }

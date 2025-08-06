@@ -43,9 +43,13 @@ class PdfExporter {
     final logoBytes = _decodeBase64Logo(base64Logo);
     //  final qrInfo = _generateQrData(orderId, orderData, supplierData, companyData);
     //   final qrImage = await _generateQrImage(qrInfo);
+    // استخراج poNumber من orderData أو استخدام orderId إذا كان فارغًا
+    final poNumber = orderData['poNumber']?.toString().isNotEmpty == true
+        ? orderData['poNumber'].toString()
+        : orderId;
     // إنشاء QR Code مع بيانات الطلب ورابط التنزيل
     final qrData = _generateQrData(
-        orderId, orderData, supplierData, companyData, itemData, isArabic);
+        poNumber, orderData, supplierData, companyData, itemData, isArabic);
     // طباعة البيانات للتأكد من أنها غير فارغة
     debugPrint('QR Data: $qrData');
 
@@ -157,28 +161,16 @@ class PdfExporter {
     bool isArabic,
   ) {
     debugPrint('itemData structure: ${itemData.toString()}');
-
-/*     final items = (orderData['items'] as List).map((item) {
-      final itemId = item['nameId'] ?? item['itemId'] ?? 'N/A';
-      final itemDetails =
-          itemData[itemId] ?? {}; // بيانات الصنف من جدول الأصناف
-      final itemName =
-          isArabic ? itemDetails['name_ar'] : itemDetails['name_en'];
-
-      return {
-        'name': itemName ?? 'غير معروف',
-        'quantity': item['quantity'],
-        'price': item['unitPrice'],
-        'total': item['totalPrice'],
-      };
-    }).toList(); */
+    final poNumber = orderData['poNumber']?.toString().isNotEmpty == true
+        ? orderData['poNumber'].toString()
+        : orderId;
 
     final invoiceContent = '''
 === ${isArabic ? 'فاتورة شراء' : 'Purchase Order'} ===
-${isArabic ? 'رقم الفاتورة' : 'Invoice No'}: $orderId
+${isArabic ? 'رقم الفاتورة' : 'Invoice No'}: $poNumber
 ${isArabic ? 'التاريخ' : 'Date'}: ${_formatOrderDate(orderData['orderDate'])}
 ${isArabic ? 'الشركة' : 'Company'}: ${isArabic ? companyData['name_ar'] : companyData['name_en']}
-${isArabic ? 'المورد' : 'Supplier'}: ${supplierData['name']}
+${isArabic ? 'المورد' : 'Supplier'}: ${isArabic ? supplierData['name_ar'] : supplierData['name_en']}
 
 ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(orderData['totalAmountAfterTax'])} ${orderData['currency'] ?? 'EGP'}
     =====xxx===xxx=====
@@ -206,6 +198,9 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
     String? base64Logo,
     bool isArabic,
   ) async {
+    final poNumber = orderData['poNumber']?.toString().isNotEmpty == true
+        ? orderData['poNumber'].toString()
+        : orderId;
     final pdf = await generatePurchaseOrderPdf(
       orderId: orderId,
       orderData: orderData,
@@ -217,7 +212,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
     );
 
     final bytes = await pdf.save();
-    final ref = FirebaseStorage.instance.ref('purchase_orders/$orderId.pdf');
+    final ref = FirebaseStorage.instance.ref('purchase_orders/$poNumber.pdf');
     await ref.putData(bytes);
     return await ref.getDownloadURL();
   }
@@ -241,6 +236,10 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
     bool isArabic,
     pw.Font arabicFont,
   ) {
+    // استخراج poNumber من orderData أو استخدام orderId إذا كان فارغًا
+    final poNumber = orderData['poNumber']?.toString().isNotEmpty == true
+        ? orderData['poNumber'].toString()
+        : orderId;
     return pw.Column(
       crossAxisAlignment:
           isArabic ? pw.CrossAxisAlignment.end : pw.CrossAxisAlignment.start,
@@ -271,7 +270,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
                   textAlign: isArabic ? pw.TextAlign.right : pw.TextAlign.left,
                 ),
                 pw.Text(
-                  '${'invoice'.tr()} #$orderId',
+                  '${'invoice'.tr()} #$poNumber',
                   style: pw.TextStyle(
                     fontSize: _bodyFontSize,
                     font: arabicFont,
@@ -358,7 +357,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
         ),
         pw.Expanded(
           child: pw.Text(
-            supplierData['name'] ?? '',
+            isArabic ? supplierData['name_ar'] : supplierData['name_en'],
             style: pw.TextStyle(
               font: arabicFont,
             ),
@@ -443,7 +442,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
   ) {
     return items.map<pw.TableRow>((item) {
       final itemName =
-          isArabic ? (item['name_ar'] ?? '') : (item['name_en'] ?? '');
+          isArabic ? (item['nameAr'] ?? '') : (item['nameEn'] ?? '');
       return pw.TableRow(
         children: isArabic
             ? [
@@ -630,8 +629,8 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
           ? _convertNumberToArabicWords(safeValue)
           : _convertNumberToEnglishWords(safeValue);
 
-      final currencyText = getCurrencyText(safeValue, isArabic); 
-         // currency = isArabic ? 'جنيهاً مصرياً' : 'Egyptian Pounds'; //= 'EGP'
+      final currencyText = getCurrencyText(safeValue, isArabic);
+      // currency = isArabic ? 'جنيهاً مصرياً' : 'Egyptian Pounds'; //= 'EGP'
       //? (isArabic ? 'جنيهاً مصرياً' : 'Egyptian Pounds')
       //: (isArabic ? 'دولاراً أمريكياً' : 'US Dollars');
 
@@ -792,387 +791,21 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
     }
   }
 
-/*   static String _convertNumberToArabicWords(int number) {
-    if (number == 0) return 'صفر';
+  static String getCurrencyText(int number, bool isArabic) {
+    if (!isArabic) return 'Egyptian Pounds';
 
-    final List<String> units = [
-      '',
-      'واحد',
-      'اثنان',
-      'ثلاثة',
-      'أربعة',
-      'خمسة',
-      'ستة',
-      'سبعة',
-      'ثمانية',
-      'تسعة'
-    ];
-    final List<String> teens = [
-      'عشرة',
-      'أحد عشر',
-      'اثنا عشر',
-      'ثلاثة عشر',
-      'أربعة عشر',
-      'خمسة عشر',
-      'ستة عشر',
-      'سبعة عشر',
-      'ثمانية عشر',
-      'تسعة عشر'
-    ];
-    final List<String> tens = [
-      '',
-      'عشرة',
-      'عشرون',
-      'ثلاثون',
-      'أربعون',
-      'خمسون',
-      'ستون',
-      'سبعون',
-      'ثمانون',
-      'تسعون'
-    ];
-    final List<String> hundreds = [
-      '',
-      'مائة',
-      'مئتان',
-      'ثلاثمائة',
-      'أربعمائة',
-      'خمسمائة',
-      'ستمائة',
-      'سبعمائة',
-      'ثمانمائة',
-      'تسعمائة'
-    ];
-    final List<String> scales = ['', 'ألف', 'مليون', 'مليار', 'تريليون'];
+    int lastTwoDigits = number % 100;
 
-    String convertLessThanOneThousand(int n, bool isLastScale) {
-      if (n == 0) return '';
-      if (n < 10) return units[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) {
-        return n % 10 == 0
-            ? tens[n ~/ 10]
-            : '${units[n % 10]} و${tens[n ~/ 10]}';
-      }
-      return '${hundreds[n ~/ 100]}${n % 100 != 0 ? ' و${convertLessThanOneThousand(n % 100, false)}' : ''}';
+    if (number == 1) {
+      return 'جنيه مصري';
+    } else if (number == 2) {
+      return 'جنيهان مصريان';
+    } else if (lastTwoDigits >= 3 && lastTwoDigits <= 10) {
+      return 'جنيهات مصرية';
+    } else {
+      return 'جنيهاً مصرياً';
     }
-
-    if (number < 0) return 'سالب ${_convertNumberToArabicWords(-number)}';
-
-    String result = '';
-    int scaleIndex = 0;
-
-    while (number > 0) {
-      int chunk = number % 1000;
-      if (chunk != 0) {
-        String chunkStr = convertLessThanOneThousand(chunk, scaleIndex == 0);
-        if (scaleIndex > 0) {
-          chunkStr += ' ${scales[scaleIndex]}';
-          //  if (chunk > 2 && scaleIndex > 0) chunkStr += 'ات';
-          if (scaleIndex > 0) {
-            if (chunk == 2) {
-              chunkStr = ' ${scales[scaleIndex]}ان';
-            } else if (chunk >= 3 && chunk <= 10) {
-              final pluralForms = [
-                '',
-                'آلاف',
-                'ملايين',
-                'مليارات',
-                'تريليونات'
-              ];
-              chunkStr = '$chunkStr ${pluralForms[scaleIndex]}';
-            } else {
-              chunkStr = '$chunkStr ${scales[scaleIndex]}';
-            }
-          }
-        }
-        result = '$chunkStr $result'.trim();
-      }
-      number ~/= 1000;
-      scaleIndex++;
-      if (scaleIndex >= scales.length) break; // تجنب تجاوز حدود القائمة
-    }
-
-    return result.trim();
   }
- */
-
-/*   static String _convertNumberToArabicWords(int number) {
-    if (number == 0) return 'صفر';
-
-    final List<String> units = [
-      '',
-      'واحد',
-      'اثنان',
-      'ثلاثة',
-      'أربعة',
-      'خمسة',
-      'ستة',
-      'سبعة',
-      'ثمانية',
-      'تسعة'
-    ];
-    final List<String> teens = [
-      'عشرة',
-      'أحد عشر',
-      'اثنا عشر',
-      'ثلاثة عشر',
-      'أربعة عشر',
-      'خمسة عشر',
-      'ستة عشر',
-      'سبعة عشر',
-      'ثمانية عشر',
-      'تسعة عشر'
-    ];
-    final List<String> tens = [
-      '',
-      'عشرة',
-      'عشرون',
-      'ثلاثون',
-      'أربعون',
-      'خمسون',
-      'ستون',
-      'سبعون',
-      'ثمانون',
-      'تسعون'
-    ];
-    final List<String> hundreds = [
-      '',
-      'مائة',
-      'مئتان',
-      'ثلاثمائة',
-      'أربعمائة',
-      'خمسمائة',
-      'ستمائة',
-      'سبعمائة',
-      'ثمانمائة',
-      'تسعمائة'
-    ];
-    final List<String> singularScales = [
-      '',
-      'ألف',
-      'مليون',
-      'مليار',
-      'تريليون'
-    ];
-    final List<String> dualScales = [
-      '',
-      'ألفان',
-      'مليونان',
-      'ملياران',
-      'تريليونان'
-    ];
-    final List<String> pluralScales = [
-      '',
-      'آلاف',
-      'ملايين',
-      'مليارات',
-      'تريليونات'
-    ];
-
-    String convertLessThanOneThousand(int n) {
-      if (n == 0) return '';
-      if (n < 10) return units[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) {
-        return n % 10 == 0
-            ? tens[n ~/ 10]
-            : '${units[n % 10]} و${tens[n ~/ 10]}';
-      }
-      return '${hundreds[n ~/ 100]}${n % 100 != 0 ? ' و${convertLessThanOneThousand(n % 100)}' : ''}';
-    }
-
-    if (number < 0) return 'سالب ${_convertNumberToArabicWords(-number)}';
-
-    String result = '';
-    int scaleIndex = 0;
-    List<String> parts = [];
-
-    while (number > 0) {
-      int chunk = number % 1000;
-      if (chunk != 0) {
-        String chunkStr = convertLessThanOneThousand(chunk);
-        String scaleWord = '';
-
-        if (scaleIndex > 0) {
-          if (chunk == 1) {
-            scaleWord = singularScales[scaleIndex];
-            chunkStr = '';
-          } else if (chunk == 2) {
-            scaleWord = dualScales[scaleIndex];
-            chunkStr = '';
-          } else if (chunk >= 3 && chunk <= 10) {
-            scaleWord = pluralScales[scaleIndex];
-          } else {
-            scaleWord = singularScales[scaleIndex];
-          }
-
-          chunkStr = chunkStr.isEmpty ? scaleWord : '$chunkStr $scaleWord';
-        }
-        parts.insert(0, chunkStr.trim());
-        //  result = '$chunkStr ${result.trim()}'.trim();
-      }
-
-      number ~/= 1000;
-      scaleIndex++;
-      if (scaleIndex >= singularScales.length) break;
-    }
-// إضافة "و" بين كل جزئين إذا كانوا موجودين
-    result = parts.join(' و');
-    return result.trim();
-  }
- */
-/* 
-  static String _convertNumberToArabicWords(int number) {
-    if (number == 0) return 'صفر';
-
-    final List<String> units = [
-      '',
-      'واحد',
-      'اثنان',
-      'ثلاثة',
-      'أربعة',
-      'خمسة',
-      'ستة',
-      'سبعة',
-      'ثمانية',
-      'تسعة'
-    ];
-    final List<String> teens = [
-      'عشرة',
-      'أحد عشر',
-      'اثنا عشر',
-      'ثلاثة عشر',
-      'أربعة عشر',
-      'خمسة عشر',
-      'ستة عشر',
-      'سبعة عشر',
-      'ثمانية عشر',
-      'تسعة عشر'
-    ];
-    final List<String> tens = [
-      '',
-      'عشرة',
-      'عشرون',
-      'ثلاثون',
-      'أربعون',
-      'خمسون',
-      'ستون',
-      'سبعون',
-      'ثمانون',
-      'تسعون'
-    ];
-    final List<String> hundreds = [
-      '',
-      'مائة',
-      'مئتان',
-      'ثلاثمائة',
-      'أربعمائة',
-      'خمسمائة',
-      'ستمائة',
-      'سبعمائة',
-      'ثمانمائة',
-      'تسعمائة'
-    ];
-    final List<String> singularScales = [
-      '',
-      'ألف',
-      'مليون',
-      'مليار',
-      'تريليون'
-    ];
-    final List<String> dualScales = [
-      '',
-      'ألفان',
-      'مليونان',
-      'ملياران',
-      'تريليونان'
-    ];
-    final List<String> pluralScales = [
-      '',
-      'آلاف',
-      'ملايين',
-      'مليارات',
-      'تريليونات'
-    ];
-
-    String convertLessThanOneThousand(int n) {
-      if (n == 0) return '';
-      if (n < 10) return units[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) {
-        return n % 10 == 0
-            ? tens[n ~/ 10]
-            : '${units[n % 10]} و${tens[n ~/ 10]}';
-      }
-      return '${hundreds[n ~/ 100]}${n % 100 != 0 ? ' و${convertLessThanOneThousand(n % 100)}' : ''}';
-    }
-
-    if (number < 0) return 'سالب ${_convertNumberToArabicWords(-number)}';
-
-    List<String> parts = [];
-    int scaleIndex = 0;
-
-    while (number > 0) {
-      int chunk = number % 1000;
-      if (chunk != 0) {
-        String chunkStr = convertLessThanOneThousand(chunk);
-        String scaleWord = '';
-
-if (scaleIndex > 0) {
-  bool isCompound = number > 0; // باقي أرقام موجودة (يعني العدد مركب)
-
-  if (chunk == 1) {
-    // المفرد: ألف، مليون ...
-    scaleWord = singularScales[scaleIndex] + (isCompound ? '' : 'ًا');
-    chunkStr = '';
-  } else if (chunk == 2) {
-    scaleWord = dualScales[scaleIndex];
-    chunkStr = '';
-  } else if (chunk >= 3 && chunk <= 10) {
-    scaleWord = pluralScales[scaleIndex];
-  } else {
-    // مفرد مع تنوين فقط إذا ما كانش مركب
-    scaleWord = singularScales[scaleIndex] + (isCompound ? '' : 'ًا');
-  }
-
-  chunkStr = chunkStr.isEmpty ? scaleWord : '$chunkStr $scaleWord';
-}
-
-
-        parts.insert(0, chunkStr.trim());
-      }
-
-      number ~/= 1000;
-      scaleIndex++;
-      if (scaleIndex >= singularScales.length) break;
-    }
-
-    String result = parts.join(' و');
-
-  
-    return result.trim();
-
-  }
- */
-
-
-static String getCurrencyText(int number, bool isArabic) {
-  if (!isArabic) return 'Egyptian Pounds';
-
-  int lastTwoDigits = number % 100;
-
-  if (number == 1) {
-    return 'جنيه مصري';
-  } else if (number == 2) {
-    return 'جنيهان مصريان';
-  } else if (lastTwoDigits >= 3 && lastTwoDigits <= 10) {
-    return 'جنيهات مصرية';
-  } else {
-    return 'جنيهاً مصرياً';
-  }
-}
-
 
   static String _convertNumberToArabicWords(int number) {
     if (number == 0) return 'صفر';
@@ -1279,8 +912,7 @@ static String getCurrencyText(int number, bool isArabic) {
       return '${hundreds[n ~/ 100]}${n % 100 != 0 ? ' و${convertLessThanOneThousand(n % 100, isAccusative)}' : ''}';
     }
 
-       if (number < 0) return 'سالب ${_convertNumberToArabicWords(-number)}';
-
+    if (number < 0) return 'سالب ${_convertNumberToArabicWords(-number)}';
 
     String result = '';
     int scaleIndex = 0;
@@ -1347,16 +979,6 @@ static String getCurrencyText(int number, bool isArabic) {
 
     result = parts.join(' و');
 
-/*   // معالجة خاصة للألف في حالة النصب
-  result = result.replaceAllMapped(
-    RegExp(r'ألف(?!ً)(?= و)'),
-    (match) => 'ألفًا'
-  );
-
-  // معالجة خاصة عندما تنتهي بـ "ألف" بدون "و" بعدها
-  if (result.endsWith('ألف')) {
-    result = result.replaceAll('ألف', 'ألفًا');
-  } */
     return result; //'$result $currency مصرياً فقط لا غير';
   }
 

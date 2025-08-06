@@ -347,28 +347,24 @@ class FirestoreService {
     return querySnapshot.docs.map((doc) => Item.fromMap(doc.data())).toList();
   } */
 
-Future<List<Item>> getUserItems(String userId) async {
-  try {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .where('user_id', isEqualTo: userId)
-        .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
-        .get();
+  Future<List<Item>> getUserItems(String userId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
+          .get();
 
-    debugPrint('✅ getUserItems: returned ${querySnapshot.docs.length} items');
-    return querySnapshot.docs
-        .map((doc) => Item.fromFirestore(doc.data(), doc.id))
-        .toList();
-  } catch (e, st) {
-    debugPrint('❌ Error in getUserItems: $e');
-    debugPrint(st.toString());
-    return [];
+      debugPrint('✅ getUserItems: returned ${querySnapshot.docs.length} items');
+      return querySnapshot.docs
+          .map((doc) => Item.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e, st) {
+      debugPrint('❌ Error in getUserItems: $e');
+      debugPrint(st.toString());
+      return [];
+    }
   }
-}
-
-
-
-
 
   /// ─────────────── أوامر الشراء ───────────────
   Future<void> addPurchaseOrder(PurchaseOrder order) async {
@@ -387,15 +383,19 @@ Future<List<Item>> getUserItems(String userId) async {
 
   Future<void> createPurchaseOrder(PurchaseOrder order) async {
     final generatedPoNumber = await generatePoNumber(order.companyId);
-    final newDoc = _firestore.collection('purchase_orders').doc();
+    //  final newDoc = _firestore.collection('purchase_orders').doc();
 
     final newOrder = order.copyWith(
       poNumber: generatedPoNumber,
-      id: newDoc.id,
+      //    id: newDoc.id,
       orderDate: order.orderDate,
     );
 
-    await newDoc.set(newOrder.toMap());
+    //   await newDoc.set(newOrder.toMap());
+    await _firestore
+        .collection('purchase_orders')
+        .doc(order.id) // ← استخدم الـ id الذي أرسلته
+        .set(newOrder.toMap());
   }
 
   Future<String> generatePoNumber(String companyId) async {
@@ -411,6 +411,17 @@ Future<List<Item>> getUserItems(String userId) async {
     final formattedCount = orderCount.toString().padLeft(3, '0');
 
     return 'PO-PS-$yyMM$formattedCount';
+  }
+
+  Future<void> updatePurchaseOrder(PurchaseOrder order) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('purchase_orders')
+          .doc(order.id)
+          .update(order.toMap());
+    } catch (e) {
+      throw Exception('Failed to update order: $e');
+    }
   }
 
   /// ─────────────── الحركات المخزنية ───────────────
@@ -542,5 +553,45 @@ Future<List<Item>> getUserItems(String userId) async {
     }
 
     return allDocs;
+  }
+
+  Future<Map<String, String>> getCompanyName(String companyId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(companyId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        return {
+          'name_ar': (data?['name_ar'] ?? 'غير معروف').toString(),
+          'name_en': (data?['name_en'] ?? 'Unknown').toString(),
+        };
+      }
+      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+    } catch (e) {
+      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+    }
+  }
+
+  Future<Map<String, String>> getSupplierName(String supplierId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('vendors')
+          .doc(supplierId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        return {
+          'name_ar': (data?['name_ar'] ?? 'غير معروف').toString(),
+          'name_en': (data?['name_en'] ?? 'Unknown').toString(),
+        };
+      }
+      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+    } catch (e) {
+      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+    }
   }
 }

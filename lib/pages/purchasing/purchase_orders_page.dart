@@ -139,12 +139,12 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .collection('vendors')
           .doc(supplierId)
           .get();
-                if (isArabic) {
+      if (isArabic) {
         return doc.data()?['name_ar'] ?? supplierId;
       } else {
         return doc.data()?['name_en'] ?? supplierId;
       }
-   //   return doc.data()?['name_ar'] ?? supplierId;
+      //   return doc.data()?['name_ar'] ?? supplierId;
     } catch (e) {
       return supplierId;
     }
@@ -401,7 +401,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   void _editOrder(Map<String, dynamic> order) {
-    context.push('/edit-purchase-order/${order['id']}');
+    context.push('/purchase/${order['id']}');
   }
 
   Future<void> _exportOrder(Map<String, dynamic> order) async {
@@ -417,7 +417,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .doc(order['supplierId'])
           .get();
 
-      // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
+/*       // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
       List<dynamic> orderItems = List.from(order['items'] ?? []);
       Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
 
@@ -450,10 +450,10 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           item['name_ar'] = 'لا يوجد كود صنف';
           item['name_en'] = 'No item code';
         }
-      }
+      } */
 
       // تحديث order بعد تعديل العناصر
-      order['items'] = orderItems;
+      //   order['items'] = orderItems;
       final companyDataMap = companyData.data() ?? {};
       final base64Logo = companyDataMap['logo_base64'] as String?;
 
@@ -462,7 +462,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         orderData: order,
         supplierData: supplierData.data() ?? {},
         companyData: companyData.data() ?? {},
-        itemData: itemsDataMap,
+        itemData: {
+          'items': order['items'],
+        }, //itemsDataMap,
         base64Logo: base64Logo,
         isArabic: isArabic,
       );
@@ -529,6 +531,8 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       ),
     );
   }
+  
+  
 
   Future<void> _deleteOrder(Map<String, dynamic> order) async {
     try {
@@ -570,7 +574,12 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/purchase-order-details/${order['id']}'),
+        // onTap: () => context.push('/purchase/${order['id']}'),
+        onTap: () => context.push(
+          '/purchase/${order['id']}', // أو إذا كان order['id']، فتأكد أنها Map
+          extra: order, // هذا تمرير كائن كامل
+        ),
+
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -667,17 +676,20 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
-                    tooltip: 'edit'.tr(),
-                    onPressed: () => _editOrder(order),
-                  ),
+                  if (order['status'] == 'pending')
+                    IconButton(
+                      icon:
+                          const Icon(Icons.edit, size: 20, color: Colors.blue),
+                      tooltip: 'edit'.tr(),
+                      onPressed: () => _editOrder(order),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.picture_as_pdf,
                         size: 20, color: Colors.green),
                     tooltip: 'export_pdf'.tr(),
                     onPressed: () => _exportOrder(order),
                   ),
+                    if (order['status'] == 'pending')
                   IconButton(
                     icon: const Icon(Icons.delete, size: 20, color: Colors.red),
                     tooltip: 'delete'.tr(),

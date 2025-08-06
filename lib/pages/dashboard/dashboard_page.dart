@@ -668,6 +668,8 @@ bool _hasDifferences(Map<String, dynamic> oldData, Map<String, dynamic> newData)
 }
  */
 
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -690,6 +692,8 @@ class DashboardPage extends StatefulWidget {
 enum DashboardView { short, long }
 
 class DashboardPageState extends State<DashboardPage> {
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
+
   // Controllers and State
   final RefreshController _refreshController =
       RefreshController(initialRefresh: false);
@@ -713,18 +717,185 @@ class DashboardPageState extends State<DashboardPage> {
     super.initState();
     _initializeData();
     _checkSubscriptionStatus();
+    _startListeningToUserChanges();
   }
 
   @override
   void dispose() {
+    _userSubscription?.cancel();
     _refreshController.dispose();
     super.dispose();
   }
 
   Future<void> _initializeData() async {
     await _syncUserData();
+    await _reloadUserData(); // ✅ هذا جديد
     await loadSettings();
     await _loadInitialData();
+  }
+
+  bool isSameDate(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+/*   void _startListeningToUserChanges() {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    _userSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .snapshots()
+        .listen((snapshot) async {
+      debugPrint('🔥 Firestore snapshot received.');
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data();
+      debugPrint('Firestore data: $data');
+      if (data == null) return;
+
+      final createdAtTimestamp = data['createdAt'];
+      final int subscriptionDurationInDays =
+          data['subscriptionDurationInDays'] ?? 30;
+      final bool isActive = data['isActive'] ?? true;
+      final createdAt = createdAtTimestamp is Timestamp
+          ? createdAtTimestamp.toDate()
+          : DateTime.tryParse(createdAtTimestamp.toString());
+
+      // جلب البيانات المحلية
+      final localUser = await UserLocalStorage.getUser();
+
+      bool needsUpdate = false;
+
+      if (localUser == null ||
+          (localUser['createdAt'] as DateTime?)?.toIso8601String() !=
+              createdAt?.toIso8601String() ||
+          localUser['subscriptionDurationInDays'] !=
+              subscriptionDurationInDays ||
+          localUser['isActive'] != isActive) {
+        needsUpdate = true;
+      }
+
+      if (needsUpdate && createdAt != null) {
+        await UserLocalStorage.saveUser(
+          userId: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: firebaseUser.displayName,
+          companyIds: (data['companyIds'] as List?)?.cast<String>() ?? [],
+          factoryIds: (data['factoryIds'] as List?)?.cast<String>() ?? [],
+          supplierIds: (data['supplierIds'] as List?)?.cast<String>() ?? [],
+          createdAt: createdAt,
+          subscriptionDurationInDays: subscriptionDurationInDays,
+          isActive: isActive,
+        );
+        debugPrint('Local data saved, now reloading UI.');
+        _reloadUserData();
+
+        if (mounted) {
+          setState(() {
+            userName = firebaseUser.displayName;
+            userId = firebaseUser.uid;
+            userCompanyIds =
+                (data['companyIds'] as List?)?.cast<String>() ?? [];
+            isSubscriptionExpired = false;
+            isSubscriptionExpiringSoon = false;
+          });
+        }
+
+        debugPrint('✅ Local user data updated from Firestore.');
+      }
+    });
+  }
+StreamSubscription<DocumentSnapshot>? _userSubscription;
+ */
+  void _startListeningToUserChanges() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    _userSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .snapshots()
+        .listen((snapshot) async {
+      debugPrint('🔥 Firestore snapshot received.');
+
+      if (!snapshot.exists) return;
+      final data = snapshot.data();
+      if (data == null) return;
+
+      final localUser = await UserLocalStorage.getUser();
+      bool needUpdate = false;
+
+      final cloudCreatedAt = (data['createdAt'] as Timestamp?)?.toDate();
+      final cloudDuration = data['subscriptionDurationInDays'] ?? 30;
+      final cloudIsActive = data['isActive'] ?? true;
+
+      final localCreatedAt = localUser?['createdAt'] as DateTime?;
+      final localDuration = localUser?['subscriptionDurationInDays'];
+      final localIsActive = localUser?['isActive'];
+
+      debugPrint('🔍 Comparing:');
+      debugPrint(
+          '📦 cloud => createdAt=$cloudCreatedAt, duration=$cloudDuration, isActive=$cloudIsActive');
+      debugPrint(
+          '📦 local => createdAt=$localCreatedAt, duration=$localDuration, isActive=$localIsActive');
+
+      if (localCreatedAt == null ||
+          !localCreatedAt.isAtSameMomentAs(cloudCreatedAt!) ||
+          localDuration != cloudDuration ||
+          localIsActive != cloudIsActive) {
+        needUpdate = true;
+      }
+      if (localCreatedAt != null && cloudCreatedAt != null) {
+        debugPrint(
+            '📏 Time diff: ${localCreatedAt.difference(cloudCreatedAt).inMilliseconds} ms');
+      }
+
+      if (needUpdate) {
+        await UserLocalStorage.saveUser(
+          userId: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: firebaseUser.displayName,
+          companyIds: (data['companyIds'] as List?)?.cast<String>() ?? [],
+          factoryIds: (data['factoryIds'] as List?)?.cast<String>() ?? [],
+          supplierIds: (data['supplierIds'] as List?)?.cast<String>() ?? [],
+          createdAt: cloudCreatedAt!,
+          subscriptionDurationInDays: cloudDuration,
+          isActive: cloudIsActive,
+        );
+
+        debugPrint('✅ Local user data updated from Firestore.');
+
+        if (mounted) {
+          setState(() {
+            userName = firebaseUser.displayName;
+            userId = firebaseUser.uid;
+            userCompanyIds =
+                (data['companyIds'] as List?)?.cast<String>() ?? [];
+          });
+          _reloadUserData();
+        }
+      }
+    });
+  }
+
+  Future<void> _reloadUserData() async {
+    final user = await UserLocalStorage.getUser();
+    if (user == null || !mounted) return;
+
+    setState(() {
+      userName = user['displayName'];
+      userId = user['userId'];
+      userCompanyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+      _stats.totalCompanies = userCompanyIds.length;
+      final createdAt = user['createdAt'] as DateTime?;
+      final subscriptionDuration = user['subscriptionDurationInDays'] as int?;
+      final isActive = user['isActive'] as bool?;
+
+      debugPrint(
+          '🔁 Local reload: createdAt=$createdAt, duration=$subscriptionDuration, isActive=$isActive');
+    });
   }
 
   Future<void> loadSettings() async {
@@ -752,7 +923,7 @@ class DashboardPageState extends State<DashboardPage> {
     await fetchStats();
   }
 
-  Future<void> _checkSubscriptionStatus() async {
+/*   Future<void> _checkSubscriptionStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -800,6 +971,110 @@ debugPrint(
     }
 
     // ✅ إظهار تنبيه بانتهاء الاشتراك
+    if (mounted && daysLeft < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('subscription_expired'.tr()),
+          backgroundColor: Colors.grey,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    }
+  }
+ */
+
+  Future<void> _checkSubscriptionStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data();
+    if (data == null) return;
+
+    final Timestamp? createdAtTimestamp = data['createdAt'];
+    final int subscriptionDurationInDays =
+        data['subscriptionDurationInDays'] ?? 30;
+    final bool isActive = data['isActive'] ?? true;
+
+    if (createdAtTimestamp == null) return;
+
+    final createdAt = createdAtTimestamp.toDate();
+
+    // قراءة القيم المحلية
+    final localUser = await UserLocalStorage.getUser();
+
+    bool needUpdateLocal = false;
+
+    // تحقق اذا القيم اختلفت
+    if (localUser == null) {
+      needUpdateLocal = true;
+    } else {
+      final localCreatedAt = localUser['createdAt'] as DateTime?;
+      final localSubscriptionDuration =
+          localUser['subscriptionDurationInDays'] ?? 30;
+      final localIsActive = localUser['isActive'] ?? true;
+
+      if (localCreatedAt == null ||
+          !isSameDate(localCreatedAt, createdAt) ||
+          localSubscriptionDuration != subscriptionDurationInDays ||
+          localIsActive != isActive) {
+        needUpdateLocal = true;
+      }
+    }
+
+    if (needUpdateLocal) {
+      await UserLocalStorage.saveUser(
+        userId: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName,
+        companyIds: (data['companyIds'] as List?)?.cast<String>() ?? [],
+        factoryIds: (data['factoryIds'] as List?)?.cast<String>() ?? [],
+        supplierIds: (data['supplierIds'] as List?)?.cast<String>() ?? [],
+        createdAt: createdAt,
+        subscriptionDurationInDays: subscriptionDurationInDays,
+        isActive: isActive,
+      );
+    }
+
+final expirationDate = createdAt.add(Duration(days: subscriptionDurationInDays));
+final now = DateTime.now();
+
+final durationLeft = expirationDate.difference(now);
+final daysLeft = durationLeft.inHours / 24;
+
+debugPrint(
+  '📆 Subscription status:\n'
+  '  ➤ createdAt: $createdAt\n'
+  '  ➤ expirationDate: $expirationDate\n'
+  '  ➤ durationLeft: ${durationLeft.inHours} hours (${daysLeft.toStringAsFixed(2)} days)',
+);
+
+
+    if (mounted) {
+      setState(() {
+        isSubscriptionExpiringSoon = daysLeft <= 3 && daysLeft >= 0;
+        isSubscriptionExpired = daysLeft < 0;
+        isLoading = false;
+      });
+    }
+
+    if (mounted && daysLeft >= 0 && daysLeft < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr('subscription_days_left',
+              namedArgs: {'days': daysLeft.toString()})),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+
     if (mounted && daysLeft < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1031,7 +1306,7 @@ debugPrint(
     }
   }
 
-  Future<void> _syncUserData() async {
+/*   Future<void> _syncUserData() async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) return;
 
@@ -1052,6 +1327,71 @@ debugPrint(
         supplierIds:
             (userDoc.data()?['supplierIds'] as List?)?.cast<String>() ?? [],
       );
+    }
+  } */
+
+  Future<void> _syncUserData() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (!userDoc.exists) return;
+
+    final data = userDoc.data();
+    if (data == null) return;
+
+    final Timestamp? createdAtTimestamp = data['createdAt'];
+    final createdAt = createdAtTimestamp?.toDate();
+    final subscriptionDurationInDays = data['subscriptionDurationInDays'] ?? 30;
+    final isActive = data['isActive'] ?? true;
+
+    // جلب البيانات المحلية
+    final localUser = await UserLocalStorage.getUser();
+
+    bool needUpdateLocal = false;
+
+    if (localUser == null) {
+      needUpdateLocal = true;
+    } else {
+      final localCreatedAt = localUser['createdAt'] as DateTime?;
+      final localSubscriptionDuration =
+          localUser['subscriptionDurationInDays'] ?? 30;
+      final localIsActive = localUser['isActive'] ?? true;
+
+      if (localCreatedAt == null ||
+          !isSameDate(localCreatedAt, createdAt) ||
+          localSubscriptionDuration != subscriptionDurationInDays ||
+          localIsActive != isActive) {
+        needUpdateLocal = true;
+      }
+    }
+
+    if (needUpdateLocal) {
+      await UserLocalStorage.saveUser(
+        userId: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: firebaseUser.displayName,
+        companyIds: (data['companyIds'] as List?)?.cast<String>() ?? [],
+        factoryIds: (data['factoryIds'] as List?)?.cast<String>() ?? [],
+        supplierIds: (data['supplierIds'] as List?)?.cast<String>() ?? [],
+        createdAt: createdAt,
+        subscriptionDurationInDays: subscriptionDurationInDays,
+        isActive: isActive,
+      );
+
+      // حدث الحالة إذا الواجهة موجودة
+      if (mounted) {
+        setState(() {
+          userName = firebaseUser.displayName;
+          userId = firebaseUser.uid;
+          userCompanyIds = (data['companyIds'] as List?)?.cast<String>() ?? [];
+          // ... حدث بقية المتغيرات حسب الحاجة
+        });
+      }
     }
   }
 
@@ -1074,6 +1414,7 @@ debugPrint(
 
   Future<void> _handleRefresh() async {
     try {
+      await _syncUserData();
       await fetchStats();
       _refreshController.refreshCompleted();
     } catch (e) {

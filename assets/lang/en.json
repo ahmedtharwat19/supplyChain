@@ -31,7 +31,7 @@
   "confirmed": "Confirmed",
   "not_confirmed": "Not Confirmed",
   "export_pdf": "Export PDF",
-  "edit_order": "Edit Order",
+
   "delete_order": "Delete Order",
   "delete_confirmation": "Delete Confirmation",
   "confirm_delete_message": "Are you sure you want to delete this order?",
@@ -451,8 +451,19 @@
 
 "subscription_expired": "Your subscription has expired. Access will be restricted soon.",
   "subscription_days_left": "You have {days} day(s) left before your subscription ends.",
-  "no_access_rights": "You do not have access rights to this feature. Please contact support for assistance."
+  "no_access_rights": "You do not have access rights to this feature. Please contact support for assistance.",
+  "no_items_added_to_order": "No items have been added to the order. Please add items before saving.",
+  "is_taxable": "Is this taxable?",
 
 
+
+  "edit_order": "Edit Purchase Order",
+  "order_updated": "Order updated successfully",
+  "update_error": "Error while updating",
+  "change_status": "Change Status",
+  "mark_as_completed": "Mark as Completed",
+  "mark_as_cancelled": "Mark as Cancelled",
+  "order_details": "Order Details",
+  "po_number": "PO Number"
 
 }
