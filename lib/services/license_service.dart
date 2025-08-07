@@ -868,3 +868,44 @@ class LicenseException implements Exception {
   @override
   String toString() => 'LicenseException: $message';
 }
+
+Future<void> _initializeFirestoreCollections() async {
+  try {
+    // إنشاء مستند تجريبي في licenses إذا لم تكن المجموعة موجودة
+    final licenseRef = _firestore.collection('licenses').doc('sample_license');
+    await licenseRef.set({
+      'sample': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    
+    // إنشاء مستند تجريبي في license_requests
+    final requestRef = _firestore.collection('license_requests').doc('sample_request');
+    await requestRef.set({
+      'sample': true,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    
+    // حذف المستندات التجريبية بعد التأكد من إنشاء المجموعات
+    await Future.wait([
+      licenseRef.delete(),
+      requestRef.delete(),
+    ]);
+  } catch (e) {
+    debugPrint('Collections already exist or creation failed: $e');
+  }
+}
+
+// استدعاء هذه الدالة في constructor
+LicenseService({
+  FirebaseFirestore? firestore,
+  FirebaseAuth? auth,
+  Connectivity? connectivity,
+  DeviceInfoPlugin? deviceInfo,
+  NetworkInfo? networkInfo,
+})  : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance,
+      _connectivity = connectivity ?? Connectivity(),
+      _deviceInfo = deviceInfo ?? DeviceInfoPlugin(),
+      _networkInfo = networkInfo ?? NetworkInfo() {
+  _initializeFirestoreCollections();
+}
