@@ -1,11 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:puresip_purchasing/utils/user_local_storage.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/services/user_subscription_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -39,6 +35,120 @@ class _SplashScreenState extends State<SplashScreen>
       }
     });
   }
+
+  Future<void> _startApp() async {
+  final subscriptionService = UserSubscriptionService();
+  final result = await subscriptionService.checkUserSubscription();
+
+  if (!mounted) return;
+
+  if (!result.isValid || result.isExpired) {
+    SubscriptionNotifier.showExpiredDialog(context);
+    await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return; 
+    context.go('/login');
+    return;
+  }
+
+  SubscriptionNotifier.showWarning(context, result);
+  context.go(result.isValid ? '/dashboard' : '/login');
+}
+  
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: Image.asset(
+                  'assets/images/splash_screen.jpg',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Column(
+                children: [
+                  Text(
+                    'Ahmed Tharwat tech.',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'ALL RIGHTS ARE RESERVED',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/*   void _showExpiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(tr('membership_expired_title')),
+        content: Text(tr('membership_expired_message')),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.go('/login');
+            },
+            child: Text(tr('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+ */
+/*   void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('error'.tr()),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _startApp(); // إعادة المحاولة
+            },
+            child: Text('retry'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+ */
+ 
 
 /*   Future<void> _startApp() async {
     final connectivityResult = await Connectivity().checkConnectivity();
@@ -331,7 +441,7 @@ Future<void> _startApp() async {
 }
  */
 
-  Future<void> _startApp() async {
+ /*  Future<void> _startApp() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     debugPrint('📶 Connectivity result: $connectivityResult');
 
@@ -499,100 +609,8 @@ Future<void> _startApp() async {
       _showExpiredDialog();
     }
   }
-
-  void _showExpiredDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Text(tr('membership_expired_title')),
-        content: Text(tr('membership_expired_message')),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.go('/login');
-            },
-            child: Text(tr('ok')),
-          ),
-        ],
-      ),
-    );
-  }
-
-/*   void _showErrorDialog(String message) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('error'.tr()),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _startApp(); // إعادة المحاولة
-            },
-            child: Text('retry'.tr()),
-          ),
-        ],
-      ),
-    );
-  }
  */
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Center(
-                child: Image.asset(
-                  'assets/images/splash_screen.jpg',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 24),
-              child: Column(
-                children: [
-                  Text(
-                    'Ahmed Tharwat tech.',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'ALL RIGHTS ARE RESERVED',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
+  
 
 /*   @override
   void initState() {

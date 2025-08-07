@@ -34,12 +34,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   List<Map<String, dynamic>> _userCompanies = [];
   String? _selectedCompanyId;
 
-  bool get isArabic => Localizations.localeOf(context).languageCode == 'ar';
+  //bool get isArabic => Localizations.localeOf(context).languageCode == 'ar';
+  late bool _isArabic;
 
   @override
   void initState() {
     super.initState();
-    _initData();
+    //_initData();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -49,7 +50,24 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     super.dispose();
   }
 
+  bool _isDataLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isDataLoaded) {
+      _isDataLoaded = true;
+        setState(() {
+   _isArabic = context.locale.languageCode == 'ar';// Localizations.localeOf(context).languageCode == 'ar';
+  });
+      debugPrint("Current language is Arabic? $_isArabic");
+      _initData(); // الدالة التي كانت تُستدعى في initState
+    }
+  }
+
   Future<void> _initData() async {
+    //   _isArabic = Localizations.localeOf(context).languageCode == 'ar';
     await loadUserInfo();
     await _loadUserCompaniesCount();
     await _loadAllOrders();
@@ -84,7 +102,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .get();
       return {
         'id': id,
-        'name': isArabic
+        'name': _isArabic
             ? companyDoc['name_ar'] ?? id
             : companyDoc['name_en'] ?? id,
       };
@@ -116,7 +134,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     //debugPrint('User companies count: $_userCompaniesCount');
   }
 
-  Future<String> _getCompanyName(String companyId) async {
+  Future<String> _getCompanyName(String companyId, bool isArabic) async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('companies')
@@ -133,7 +151,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     }
   }
 
-  Future<String> _getSupplierName(String supplierId) async {
+  Future<String> _getSupplierName(String supplierId, bool isArabic) async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('vendors')
@@ -144,7 +162,6 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       } else {
         return doc.data()?['name_en'] ?? supplierId;
       }
-      //   return doc.data()?['name_ar'] ?? supplierId;
     } catch (e) {
       return supplierId;
     }
@@ -214,12 +231,21 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         final companyId = data['companyId'] as String? ?? '';
         final supplierId = data['supplierId'] as String? ?? '';
 
-        final company = await _getCompanyName(companyId);
-        final supplier = await _getSupplierName(supplierId);
+        final company = await _getCompanyName(companyId, _isArabic);
+        final supplier = await _getSupplierName(supplierId, _isArabic);
+
+          // نحضّر نسخة قابلة للترميز بالكامل
+        final cleanedData = Map<String, dynamic>.from(data);
+
+          // تأكد من تحويل كل Timestamps إلى int
+        if (cleanedData['orderDate'] is Timestamp) {
+          cleanedData['orderDate'] =
+              (cleanedData['orderDate'] as Timestamp).millisecondsSinceEpoch;
+        }
 
         // تحويل Timestamp إلى milliseconds منذ epoch
         final orderData = {
-          ...data,
+          ...cleanedData,
           'id': doc.id,
           'companyName': company,
           'supplierName': supplier,
@@ -417,41 +443,6 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .doc(order['supplierId'])
           .get();
 
-/*       // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
-      List<dynamic> orderItems = List.from(order['items'] ?? []);
-      Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
-
-      for (var item in orderItems) {
-        final itemId = item['itemId'];
-        if (itemId != null && itemId.isNotEmpty) {
-          try {
-            final itemSnapshot = await FirebaseFirestore.instance
-                .collection('items')
-                .doc(itemId) // تم التصحيح هنا لاستخدام itemId مباشرة
-                .get();
-
-            if (itemSnapshot.exists) {
-              final itemData = itemSnapshot.data();
-              // أضف اسم الصنف حسب اللغة داخل العنصر مباشرة
-              item['name_ar'] = itemData?['name_ar'] ?? 'غير متوفر';
-              item['name_en'] = itemData?['name_en'] ?? 'Not available';
-              itemsDataMap[itemId] = itemData;
-            } else {
-              debugPrint('Item document $itemId does not exist');
-              item['name_ar'] = 'صنف غير موجود';
-              item['name_en'] = 'Item not found';
-            }
-          } catch (e) {
-            debugPrint('Error fetching item $itemId: $e');
-            item['name_ar'] = 'خطأ في جلب البيانات';
-            item['name_en'] = 'Error loading data';
-          }
-        } else {
-          item['name_ar'] = 'لا يوجد كود صنف';
-          item['name_en'] = 'No item code';
-        }
-      } */
-
       // تحديث order بعد تعديل العناصر
       //   order['items'] = orderItems;
       final companyDataMap = companyData.data() ?? {};
@@ -466,7 +457,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           'items': order['items'],
         }, //itemsDataMap,
         base64Logo: base64Logo,
-        isArabic: isArabic,
+        isArabic: _isArabic,
       );
 
       final bytes = await pdf.save();
@@ -531,8 +522,6 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       ),
     );
   }
-  
-  
 
   Future<void> _deleteOrder(Map<String, dynamic> order) async {
     try {
@@ -689,12 +678,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     tooltip: 'export_pdf'.tr(),
                     onPressed: () => _exportOrder(order),
                   ),
-                    if (order['status'] == 'pending')
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                    tooltip: 'delete'.tr(),
-                    onPressed: () => _confirmDeleteOrder(order),
-                  ),
+                  if (order['status'] == 'pending')
+                    IconButton(
+                      icon:
+                          const Icon(Icons.delete, size: 20, color: Colors.red),
+                      tooltip: 'delete'.tr(),
+                      onPressed: () => _confirmDeleteOrder(order),
+                    ),
                 ],
               ),
             ],
@@ -730,31 +720,6 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             iconSize: 28,
           ),
         ],
-
-/*         actions: [
-              IconButton(
-      icon: const Icon(Icons.add),
-      tooltip: tr('add_purchase_order'),
-      onPressed: () async {
-        final result = await context.push('/add-purchase-order');
-        if (result == true && mounted) await _loadAllOrders();
-        _filterOrders(searchQuery);
-      },
-    ),
-        ], */
-/*         actions: [
-          if (_userCompaniesCount > 1)
-            IconButton(
-              icon: const Icon(Icons.business),
-              tooltip: 'multiple_companies'.tr(),
-              onPressed: _showCompanySelector,
-            ),
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: _showSortOptions,
-            tooltip: 'sort_options'.tr(),
-          ),
-        ], */
         body: Column(
           children: [
             Padding(
@@ -814,6 +779,71 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+/*         actions: [
+              IconButton(
+      icon: const Icon(Icons.add),
+      tooltip: tr('add_purchase_order'),
+      onPressed: () async {
+        final result = await context.push('/add-purchase-order');
+        if (result == true && mounted) await _loadAllOrders();
+        _filterOrders(searchQuery);
+      },
+    ),
+        ], */
+/*         actions: [
+          if (_userCompaniesCount > 1)
+            IconButton(
+              icon: const Icon(Icons.business),
+              tooltip: 'multiple_companies'.tr(),
+              onPressed: _showCompanySelector,
+            ),
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: _showSortOptions,
+            tooltip: 'sort_options'.tr(),
+          ),
+        ], */
+       
+/*       // تجهيز عناصر الطلب مع أسماء الأصناف من قاعدة البيانات
+      List<dynamic> orderItems = List.from(order['items'] ?? []);
+      Map<String, dynamic> itemsDataMap = {}; // تخزين أسماء الأصناف حسب ID
+
+      for (var item in orderItems) {
+        final itemId = item['itemId'];
+        if (itemId != null && itemId.isNotEmpty) {
+          try {
+            final itemSnapshot = await FirebaseFirestore.instance
+                .collection('items')
+                .doc(itemId) // تم التصحيح هنا لاستخدام itemId مباشرة
+                .get();
+
+            if (itemSnapshot.exists) {
+              final itemData = itemSnapshot.data();
+              // أضف اسم الصنف حسب اللغة داخل العنصر مباشرة
+              item['name_ar'] = itemData?['name_ar'] ?? 'غير متوفر';
+              item['name_en'] = itemData?['name_en'] ?? 'Not available';
+              itemsDataMap[itemId] = itemData;
+            } else {
+              debugPrint('Item document $itemId does not exist');
+              item['name_ar'] = 'صنف غير موجود';
+              item['name_en'] = 'Item not found';
+            }
+          } catch (e) {
+            debugPrint('Error fetching item $itemId: $e');
+            item['name_ar'] = 'خطأ في جلب البيانات';
+            item['name_en'] = 'Error loading data';
+          }
+        } else {
+          item['name_ar'] = 'لا يوجد كود صنف';
+          item['name_en'] = 'No item code';
+        }
+      } */
 /*         floatingActionButton: FloatingActionButton(
           onPressed: () async {
             final result = await context.push('/add-purchase-order');
@@ -823,7 +853,3 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           tooltip: 'add_purchase_order'.tr(),
           child: const Icon(Icons.add),
         ), */
-      ),
-    );
-  }
-}

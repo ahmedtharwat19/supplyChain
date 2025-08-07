@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,9 @@ import 'package:puresip_purchasing/pages/manufacturing/edit_factory_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/factories_page.dart';
 import 'package:puresip_purchasing/pages/purchasing/edit_puchase_order_page.dart';
 import 'package:puresip_purchasing/services/order_service.dart';
+import 'package:puresip_purchasing/services/license_service.dart';
+import 'package:puresip_purchasing/widgets/auth/admin_license_management.dart';
+import 'package:puresip_purchasing/widgets/auth/user_license_request.dart';
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -29,6 +33,7 @@ import 'pages/items/items_page.dart';
 
 // مفتاح التنقل العام
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final _licenseService = LicenseService();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: navigatorKey,
@@ -93,19 +98,16 @@ final GoRouter appRouter = GoRouter(
       path: '/purchase-orders',
       builder: (context, state) => const PurchaseOrdersPage(),
     ),
-GoRoute(
+    GoRoute(
       path: '/purchase/:id',
       name: 'purchase',
       builder: (context, state) {
-        // الحالة 1: إذا تم تمرير PurchaseOrder كـ extra
         if (state.extra != null && state.extra is PurchaseOrder) {
           final order = state.extra as PurchaseOrder;
           return order.status == 'pending'
               ? EditPurchaseOrderPage(order: order)
               : PurchaseOrderDetailsPage(order: order);
-        }
-        // الحالة 2: إذا لم يتم تمرير order، جلبها من Firestore باستخدام ID
-        else {
+        } else {
           final id = state.pathParameters['id']!;
           return FutureBuilder<PurchaseOrder>(
             future: OrderService.getOrderById(id),
@@ -125,17 +127,6 @@ GoRoute(
         }
       },
     ),
-/*     GoRoute(
-      path: '/purchase-order-detail',
-      builder: (context, state) {
-        final companyId = state.uri.queryParameters['companyId'] ?? '';
-        final orderId = state.uri.queryParameters['orderId'] ?? '';
-        return PurchaseOrderDetailPage(
-          companyId: companyId,
-          orderId: orderId,
-        );
-      },
-    ), */
     GoRoute(
       path: '/add-purchase-order',
       builder: (context, state) {
@@ -160,10 +151,13 @@ GoRoute(
       },
     ),
     GoRoute(
-        path: '/factories', builder: (context, state) => const FactoriesPage()),
+      path: '/factories',
+      builder: (context, state) => const FactoriesPage(),
+    ),
     GoRoute(
-        path: '/add-factory',
-        builder: (context, state) => const AddFactoryPage()),
+      path: '/add-factory',
+      builder: (context, state) => const AddFactoryPage(),
+    ),
     GoRoute(
       path: '/edit-factory/:id',
       builder: (context, state) {
@@ -171,19 +165,63 @@ GoRoute(
         return EditFactoryPage(factoryId: factoryId);
       },
     ),
+    GoRoute(
+      path: '/license-request',
+      builder: (context, state) => const UserLicenseRequestPage(),
+    ),
+    GoRoute(
+      path: '/admin/licenses',
+      builder: (context, state) => const AdminLicenseManagementPage(),
+    ),
   ],
 
-  /// ✅ التوجيه حسب حالة تسجيل الدخول
-  redirect: (context, state) {
+  redirect: (context, state) async {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
     final isLoggingIn =
         state.fullPath == '/login' || state.fullPath == '/signup';
+    final isLicenseRequest = state.fullPath == '/license-request';
+    final isAdminLicense = state.fullPath == '/admin/licenses';
 
+    // حالة شاشة البداية
     if (isSplash) return null;
-    if (user == null && !isLoggingIn) return '/login';
-    if (user != null && isLoggingIn) return '/dashboard';
+
+    // حالة عدم تسجيل الدخول
+    if (user == null) {
+      return isLoggingIn ? null : '/login';
+    }
+
+    // التحقق من الصلاحيات الإدارية
+    final isAdmin = await _checkIfAdmin(user.uid);
+
+    // توجيه الإداريين
+    if (isAdmin) {
+      return isAdminLicense ? null : '/admin/licenses';
+    }
+
+    // توجيه المستخدمين العاديين
+    final licenseStatus = await _licenseService.checkLicenseStatus();
+    if (!licenseStatus.isValid) {
+      return isLicenseRequest ? null : '/license-request';
+    }
+
+    // توجيه عام بعد التحقق
+    if (isLoggingIn) {
+      return licenseStatus.isValid ? '/dashboard' : '/license-request';
+    }
 
     return null;
   },
 );
+
+Future<bool> _checkIfAdmin(String userId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    return doc.data()?['isAdmin'] == true;
+  } catch (e) {
+    return false;
+  }
+}
