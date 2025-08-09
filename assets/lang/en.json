@@ -512,7 +512,8 @@
   "no_license": "No active license found",
   "license_expired": "License has expired",
   "device_limit_reached": "Device limit reached",
-   "no_internet_connection": "No internet connection"
+   "no_internet_connection": "No internet connection",
+  "no_valid_license": "No Valid License..."
 
 
 }

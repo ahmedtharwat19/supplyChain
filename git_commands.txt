@@ -47,5 +47,7 @@ git push -u origin main
 Run web app in port 5000
 
 flutter run -d chrome --web-port=5000
+flutter run -d chrome --web-port=4999
+
 flutter run -d CPH2235 -v
 flutter run -d windows -v
