@@ -41,7 +41,7 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
       'address': addressController.text.trim(),
       'phone': phoneController.text.trim(),
       'company_id': companyId,
-      'user_id': user['userId'],
+      'userId': user['userId'],
       'createdAt': Timestamp.now(),
     });
 
@@ -127,14 +127,14 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
     if (user == null) return;
 
     final data = {
-      'name_ar': _nameArController.text.trim(),
-      'name_en': _nameEnController.text.trim(),
+      'nameAr': _nameArController.text.trim(),
+      'nameEn': _nameEnController.text.trim(),
       'location': _locationController.text.trim(),
-      'manager_name': _managerController.text.trim(),
-      'manager_phone': _phoneController.text.trim(),
+      'managerName': _managerController.text.trim(),
+      'managerPhone': _phoneController.text.trim(),
       //'company_id': user.uid, // أو أي منطق للمفتاح
       'createdAt': FieldValue.serverTimestamp(),
-      'user_id': user.uid,
+      'userId': user.uid,
     };
 
     try {
@@ -175,14 +175,14 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
             children: [
               TextFormField(
                 controller: _nameArController,
-                decoration: InputDecoration(labelText: tr('name_arabic')),
+                decoration: InputDecoration(labelText: tr('nameArabic')),
                 validator: (v) => v == null || v.isEmpty ? tr('required_field') : null,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameEnController,
-                decoration: InputDecoration(labelText: tr('name_english')),
+                decoration: InputDecoration(labelText: tr('nameEnglish')),
                 validator: (v) => v == null || v.isEmpty ? tr('required_field') : null,
               ),
               const SizedBox(height: 8),
@@ -193,12 +193,12 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _managerController,
-                decoration: InputDecoration(labelText: tr('manager_name')),
+                decoration: InputDecoration(labelText: tr('managerName')),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
-                decoration: InputDecoration(labelText: tr('manager_phone')),
+                decoration: InputDecoration(labelText: tr('managerPhone')),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 24),
@@ -334,13 +334,13 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
     if (user == null) return;
 
     final data = {
-      'name_ar': _nameArController.text.trim(),
-      'name_en': _nameEnController.text.trim(),
+      'nameAr': _nameArController.text.trim(),
+      'nameEn': _nameEnController.text.trim(),
       'location': _locationController.text.trim(),
-      'manager_name': _managerController.text.trim(),
-      'manager_phone': _phoneController.text.trim(),
+      'managerName': _managerController.text.trim(),
+      'managerPhone': _phoneController.text.trim(),
       'createdAt': FieldValue.serverTimestamp(),
-      'user_id': user.uid,
+      'userId': user.uid,
       'companyIds': [], // حدث حسب متطلباتك
     };
 
@@ -465,8 +465,8 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
         .map((doc) => {
               'id': doc.id,
               'name': isArabic
-                  ? doc.data()['name_ar'] ?? ''
-                  : doc.data()['name_en'] ?? '',
+                  ? doc.data()['nameAr'] ?? ''
+                  : doc.data()['nameEn'] ?? '',
             })
         .toList();
 
@@ -487,13 +487,13 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
     setState(() => _isLoading = true);
     final user = FirebaseAuth.instance.currentUser!;
     final data = {
-      'name_ar': _nameAr.text.trim(),
-      'name_en': _nameEn.text.trim(),
+      'nameAr': _nameAr.text.trim(),
+      'nameEn': _nameEn.text.trim(),
       'location': _location.text.trim(),
-      'manager_name': _manager.text.trim(),
-      'manager_phone': _phone.text.trim(),
+      'managerName': _manager.text.trim(),
+      'managerPhone': _phone.text.trim(),
       'createdAt': FieldValue.serverTimestamp(),
-      'user_id': user.uid,
+      'userId': user.uid,
       'companyIds': _selectedCompanyIds,
     };
 
@@ -578,7 +578,7 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
             children: [
               TextFormField(
                 controller: _nameAr,
-                decoration: InputDecoration(labelText: tr('factory_name_ar')),
+                decoration: InputDecoration(labelText: tr('factory_nameAr')),
                 inputFormatters: [_getFmt('arabic')],
                 onChanged: _onChangeWarn('arabic'),
                 validator: (v) {
@@ -592,7 +592,7 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameEn,
-                decoration: InputDecoration(labelText: tr('factory_name_en')),
+                decoration: InputDecoration(labelText: tr('factory_nameEn')),
                 inputFormatters: [_getFmt('english')],
                 onChanged: _onChangeWarn('english'),
                 validator: (v) {
@@ -613,14 +613,14 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _manager,
-                decoration: InputDecoration(labelText: tr('manager_name')),
+                decoration: InputDecoration(labelText: tr('managerName')),
                 validator: (v) =>
                     (v?.trim().isEmpty ?? true) ? tr('field_required') : null,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phone,
-                decoration: InputDecoration(labelText: tr('manager_phone')),
+                decoration: InputDecoration(labelText: tr('managerPhone')),
                 keyboardType: TextInputType.phone,
                 inputFormatters: [_getFmt('digits')],
                 onChanged: _onChangeWarn('digits'),

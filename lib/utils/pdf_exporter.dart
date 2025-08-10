@@ -169,8 +169,8 @@ class PdfExporter {
 === ${isArabic ? 'فاتورة شراء' : 'Purchase Order'} ===
 ${isArabic ? 'رقم الفاتورة' : 'Invoice No'}: $poNumber
 ${isArabic ? 'التاريخ' : 'Date'}: ${_formatOrderDate(orderData['orderDate'])}
-${isArabic ? 'الشركة' : 'Company'}: ${isArabic ? companyData['name_ar'] : companyData['name_en']}
-${isArabic ? 'المورد' : 'Supplier'}: ${isArabic ? supplierData['name_ar'] : supplierData['name_en']}
+${isArabic ? 'الشركة' : 'Company'}: ${isArabic ? companyData['nameAr'] : companyData['nameEn']}
+${isArabic ? 'المورد' : 'Supplier'}: ${isArabic ? supplierData['nameAr'] : supplierData['nameEn']}
 
 ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(orderData['totalAmountAfterTax'])} ${orderData['currency'] ?? 'EGP'}
     =====xxx===xxx=====
@@ -261,7 +261,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
                   : pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  isArabic ? companyData['name_ar'] : companyData['name_en'],
+                  isArabic ? companyData['nameAr'] : companyData['nameEn'],
                   style: pw.TextStyle(
                     fontSize: _headerFontSize + 2,
                     fontWeight: pw.FontWeight.bold,
@@ -357,7 +357,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
         ),
         pw.Expanded(
           child: pw.Text(
-            isArabic ? supplierData['name_ar'] : supplierData['name_en'],
+            isArabic ? supplierData['nameAr'] : supplierData['nameEn'],
             style: pw.TextStyle(
               font: arabicFont,
             ),
@@ -721,7 +721,7 @@ ${isArabic ? 'المجموع النهائي' : 'Total'}: ${_formatCurrency(order
       children: [
         pw.Divider(),
         pw.Text(
-          userName, // Replaced user_id with company name
+          userName, // Replaced userId with company name
           style: pw.TextStyle(
             fontSize: _smallFontSize,
             font: arabicFont,

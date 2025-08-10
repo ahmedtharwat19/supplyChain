@@ -103,8 +103,8 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       return {
         'id': id,
         'name': _isArabic
-            ? companyDoc['name_ar'] ?? id
-            : companyDoc['name_en'] ?? id,
+            ? companyDoc['nameAr'] ?? id
+            : companyDoc['nameEn'] ?? id,
       };
     }).toList();
 
@@ -142,9 +142,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .get();
 
       if (isArabic) {
-        return doc.data()?['name_ar'] ?? companyId;
+        return doc.data()?['nameAr'] ?? companyId;
       } else {
-        return doc.data()?['name_en'] ?? companyId;
+        return doc.data()?['nameEn'] ?? companyId;
       }
     } catch (e) {
       return companyId;
@@ -158,9 +158,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           .doc(supplierId)
           .get();
       if (isArabic) {
-        return doc.data()?['name_ar'] ?? supplierId;
+        return doc.data()?['nameAr'] ?? supplierId;
       } else {
-        return doc.data()?['name_en'] ?? supplierId;
+        return doc.data()?['nameEn'] ?? supplierId;
       }
     } catch (e) {
       return supplierId;
@@ -446,7 +446,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       // تحديث order بعد تعديل العناصر
       //   order['items'] = orderItems;
       final companyDataMap = companyData.data() ?? {};
-      final base64Logo = companyDataMap['logo_base64'] as String?;
+      final base64Logo = companyDataMap['logoBase64'] as String?;
 
       final pdf = await PdfExporter.generatePurchaseOrderPdf(
         orderId: order['id'],
@@ -826,22 +826,22 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             if (itemSnapshot.exists) {
               final itemData = itemSnapshot.data();
               // أضف اسم الصنف حسب اللغة داخل العنصر مباشرة
-              item['name_ar'] = itemData?['name_ar'] ?? 'غير متوفر';
-              item['name_en'] = itemData?['name_en'] ?? 'Not available';
+              item['nameAr'] = itemData?['nameAr'] ?? 'غير متوفر';
+              item['nameEn'] = itemData?['nameEn'] ?? 'Not available';
               itemsDataMap[itemId] = itemData;
             } else {
               debugPrint('Item document $itemId does not exist');
-              item['name_ar'] = 'صنف غير موجود';
-              item['name_en'] = 'Item not found';
+              item['nameAr'] = 'صنف غير موجود';
+              item['nameEn'] = 'Item not found';
             }
           } catch (e) {
             debugPrint('Error fetching item $itemId: $e');
-            item['name_ar'] = 'خطأ في جلب البيانات';
-            item['name_en'] = 'Error loading data';
+            item['nameAr'] = 'خطأ في جلب البيانات';
+            item['nameEn'] = 'Error loading data';
           }
         } else {
-          item['name_ar'] = 'لا يوجد كود صنف';
-          item['name_en'] = 'No item code';
+          item['nameAr'] = 'لا يوجد كود صنف';
+          item['nameEn'] = 'No item code';
         }
       } */
 /*         floatingActionButton: FloatingActionButton(

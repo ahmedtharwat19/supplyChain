@@ -65,7 +65,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           .doc(userId)
           .get();
       if (!userDoc.exists) return false;
-      final isActive = userDoc.data()?['is_active'] ?? false;
+      final isActive = userDoc.data()?['isActive'] ?? false;
       return isActive == true;
     } catch (e) {
       debugPrint('❌ خطأ في التحقق من حالة المستخدم: $e');
@@ -93,8 +93,8 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     final normalizedEn = nameEn.trim().toLowerCase();
 
     for (var doc in snapshot.docs) {
-      final existingAr = (doc['name_ar'] ?? '').toString().trim().toLowerCase();
-      final existingEn = (doc['name_en'] ?? '').toString().trim().toLowerCase();
+      final existingAr = (doc['nameAr'] ?? '').toString().trim().toLowerCase();
+      final existingEn = (doc['nameEn'] ?? '').toString().trim().toLowerCase();
       if (existingAr == normalizedAr || existingEn == normalizedEn) {
         return true;
       }
@@ -188,13 +188,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
     try {
       final companyData = {
-        'name_ar': _nameArController.text.trim(),
-        'name_en': _nameEnController.text.trim(),
+        'nameAr': _nameArController.text.trim(),
+        'nameEn': _nameEnController.text.trim(),
         'address': _addressController.text.trim(),
-        'manager_name': _managerNameController.text.trim(),
-        'manager_phone': _managerPhoneController.text.trim(),
-        'logo_base64': _base64Logo,
-        'user_id': userId,
+        'managerName': _managerNameController.text.trim(),
+        'managerPhone': _managerPhoneController.text.trim(),
+        'logoBase64': _base64Logo,
+        'userId': userId,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
@@ -242,14 +242,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                   TextField(
                     controller: _nameArController,
                     decoration:
-                        InputDecoration(labelText: tr('company_name_arabic')),
+                        InputDecoration(labelText: tr('company_nameArabic')),
                     inputFormatters: [arabicOnlyFormatter],
                     textInputAction: TextInputAction.next,
                   ),
                   TextField(
                     controller: _nameEnController,
                     decoration:
-                        InputDecoration(labelText: tr('company_name_english')),
+                        InputDecoration(labelText: tr('company_nameEnglish')),
                     inputFormatters: [englishOnlyFormatter],
                     textInputAction: TextInputAction.next,
                   ),
@@ -262,14 +262,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                   TextField(
                     controller: _managerNameController,
                     decoration:
-                        InputDecoration(labelText: tr('company_manager_name')),
+                        InputDecoration(labelText: tr('company_managerName')),
                     // inputFormatters: [arabicOnlyFormatter],
                     textInputAction: TextInputAction.next,
                   ),
                   TextField(
                     controller: _managerPhoneController,
                     decoration:
-                        InputDecoration(labelText: tr('company_manager_phone')),
+                        InputDecoration(labelText: tr('company_managerPhone')),
                     keyboardType: TextInputType.phone,
                     inputFormatters: [numbersOnlyFormatter],
                     textInputAction: TextInputAction.next,
@@ -397,11 +397,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final normalizedEn = nameEn.replaceAll(RegExp(r'\s+'), '').toLowerCase();
 
       for (var doc in snapshot.docs) {
-        final existingAr = (doc['name_ar'] ?? '')
+        final existingAr = (doc['nameAr'] ?? '')
             .toString()
             .replaceAll(RegExp(r'\s+'), '')
             .toLowerCase();
-        final existingEn = (doc['name_en'] ?? '')
+        final existingEn = (doc['nameEn'] ?? '')
             .toString()
             .replaceAll(RegExp(r'\s+'), '')
             .toLowerCase();
@@ -475,13 +475,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final userRef = firestore.collection('users').doc(_currentUser!.uid);
 
       final companyData = {
-        'name_ar': nameAr,
-        'name_en': nameEn,
+        'nameAr': nameAr,
+        'nameEn': nameEn,
         'address': address,
-        'manager_name': managerName,
-        'manager_phone': managerPhone,
-        'logo_base64': _base64Logo,
-        'user_id': _currentUser!.uid,
+        'managerName': managerName,
+        'managerPhone': managerPhone,
+        'logoBase64': _base64Logo,
+        'userId': _currentUser!.uid,
         'createdAt': Timestamp.now(),
       };
 
@@ -573,13 +573,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
       // بيانات الشركة
       final companyData = {
-        'name_ar': nameAr,
-        'name_en': nameEn,
+        'nameAr': nameAr,
+        'nameEn': nameEn,
         'address': _addressController.text.trim(),
-        'manager_name': _managerNameController.text.trim(),
-        'manager_phone': _managerPhoneController.text.trim(),
-        'logo_base64': _base64Logo,
-        'user_id': currentUser.uid,
+        'managerName': _managerNameController.text.trim(),
+        'managerPhone': _managerPhoneController.text.trim(),
+        'logoBase64': _base64Logo,
+        'userId': currentUser.uid,
         'createdAt': Timestamp.now(),
       };
 
@@ -602,7 +602,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           transaction.set(userRef, {
             'companyIds': [companyId],
             'createdAt': Timestamp.now(),
-            'user_id': currentUser.uid,
+            'userId': currentUser.uid,
           });
         }
       });
@@ -660,7 +660,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
             TextFormField(
               controller: _nameArController,
               decoration:
-                  InputDecoration(labelText: 'company_name_arabic'.tr()),
+                  InputDecoration(labelText: 'company_nameArabic'.tr()),
               inputFormatters: [arabicOnlyFormatter],
               textInputAction: TextInputAction.next,
             ),
@@ -668,7 +668,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
             TextFormField(
               controller: _nameEnController,
               decoration:
-                  InputDecoration(labelText: 'company_name_english'.tr()),
+                  InputDecoration(labelText: 'company_nameEnglish'.tr()),
               inputFormatters: [englishOnlyFormatter],
               textInputAction: TextInputAction.next,
             ),
@@ -682,14 +682,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
             TextFormField(
               controller: _managerNameController,
               decoration:
-                  InputDecoration(labelText: 'company_manager_name'.tr()),
+                  InputDecoration(labelText: 'company_managerName'.tr()),
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 10),
             TextFormField(
               controller: _managerPhoneController,
               decoration:
-                  InputDecoration(labelText: 'company_manager_phone'.tr()),
+                  InputDecoration(labelText: 'company_managerPhone'.tr()),
               keyboardType: TextInputType.phone,
               inputFormatters: [numbersOnlyFormatter],
               textInputAction: TextInputAction.done,
@@ -801,11 +801,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
     final normalizedEn = nameEn.replaceAll(RegExp(r'\s+'), '').toLowerCase();
 
     for (var doc in querySnapshot.docs) {
-      final existingAr = doc['name_ar']
+      final existingAr = doc['nameAr']
           ?.toString()
           .replaceAll(RegExp(r'\s+'), '')
           .toLowerCase();
-      final existingEn = doc['name_en']
+      final existingEn = doc['nameEn']
           ?.toString()
           .replaceAll(RegExp(r'\s+'), '')
           .toLowerCase();
@@ -885,13 +885,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final userRef = firestore.collection('users').doc(_currentUser!.uid);
 
       final companyData = {
-        'name_ar': nameAr,
-        'name_en': nameEn,
+        'nameAr': nameAr,
+        'nameEn': nameEn,
         'address': address,
-        'manager_name': managerName,
-        'manager_phone': managerPhone,
-        'logo_base64': _base64Logo,
-        'user_id': _currentUser!.uid,
+        'managerName': managerName,
+        'managerPhone': managerPhone,
+        'logoBase64': _base64Logo,
+        'userId': _currentUser!.uid,
         'createdAt': Timestamp.now(),
       };
 
@@ -1043,13 +1043,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       final userRef = firestore.collection('users').doc(uid);
 
       final companyData = {
-        'name_ar': nameAr,
-        'name_en': nameEn,
+        'nameAr': nameAr,
+        'nameEn': nameEn,
         'address': address,
-        'manager_name': managerName,
-        'manager_phone': managerPhone,
-        'logo_base64': _base64Logo,
-        'user_id': _currentUser!.uid,
+        'managerName': managerName,
+        'managerPhone': managerPhone,
+        'logoBase64': _base64Logo,
+        'userId': _currentUser!.uid,
         'createdAt': Timestamp.now(),
       };
 
@@ -1187,13 +1187,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
 
         final companyData = {
-          'name_ar': nameAr,
-          'name_en': nameEn,
+          'nameAr': nameAr,
+          'nameEn': nameEn,
           'address': address,
-          'manager_name': managerName,
-          'manager_phone': managerPhone,
-          'logo_base64': _base64Logo,
-          'user_id': currentUser.uid,
+          'managerName': managerName,
+          'managerPhone': managerPhone,
+          'logoBase64': _base64Logo,
+          'userId': currentUser.uid,
         //  'companyId': companyId,
           'createdAt': Timestamp.now(),
         };
@@ -1288,14 +1288,14 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
             TextFormField(
               controller: _nameArController,
               decoration:
-                  InputDecoration(labelText: 'company_name_arabic'.tr()),
+                  InputDecoration(labelText: 'company_nameArabic'.tr()),
               inputFormatters: [arabicOnlyFormatter],
               textInputAction: TextInputAction.next,
             ),
             TextFormField(
               controller: _nameEnController,
               decoration:
-                  InputDecoration(labelText: 'company_name_english'.tr()),
+                  InputDecoration(labelText: 'company_nameEnglish'.tr()),
               inputFormatters: [englishOnlyFormatter],
               textInputAction: TextInputAction.next,
             ),
@@ -1307,13 +1307,13 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
             TextFormField(
               controller: _managerNameController,
               decoration:
-                  InputDecoration(labelText: 'company_manager_name'.tr()),
+                  InputDecoration(labelText: 'company_managerName'.tr()),
               textInputAction: TextInputAction.next,
             ),
             TextFormField(
               controller: _managerPhoneController,
               decoration:
-                  InputDecoration(labelText: 'company_manager_phone'.tr()),
+                  InputDecoration(labelText: 'company_managerPhone'.tr()),
               keyboardType: TextInputType.phone,
               inputFormatters: [numbersOnlyFormatter],
               textInputAction: TextInputAction.next,

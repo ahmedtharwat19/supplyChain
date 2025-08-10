@@ -12,7 +12,6 @@ import '../../utils/user_local_storage.dart';
 import '../../widgets/app_scaffold.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -69,7 +68,7 @@ class DashboardPageState extends State<DashboardPage> {
     if (a == null || b == null) return false;
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
- 
+
   void _startListeningToUserChanges() async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) return;
@@ -184,8 +183,7 @@ class DashboardPageState extends State<DashboardPage> {
     await fetchStats();
   }
 
-
- Future<void> _checkSubscriptionStatus() async {
+/*  Future<void> _checkSubscriptionStatus() async {
   final subscriptionService = UserSubscriptionService();
   final result = await subscriptionService.checkUserSubscription();
 
@@ -198,8 +196,35 @@ class DashboardPageState extends State<DashboardPage> {
   });
 
   SubscriptionNotifier.showWarning(context, result);
-}
+} */
+  Future<void> _checkSubscriptionStatus() async {
+    final subscriptionService = UserSubscriptionService();
+    final result = await subscriptionService.checkUserSubscription();
 
+    if (!mounted) return;
+
+    setState(() {
+      isSubscriptionExpiringSoon = result.isExpiringSoon;
+      isSubscriptionExpired = result.isExpired;
+      isLoading = false;
+    });
+
+    // Show warning if subscription is expiring soon
+    if (result.isExpiringSoon) {
+      SubscriptionNotifier.showWarning(
+        context,
+        daysLeft: result.daysLeft,
+      );
+    }
+
+    // Show expired dialog if subscription is expired
+    if (result.isExpired && result.expiryDate != null) {
+      SubscriptionNotifier.showExpiredDialog(
+        context,
+        expiryDate: result.expiryDate!,
+      );
+    }
+  }
 
   Future<void> _loadCachedData() async {
     final cached = await UserLocalStorage.getDashboardData();
@@ -231,7 +256,7 @@ class DashboardPageState extends State<DashboardPage> {
           .collection('users')
           .doc(user.uid)
           .get();
-
+      debugPrint('userDoc : $userDoc');
       final updatedCompanyIds =
           (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
 
@@ -307,7 +332,7 @@ class DashboardPageState extends State<DashboardPage> {
       if (userId == null) return 0;
       final snapshot = await FirebaseFirestore.instance
           .collection(collection)
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
       return snapshot.size;
     } catch (e) {
@@ -351,7 +376,7 @@ class DashboardPageState extends State<DashboardPage> {
 
       final snapshot = await FirebaseFirestore.instance
           .collection('companies/$companyId/$collection')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
 
       double amount = 0.0;
@@ -420,7 +445,6 @@ class DashboardPageState extends State<DashboardPage> {
       return 0;
     }
   }
-
 
   Future<void> _syncUserData() async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
@@ -1239,7 +1263,7 @@ bool _hasDifferences(Map<String, dynamic> oldData, Map<String, dynamic> newData)
       // You can replace below with count() aggregation when available:
       final snapshot = await FirebaseFirestore.instance
           .collection(collection)
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
       return snapshot.size;
     } catch (e) {
@@ -1365,7 +1389,7 @@ bool _hasDifferences(Map<String, dynamic> oldData, Map<String, dynamic> newData)
 
       final snapshot = await FirebaseFirestore.instance
           .collection('companies/$companyId/$collection')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
 
       double amount = 0.0;
@@ -1396,7 +1420,7 @@ bool _hasDifferences(Map<String, dynamic> oldData, Map<String, dynamic> newData)
 
       final snapshot = await FirebaseFirestore.instance
           .collection('factories')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
 
       debugPrint('Found ${snapshot.size} factories');

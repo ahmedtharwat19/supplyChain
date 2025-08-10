@@ -78,8 +78,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
   Future<void> _editSupplier(Supplier supplier) async {
     await context.push('/edit-vendor/${supplier.id}', extra: {
-      'name_ar': supplier.nameAr,
-      'name_en': supplier.nameEn,
+      'nameAr': supplier.nameAr,
+      'nameEn': supplier.nameEn,
     });
   }
 

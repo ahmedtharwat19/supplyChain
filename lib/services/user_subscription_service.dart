@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+/* import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -86,7 +86,7 @@ class UserSubscriptionService {
       }
 
       final data = userDoc.data()!;
-      final isActive = data['is_active'] == true;
+      final isActive = data['isActive'] == true;
       final durationDays = data['subscriptionDurationInDays'] ?? 30;
       final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
 
@@ -108,7 +108,7 @@ class UserSubscriptionService {
 
       if (now.isAfter(expiryDate)) {
         debugPrint('🔴 Firebase subscription expired on $expiryDate');
-        await _firestore.collection('users').doc(user.uid).update({'is_active': false});
+        await _firestore.collection('users').doc(user.uid).update({'isActive': false});
         await _auth.signOut();
         return SubscriptionResult.expired(expiryDate: expiryDate);
       }
@@ -275,5 +275,356 @@ class SubscriptionNotifier {
         ),
       );
     }
+  }
+}
+
+ */
+
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:puresip_purchasing/utils/user_local_storage.dart';
+
+/// خدمة متكاملة لإدارة وتحقق حالة اشتراك المستخدم
+class UserSubscriptionService {
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+  final Connectivity _connectivity;
+
+  /// تهيئة الخدمة مع إمكانية حقن التبعيات للاختبار
+  UserSubscriptionService({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    Connectivity? connectivity,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _connectivity = connectivity ?? Connectivity();
+
+  /// التحقق الرئيسي من حالة الاشتراك (يتعامل مع الحالات المتصلة والغير متصلة)
+  Future<SubscriptionResult> checkUserSubscription() async {
+    try {
+      // 1. التحقق من حالة الاتصال بالإنترنت
+      final connectivityResult = await _connectivity.checkConnectivity();
+      final isOnline = connectivityResult != ConnectivityResult.none;
+
+      // 2. التنفيذ بناءً على حالة الاتصال
+      final result = isOnline
+          ? await _checkOnlineSubscription()
+          : await _checkOfflineSubscription();
+
+      // 3. تسجيل النتائج للتحليل
+      _logSubscriptionResult(result, isOnline);
+      return result;
+    } catch (e, stackTrace) {
+      debugPrint('''
+      🔴 Error in checkUserSubscription:
+      Error: $e
+      StackTrace: $stackTrace
+      ''');
+
+      return SubscriptionResult.error(
+        error: 'subscription_check_failed'.tr(),
+        details: e.toString(),
+      );
+    }
+  }
+
+  /// التحقق من الاشتراك عند الاتصال بالإنترنت
+  Future<SubscriptionResult> _checkOnlineSubscription() async {
+    try {
+      // 1. التحقق من وجود مستخدم مسجل الدخول
+      final user = _auth.currentUser;
+      if (user == null) {
+        return SubscriptionResult.invalid(reason: 'not_logged_in');
+      }
+
+      // 2. جلب بيانات المستخدم من Firestore
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) {
+        await _auth.signOut();
+        return SubscriptionResult.invalid(reason: 'user_not_found');
+      }
+
+      // 3. تحليل بيانات الاشتراك
+      final data = userDoc.data()!;
+      final subscriptionData = _parseSubscriptionData(data);
+
+      // 4. التحقق من صلاحية الاشتراك
+      if (!subscriptionData.isValid) {
+        await _handleInvalidOnlineSubscription(user.uid, subscriptionData.isActive);
+        return SubscriptionResult.expired(expiryDate: subscriptionData.expiryDate);
+      }
+
+      // 5. تخزين البيانات محلياً لاستخدامها في وضع عدم الاتصال
+      await _cacheUserData(user, data, subscriptionData);
+
+      return SubscriptionResult.valid(
+        expiryDate: subscriptionData.expiryDate,
+        daysLeft: subscriptionData.daysLeft,
+        isActive: subscriptionData.isActive,
+      );
+    } catch (e) {
+      debugPrint('Online subscription check error: $e');
+      rethrow;
+    }
+  }
+
+  /// تحليل بيانات الاشتراك من Firestore
+  SubscriptionData _parseSubscriptionData(Map<String, dynamic> data) {
+    final isActive = data['isActive'] as bool? ?? false;
+    final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+    final durationDays = data['subscriptionDurationInDays'] as int? ?? 30;
+
+    if (createdAt == null) {
+      throw Exception('Invalid creation date in user data');
+    }
+
+    final expiryDate = createdAt.add(Duration(days: durationDays));
+    final daysLeft = expiryDate.difference(DateTime.now()).inDays;
+
+    return SubscriptionData(
+      isActive: isActive,
+      expiryDate: expiryDate,
+      daysLeft: daysLeft,
+      isValid: isActive && daysLeft > 0,
+    );
+  }
+
+  /// معالجة الاشتراك غير الصالح (تسجيل الخروج، تحديث الحالة)
+  Future<void> _handleInvalidOnlineSubscription(String userId, bool isActive) async {
+    if (isActive) {
+      await _firestore.collection('users').doc(userId).update({'isActive': false});
+    }
+    await _auth.signOut();
+  }
+
+  /// تخزين بيانات المستخدم محلياً
+  Future<void> _cacheUserData(
+    User user,
+    Map<String, dynamic> data,
+    SubscriptionData subscriptionData,
+  ) async {
+    try {
+await UserLocalStorage.saveUser(
+  userId: user.uid,
+  email: user.email ?? '',
+  displayName: user.displayName,
+  companyIds: data['companyIds']?.cast<String>(),
+  factoryIds: data['factoryIds']?.cast<String>(),
+  supplierIds: data['supplierIds']?.cast<String>(),
+  subscriptionDurationInDays: data['subscriptionDurationInDays'],
+  createdAt: subscriptionData.expiryDate.subtract(Duration(
+    days: data['subscriptionDurationInDays'] ?? 30,
+  )),
+  isActive: subscriptionData.isActive,
+);
+
+      debugPrint('🔄 User data cached locally');
+    } catch (e) {
+      debugPrint('Failed to cache user data: $e');
+    }
+  }
+
+  /// التحقق من الاشتراك في وضع عدم الاتصال
+  Future<SubscriptionResult> _checkOfflineSubscription() async {
+    try {
+      // 1. جلب البيانات المحفوظة
+      final localData = await UserLocalStorage.getUser();
+      if (localData == null) {
+        return SubscriptionResult.invalid(reason: 'no_local_data');
+      }
+
+      // 2. تحليل البيانات المحلية
+      final subscriptionData = _parseLocalSubscriptionData(localData);
+
+      if (!subscriptionData.isValid) {
+        return SubscriptionResult.expired(expiryDate: subscriptionData.expiryDate);
+      }
+
+      return SubscriptionResult.valid(
+        expiryDate: subscriptionData.expiryDate,
+        daysLeft: subscriptionData.daysLeft,
+        isActive: subscriptionData.isActive,
+      );
+    } catch (e) {
+      debugPrint('Offline subscription check error: $e');
+      return SubscriptionResult.invalid(reason: 'invalid_local_data');
+    }
+  }
+
+  /// تحليل بيانات الاشتراك المحلية
+  SubscriptionData _parseLocalSubscriptionData(Map<String, dynamic> localData) {
+    final isActive = localData['isActive'] as bool? ?? false;
+    final createdAt = DateTime.tryParse(localData['createdAt'] as String? ?? '');
+    final durationDays = localData['subscriptionDurationInDays'] as int? ?? 30;
+
+    if (createdAt == null) {
+      throw Exception('Invalid local creation date');
+    }
+
+    final expiryDate = createdAt.add(Duration(days: durationDays));
+    final daysLeft = expiryDate.difference(DateTime.now()).inDays;
+
+    return SubscriptionData(
+      isActive: isActive,
+      expiryDate: expiryDate,
+      daysLeft: daysLeft,
+      isValid: isActive && daysLeft > 0,
+    );
+  }
+
+  /// تسجيل نتائج التحقق للتحليل
+  void _logSubscriptionResult(SubscriptionResult result, bool isOnline) {
+    debugPrint('''
+    📊 Subscription Check Result:
+    - Mode: ${isOnline ? 'Online' : 'Offline'}
+    - Valid: ${result.isValid}
+    - Active: ${result.isActive}
+    - Expired: ${result.isExpired}
+    - Days Left: ${result.daysLeft}
+    - Expiry Date: ${result.expiryDate}
+    - Reason: ${result.reason}
+    - Error: ${result.error}
+    ''');
+  }
+}
+
+/// نموذج بيانات الاشتراك الداخلية
+class SubscriptionData {
+  final bool isActive;
+  final DateTime expiryDate;
+  final int daysLeft;
+  final bool isValid;
+
+  SubscriptionData({
+    required this.isActive,
+    required this.expiryDate,
+    required this.daysLeft,
+    required this.isValid,
+  });
+}
+
+/// نتيجة التحقق من الاشتراك
+class SubscriptionResult {
+  final bool isValid;
+  final bool isActive;
+  final bool isExpired;
+  final bool isExpiringSoon;
+  final DateTime? expiryDate;
+  final int daysLeft;
+  final String? reason;
+  final String? error;
+  final String? details;
+
+  const SubscriptionResult._({
+    required this.isValid,
+    required this.isActive,
+    required this.isExpired,
+    required this.isExpiringSoon,
+    this.expiryDate,
+    this.daysLeft = 0,
+    this.reason,
+    this.error,
+    this.details,
+  });
+
+  factory SubscriptionResult.valid({
+    required DateTime expiryDate,
+    required int daysLeft,
+    required bool isActive,
+  }) => SubscriptionResult._(
+    isValid: true,
+    isActive: isActive,
+    isExpired: false,
+    isExpiringSoon: daysLeft <= 7,
+    expiryDate: expiryDate,
+    daysLeft: daysLeft,
+  );
+
+  factory SubscriptionResult.expired({required DateTime expiryDate}) => SubscriptionResult._(
+    isValid: false,
+    isActive: false,
+    isExpired: true,
+    isExpiringSoon: false,
+    expiryDate: expiryDate,
+  );
+
+  factory SubscriptionResult.invalid({required String reason}) => SubscriptionResult._(
+    isValid: false,
+    isActive: false,
+    isExpired: false,
+    isExpiringSoon: false,
+    reason: reason,
+  );
+
+  factory SubscriptionResult.error({
+    required String error,
+    String? details,
+  }) => SubscriptionResult._(
+    isValid: false,
+    isActive: false,
+    isExpired: false,
+    isExpiringSoon: false,
+    error: error,
+    details: details,
+  );
+
+  @override
+  String toString() {
+    return '''
+SubscriptionStatus:
+- Valid: $isValid
+- Active: $isActive
+- Expired: $isExpired
+- Expiring Soon: $isExpiringSoon
+- Days Left: $daysLeft
+- Expiry Date: ${expiryDate?.toIso8601String()}
+- Reason: $reason
+- Error: $error
+- Details: $details
+''';
+  }
+}
+
+/// مساعد لعرض التنبيهات للمستخدم
+class SubscriptionNotifier {
+  static void showExpiredDialog(BuildContext context, {required DateTime expiryDate}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text('subscription_expired'.tr()),
+        content: Text(
+          'subscription_expired_message'.tr(args: [
+            _formatDate(expiryDate),
+          ]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('ok'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void showWarning(BuildContext context, {required int daysLeft}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'subscription_expiring_soon'.tr(args: [daysLeft.toString()]),
+        ),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

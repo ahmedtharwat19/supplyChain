@@ -138,7 +138,7 @@ class _AddItemPageState extends State<AddItemPage> {
             children: [
               TextFormField(
                 controller: _nameArController,
-                decoration: InputDecoration(labelText: tr('name_arabic')),
+                decoration: InputDecoration(labelText: tr('nameArabic')),
                 validator: (value) => value == null || value.isEmpty
                     ? tr('required_field')
                     : null,
@@ -148,7 +148,7 @@ class _AddItemPageState extends State<AddItemPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameEnController,
-                decoration: InputDecoration(labelText: tr('name_english')),
+                decoration: InputDecoration(labelText: tr('nameEnglish')),
                 validator: (value) => value == null || value.isEmpty
                     ? tr('required_field')
                     : null,
@@ -326,7 +326,7 @@ class _AddItemPageState extends State<AddItemPage> {
         Item.fieldCreatedAt: FieldValue.serverTimestamp(),
       };
       debugPrint("🔥 Auth UID: ${FirebaseAuth.instance.currentUser?.uid}");
-      debugPrint("📦 itemData['user_id']: ${itemData[Item.fieldUserId]}");
+      debugPrint("📦 itemData['userId']: ${itemData[Item.fieldUserId]}");
 
       final collection = FirebaseFirestore.instance.collection('items');
 
@@ -370,7 +370,7 @@ class _AddItemPageState extends State<AddItemPage> {
             children: [
               TextFormField(
                 controller: _nameArController,
-                decoration: InputDecoration(labelText: tr('name_arabic')),
+                decoration: InputDecoration(labelText: tr('nameArabic')),
                 validator: (value) => value == null || value.isEmpty
                     ? tr('required_field')
                     : null,
@@ -380,7 +380,7 @@ class _AddItemPageState extends State<AddItemPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameEnController,
-                decoration: InputDecoration(labelText: tr('name_english')),
+                decoration: InputDecoration(labelText: tr('nameEnglish')),
                 validator: (value) => value == null || value.isEmpty
                     ? tr('required_field')
                     : null,

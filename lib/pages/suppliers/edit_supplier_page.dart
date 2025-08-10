@@ -257,7 +257,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _nameController,
                 focusNode: _nameFocus,
-                decoration: InputDecoration(labelText: tr('supplier_name_arabic')),
+                decoration: InputDecoration(labelText: tr('supplier_nameArabic')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_companyFocus);
@@ -267,7 +267,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
               TextFormField(
                 controller: _companyController,
                 focusNode: _companyFocus,
-                decoration: InputDecoration(labelText: tr('supplier_name_english')),
+                decoration: InputDecoration(labelText: tr('supplier_nameEnglish')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
                 },
@@ -426,7 +426,7 @@ class _EditSupplierPageState extends State<EditSupplierPage> {
           .get();
 
       if (!userDoc.exists) return false;
-      final isActive = userDoc.data()?['is_active'] ?? false;
+      final isActive = userDoc.data()?['isActive'] ?? false;
       return isActive == true;
     } catch (e) {
       debugPrint('Error checking user active status: $e');

@@ -174,8 +174,97 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AdminLicenseManagementPage(),
     ),
   ],
-
   redirect: (context, state) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSplash = state.fullPath == '/splash';
+    final isAuth = ['/login', '/signup'].contains(state.fullPath);
+    final isLicensePath =
+        ['/license-request', '/admin/licenses'].contains(state.fullPath);
+
+    // 1. Splash screen handling
+    if (isSplash) {
+      return user != null ? '/dashboard' : '/login';
+    }
+
+    // 2. Unauthenticated users
+    if (user == null) {
+      return isAuth ? null : '/login';
+    }
+
+    // 3. Check permissions
+    try {
+      final isAdmin = await _checkIfAdmin(user.uid);
+      final licenseStatus = await _licenseService.checkLicenseStatus();
+
+      debugPrint('''
+      User: ${user.uid}
+      Is Admin: $isAdmin
+      License Valid: ${licenseStatus.isValid}
+      Days Left: ${licenseStatus.daysLeft}
+      Current Path: ${state.fullPath}
+    ''');
+
+      // 3.1 Admin routing
+      if (isAdmin) {
+        // يسمح للإدمن بالدخول إلى صفحة الترخيص الخاصة به
+        if (isLicensePath) {
+          return null;
+        }
+
+        // يمنعه من الدخول لأي صفحة غير مصرح بها ويرجعه إلى لوحة التحكم
+        if (state.fullPath != '/dashboard') {
+          return '/dashboard';
+        }
+
+        return null;
+      }
+
+/*       if (isAdmin) {
+        return isLicensePath ? null : '/admin/licenses';
+      } */
+/*       if (isAdmin) {
+        // إذا هو ليس في dashboard بالفعل، يذهب له
+        if (state.fullPath != '/dashboard') {
+          return '/dashboard';
+        }
+        return null; // إذا في dashboard، يبقى
+      } */
+      // 3.2 Check license validity
+      if (!licenseStatus.isValid) {
+        // Only redirect to license request if not already there
+        return state.fullPath == '/license-request' ? null : '/license-request';
+      }
+
+      // 3.3 If license is valid but on license page, go to dashboard
+      if (isLicensePath) {
+        return '/dashboard';
+      }
+
+      // 3.4 Prevent going back to auth pages
+      if (isAuth) {
+        return '/dashboard';
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Router Error: $e');
+      return '/login';
+    }
+  },
+);
+
+Future<bool> _checkIfAdmin(String userId) async {
+  try {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return doc.data()?['isAdmin'] == true;
+  } catch (e) {
+    return false;
+  }
+}
+
+
+/*   redirect: (context, state) async {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
     final isLoggingIn =
@@ -212,16 +301,107 @@ final GoRouter appRouter = GoRouter(
 
     return null;
   },
-);
+); */
 
-Future<bool> _checkIfAdmin(String userId) async {
-  try {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
-    return doc.data()?['isAdmin'] == true;
-  } catch (e) {
-    return false;
-  }
-}
+/*   redirect: (context, state) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSplash = state.fullPath == '/splash';
+    final isAuth = ['/login', '/signup'].contains(state.fullPath);
+    final isLicense = ['/license-request', '/admin/licenses'].contains(state.fullPath);
+
+    // 1. معالجة شاشة البداية
+    if (isSplash) {
+      return user != null ? '/dashboard' : '/login';
+    }
+
+    // 2. المستخدم غير مسجل الدخول
+    if (user == null) {
+      return isAuth ? null : '/login';
+    }
+
+    // 3. التحقق من الصلاحيات (بعد إصلاح checkLicenseStatus)
+    try {
+      final isAdmin = await _checkIfAdmin(user.uid);
+      final licenseStatus = await _licenseService.checkLicenseStatus();
+
+      debugPrint('''
+        User: ${user.uid}
+        Is Admin: $isAdmin
+        License Valid: ${licenseStatus.isValid}
+        Current Path: ${state.fullPath}
+      ''');
+
+      // 3.1 توجيه الإداريين
+      if (isAdmin) {
+        return state.fullPath == '/admin/licenses' ? null : '/admin/licenses';
+      }
+
+      // 3.2 توجيه المستخدمين العاديين
+      if (!licenseStatus.isValid) {
+        return state.fullPath == '/license-request' ? null : '/license-request';
+      }
+
+      // 3.3 منع العودة إلى صفحات التسجيل إذا كان مسجلاً
+      if (isAuth) {
+        return '/dashboard';
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Router Error: $e');
+      return '/login'; // Fallback
+    }
+  },
+); */
+
+  /*  redirect: (context, state) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final isSplash = state.fullPath == '/splash';
+    final isAuth = ['/login', '/signup'].contains(state.fullPath);
+    final isLicensePath =
+        ['/license-request', '/admin/licenses'].contains(state.fullPath);
+
+    // 1. Splash screen handling
+    if (isSplash) {
+      return user != null ? '/dashboard' : '/login';
+    }
+
+    // 2. Unauthenticated users
+    if (user == null) {
+      return isAuth ? null : '/login';
+    }
+
+    // 3. Check permissions
+    try {
+      final isAdmin = await _checkIfAdmin(user.uid);
+      final licenseStatus = await _licenseService.checkLicenseStatus();
+
+      debugPrint('''
+      User: ${user.uid}
+      Is Admin: $isAdmin
+      License Valid: ${licenseStatus.isValid}
+      Current Path: ${state.fullPath}
+    ''');
+
+      // 3.1 Admin routing
+      if (isAdmin) {
+        return isLicensePath ? null : '/admin/licenses';
+      }
+
+      // 3.2 Regular user with invalid license
+      if (!licenseStatus.isValid) {
+        return isLicensePath ? null : '/license-request';
+      }
+
+      // 3.3 Prevent going back to auth pages
+      if (isAuth) {
+        return '/dashboard';
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Router Error: $e');
+      return '/login';
+    }
+  },
+ */

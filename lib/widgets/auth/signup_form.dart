@@ -55,7 +55,7 @@ class _SignupFormState extends State<SignupForm> {
           'companyIds': [],
           'supplierIds': [],
           'factoriesIds': [],
-          'is_active': true,
+          'isActive': true,
           'subscriptionDurationInDays': 30,
           'createdAt': FieldValue.serverTimestamp(),
           
@@ -257,7 +257,7 @@ class _SignupFormState extends State<SignupForm> {
             'companyIds': [],
             'supplierIds': [],
             'factoriesIds': [],
-            'is_active': true,
+            'isActive': true,
             'createdAt': FieldValue.serverTimestamp(),
           });
 

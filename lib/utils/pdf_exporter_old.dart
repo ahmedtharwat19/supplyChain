@@ -32,13 +32,13 @@ Future<pw.Document> generatePurchaseOrderPdf({
   final tax = orderData['tax']?.toStringAsFixed(2) ?? '0.00';
   final totalAmount = orderData['totalAmount']?.toStringAsFixed(2) ?? '0.00';
 
-  final companyNameAr = companyData['name_ar'] ?? '';
-  final companyNameEn = companyData['name_en'] ?? '';
+  final companyNameAr = companyData['nameAr'] ?? '';
+  final companyNameEn = companyData['nameEn'] ?? '';
   final companyAddress = companyData['address'] ?? '';
-  final companyManager = companyData['manager_name'] ?? '';
-  final companyPhone = companyData['manager_phone'] ?? '';
+  final companyManager = companyData['managerName'] ?? '';
+  final companyPhone = companyData['managerPhone'] ?? '';
 
-  final logoBase64 = companyData['logo_base64'] ?? '';
+  final logoBase64 = companyData['logoBase64'] ?? '';
   Uint8List? logoBytes;
   if (logoBase64.isNotEmpty) {
     try {
@@ -514,7 +514,7 @@ class PdfExporter {
               ),
               pw.SizedBox(height: 10),
               pw.Text('PO #: $poNumber', style: pw.TextStyle(font: font)),
-              pw.Text('Company: ${companyData['name_en'] ?? ''}',
+              pw.Text('Company: ${companyData['nameEn'] ?? ''}',
                   style: pw.TextStyle(font: font)),
               pw.Text('Supplier: ${supplierData['name'] ?? ''}',
                   style: pw.TextStyle(font: font)),
@@ -589,7 +589,7 @@ class PdfExporter {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text(companyData['name_ar'],
+                        pw.Text(companyData['nameAr'],
                             style: const pw.TextStyle(fontSize: 18)),
                         pw.Text('${'invoice'.tr()} #$orderId',
                             style: const pw.TextStyle(fontSize: 16)),
@@ -722,7 +722,7 @@ Future<pw.Document> generatePurchaseOrderPdf({
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text(companyData['name_ar']),
+                        pw.Text(companyData['nameAr']),
                         pw.Text('${'invoice'.tr()} #$orderId'),
                       ],
                     ),
@@ -756,7 +756,7 @@ String _generateQrData(
 ${'invoice'.tr()}: #$orderId
 ${'date'.tr()}: ${DateFormat('yyyy-MM-dd').format(DateTime.now())}
 ${'supplier'.tr()}: ${supplierData['name']}
-${'company'.tr()}: ${companyData['name_ar']}
+${'company'.tr()}: ${companyData['nameAr']}
 ${'total_amount'.tr()}: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
 ''';
 }
@@ -962,8 +962,8 @@ Future<pw.Font> _loadArabicFont() async {
                         children: [
                           pw.Text(
                             isArabic
-                                ? companyData['name_ar']
-                                : companyData['name_en'],
+                                ? companyData['nameAr']
+                                : companyData['nameEn'],
                             style: pw.TextStyle(
                                 fontSize: 18, fontWeight: pw.FontWeight.bold),
                           ),
@@ -1101,7 +1101,7 @@ Future<pw.Font> _loadArabicFont() async {
 ${'invoice'.tr()}: #$orderId
 ${'date'.tr()}: ${DateFormat('yyyy-MM-dd').format((orderData['orderDate'] as Timestamp).toDate())}
 ${'supplier'.tr()}: ${supplierData['name']}
-${'company'.tr()}: ${companyData['name_ar']}
+${'company'.tr()}: ${companyData['nameAr']}
 ${'total_amount'.tr()}: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
 ''';
   }
@@ -1279,7 +1279,7 @@ class PdfExporter {
             if (logoBytes != null)
               pw.Image(pw.MemoryImage(logoBytes), width: 100, height: 50),
             pw.Text(
-              isArabic ? companyData['name_ar'] : companyData['name_en'],
+              isArabic ? companyData['nameAr'] : companyData['nameEn'],
               style: pw.TextStyle(
                 fontSize: _headerFontSize,
                 fontWeight: pw.FontWeight.bold,
@@ -2067,7 +2067,7 @@ static pw.TableRow _buildSummaryRow({
 ${'invoice'.tr()}: #$orderId
 ${'date'.tr()}: ${_formatOrderDate(orderData['orderDate'])}
 ${'supplier'.tr()}: ${supplierData['name']}
-${'company'.tr()}: ${companyData['name_ar']}
+${'company'.tr()}: ${companyData['nameAr']}
 ${'total_amount'.tr()}: ${_formatCurrency(orderData['totalAmountAfterTax'])} ${orderData['currency']}
 ''';
   }
@@ -2235,7 +2235,7 @@ class PdfExporter {
             if (logoBytes != null)
               pw.Image(pw.MemoryImage(logoBytes), width: 100, height: 50),
             pw.Text(
-              isArabic ? companyData['name_ar'] : companyData['name_en'],
+              isArabic ? companyData['nameAr'] : companyData['nameEn'],
               style: pw.TextStyle(
                 fontSize: _headerFontSize,
                 fontWeight: pw.FontWeight.bold,
@@ -2607,7 +2607,7 @@ class PdfExporter {
       children: [
         pw.Divider(),
               pw.Text(
-          companyData['user_id'] ?? '',
+          companyData['userId'] ?? '',
           style: pw.TextStyle(
             fontSize: _smallFontSize,
             font: arabicFont,
@@ -2647,7 +2647,7 @@ class PdfExporter {
 ${'invoice'.tr()}: #$orderId
 ${'date'.tr()}: ${_formatOrderDate(orderData['orderDate'])}
 ${'supplier'.tr()}: ${supplierData['name']}
-${'company'.tr()}: ${companyData['name_ar']}
+${'company'.tr()}: ${companyData['nameAr']}
 ${'total_amount'.tr()}: ${_formatCurrency(orderData['totalAmountAfterTax'])} ${orderData['currency']}
 ''';
   }

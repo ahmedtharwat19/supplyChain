@@ -53,7 +53,7 @@ class ManufacturingOrder {
   static const fieldEndDate = 'end_date';
   static const fieldNote = 'note';
   static const fieldCompanyId = 'company_id';
-  static const fieldUserId = 'user_id';
+  static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
 
   // ➤ الخصائص

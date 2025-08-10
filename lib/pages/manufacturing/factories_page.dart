@@ -151,7 +151,7 @@ class _FactoriesPageState extends State<FactoriesPage> {
                       : StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
                               .collection('factories')
-                              .where('user_id',
+                              .where('userId',
                                   isEqualTo:
                                       FirebaseAuth.instance.currentUser?.uid)
                               .snapshots(),
@@ -190,12 +190,12 @@ class _FactoriesPageState extends State<FactoriesPage> {
 
                                 Uint8List? imageBytes;
                                 try {
-                                  if (data['logo_base64'] != null &&
-                                      data['logo_base64']
+                                  if (data['logoBase64'] != null &&
+                                      data['logoBase64']
                                           .toString()
                                           .isNotEmpty) {
                                     imageBytes =
-                                        base64Decode(data['logo_base64']);
+                                        base64Decode(data['logoBase64']);
                                   }
                                 } catch (_) {}
 
@@ -402,8 +402,8 @@ class _FactoriesPageState extends State<FactoriesPage> {
 
                     final factories = (snap.data?.docs ?? []).where((doc) {
                       final data = doc.data() as Map<String,dynamic>;
-                      final name = (data['name_ar'] ?? '').toString().toLowerCase();
-                      final nameEn = (data['name_en'] ?? '').toString().toLowerCase();
+                      final name = (data['nameAr'] ?? '').toString().toLowerCase();
+                      final nameEn = (data['nameEn'] ?? '').toString().toLowerCase();
                       return name.contains(searchQuery) || nameEn.contains(searchQuery);
                     }).toList();
 
@@ -421,13 +421,13 @@ class _FactoriesPageState extends State<FactoriesPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           elevation: 2,
                           child: ListTile(
-                            title: Text('${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                            title: Text('${data['nameAr'] ?? ''} - ${data['nameEn'] ?? ''}'),
                             subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (data['location'] != null)
                                   Text('📍 ${data['location']}'),
-                                if (data['manager_name'] != null)
-                                  Text('👤 ${data['manager_name']}'),
+                                if (data['managerName'] != null)
+                                  Text('👤 ${data['managerName']}'),
                               ],
                             ),
                             trailing: Row(mainAxisSize: MainAxisSize.min,
@@ -612,9 +612,9 @@ class _FactoriesPageState extends State<FactoriesPage> {
                       final factories = (snap.data?.docs ?? []).where((doc) {
                         final data = doc.data() as Map<String, dynamic>? ?? {};
                         final name =
-                            (data['name_ar'] ?? '').toString().toLowerCase();
+                            (data['nameAr'] ?? '').toString().toLowerCase();
                         final nameEn =
-                            (data['name_en'] ?? '').toString().toLowerCase();
+                            (data['nameEn'] ?? '').toString().toLowerCase();
                         return name.contains(searchQuery) ||
                             nameEn.contains(searchQuery);
                       }).toList();
@@ -636,14 +636,14 @@ class _FactoriesPageState extends State<FactoriesPage> {
                             elevation: 2,
                             child: ListTile(
                               title: Text(
-                                  '${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                                  '${data['nameAr'] ?? ''} - ${data['nameEn'] ?? ''}'),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (data['location'] != null)
                                     Text('📍 ${data['location']}'),
-                                  if (data['manager_name'] != null)
-                                    Text('👤 ${data['manager_name']}'),
+                                  if (data['managerName'] != null)
+                                    Text('👤 ${data['managerName']}'),
                                 ],
                               ),
                               trailing: Row(
@@ -738,9 +738,9 @@ class _FactoriesPageState extends State<FactoriesPage> {
 
                 final factories = (snap.data?.docs ?? []).where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final name = (data['name_ar'] ?? '').toString().toLowerCase();
+                  final name = (data['nameAr'] ?? '').toString().toLowerCase();
                   final nameEn =
-                      (data['name_en'] ?? '').toString().toLowerCase();
+                      (data['nameEn'] ?? '').toString().toLowerCase();
                   return name.contains(searchQuery) ||
                       nameEn.contains(searchQuery);
                 }).toList();
@@ -764,14 +764,14 @@ class _FactoriesPageState extends State<FactoriesPage> {
                       elevation: 2,
                       child: ListTile(
                         title: Text(
-                            '${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                            '${data['nameAr'] ?? ''} - ${data['nameEn'] ?? ''}'),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (data['location'] != null)
                               Text('📍 ${data['location']}'),
-                            if (data['manager_name'] != null)
-                              Text('👤 ${data['manager_name']}'),
+                            if (data['managerName'] != null)
+                              Text('👤 ${data['managerName']}'),
                           ],
                         ),
                         trailing: Row(
@@ -851,7 +851,7 @@ class _FactoriesPageState extends State<FactoriesPage> {
                                 (snap.data?.docs ?? []).where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
                               final name =
-                                  (isArabic ? data['name_ar'] : data['name_en'])
+                                  (isArabic ? data['nameAr'] : data['nameEn'])
                                           ?.toString()
                                           .toLowerCase() ??
                                       '';
@@ -868,8 +868,8 @@ class _FactoriesPageState extends State<FactoriesPage> {
                                 final doc = factories[index];
                                 final data = doc.data() as Map<String, dynamic>;
                                 final displayName = isArabic
-                                    ? (data['name_ar'] ?? '')
-                                    : (data['name_en'] ?? '');
+                                    ? (data['nameAr'] ?? '')
+                                    : (data['nameEn'] ?? '');
 
                                 return Card(
                                   margin: const EdgeInsets.symmetric(
@@ -887,10 +887,10 @@ class _FactoriesPageState extends State<FactoriesPage> {
                                             (data['location'] as String)
                                                 .isNotEmpty)
                                           Text('📍 ${data['location']}'),
-                                        if (data['manager_name'] != null &&
-                                            (data['manager_name'] as String)
+                                        if (data['managerName'] != null &&
+                                            (data['managerName'] as String)
                                                 .isNotEmpty)
-                                          Text('👤 ${data['manager_name']}'),
+                                          Text('👤 ${data['managerName']}'),
                                       ],
                                     ),
                                     trailing: Row(

@@ -53,13 +53,13 @@ class FilterBar extends StatelessWidget {
           selectedValue: selectedCompany != null
               ? allCompanies.firstWhere(
                   (e) => e['id'] == selectedCompany,
-                  orElse: () => {'name_en': ''},
-                )['name_en']
+                  orElse: () => {'nameEn': ''},
+                )['nameEn']
               : null,
           items: allCompanies
               .map((c) => PopupMenuItem<String>(
                     value: c['id'],
-                    child: Text(c['name_en']),
+                    child: Text(c['nameEn']),
                   ))
               .toList(),
           onSelected: onCompanyChanged,
@@ -95,15 +95,15 @@ class FilterBar extends StatelessWidget {
               ? selectedFactories.map((id) {
                   final factory = allFactories.firstWhere(
                     (f) => f['id'] == id,
-                    orElse: () => {'name_en': ''},
+                    orElse: () => {'nameEn': ''},
                   );
-                  return factory['name_en'];
+                  return factory['nameEn'];
                 }).join(', ')
               : null,
           items: allFactories
               .map((f) => PopupMenuItem<String>(
                     value: f['id'],
-                    child: Text(f['name_en']),
+                    child: Text(f['nameEn']),
                   ))
               .toList(),
           onSelected: (val) {

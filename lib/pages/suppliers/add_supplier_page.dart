@@ -70,8 +70,8 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
     final normalizedEn = nameEn.trim().toLowerCase();
 
     for (var doc in snapshot.docs) {
-      final existingAr = (doc['name_ar'] ?? '').toString().trim().toLowerCase();
-      final existingEn = (doc['name_en'] ?? '').toString().trim().toLowerCase();
+      final existingAr = (doc['nameAr'] ?? '').toString().trim().toLowerCase();
+      final existingEn = (doc['nameEn'] ?? '').toString().trim().toLowerCase();
       if (existingAr == normalizedAr || existingEn == normalizedEn) {
         return true;
       }
@@ -192,7 +192,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
                 focusNode: _nameArFocus,
                 textInputAction: TextInputAction.next,
                 decoration:
-                    InputDecoration(labelText: tr('supplier_name_arabic')),
+                    InputDecoration(labelText: tr('supplier_nameArabic')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_nameEnFocus);
@@ -203,7 +203,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
                 focusNode: _nameEnFocus,
                 textInputAction: TextInputAction.next,
                 decoration:
-                    InputDecoration(labelText: tr('supplier_name_english')),
+                    InputDecoration(labelText: tr('supplier_nameEnglish')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
@@ -468,7 +468,7 @@ try {
                 focusNode: _nameArFocus,
                 textInputAction: TextInputAction.next,
                 decoration:
-                    InputDecoration(labelText: tr('supplier_name_arabic')),
+                    InputDecoration(labelText: tr('supplier_nameArabic')),
                 validator: _validateName,
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_nameArFocus);
@@ -479,7 +479,7 @@ try {
                 focusNode: _nameEnFocus,
                 textInputAction: TextInputAction.next,
                 decoration:
-                    InputDecoration(labelText: tr('supplier_name_english')),
+                    InputDecoration(labelText: tr('supplier_nameEnglish')),
                 onFieldSubmitted: (_) {
                   FocusScope.of(context).requestFocus(_phoneFocus);
                 },
@@ -594,7 +594,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
           .get();
 
       if (!userDoc.exists) return false;
-      final isActive = userDoc.data()?['is_active'] ?? false;
+      final isActive = userDoc.data()?['isActive'] ?? false;
       return isActive == true;
     } catch (e) {
       //debugPrint('Error checking user active status: $e');
@@ -691,7 +691,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
         'email': _emailController.text.trim(),
         'address': _addressController.text.trim(),
         'notes': _notesController.text.trim(),
-        'user_id': userId,
+        'userId': userId,
         'createdAt': FieldValue.serverTimestamp(),
       };
 

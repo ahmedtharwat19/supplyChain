@@ -68,11 +68,11 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
       }
 
       final data = doc.data()!;
-      _nameArController.text = data['name_ar'] ?? '';
-      _nameEnController.text = data['name_en'] ?? '';
+      _nameArController.text = data['nameAr'] ?? '';
+      _nameEnController.text = data['nameEn'] ?? '';
       _locationController.text = data['location'] ?? '';
-      _managerController.text = data['manager_name'] ?? '';
-      _phoneController.text = data['manager_phone'] ?? '';
+      _managerController.text = data['managerName'] ?? '';
+      _phoneController.text = data['managerPhone'] ?? '';
     } catch (e) {
       debugPrint('Error loading factory: $e');
       if (mounted) {
@@ -91,11 +91,11 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
 
     try {
       final updateData = {
-        'name_ar': _nameArController.text.trim(),
-        'name_en': _nameEnController.text.trim(),
+        'nameAr': _nameArController.text.trim(),
+        'nameEn': _nameEnController.text.trim(),
         'location': _locationController.text.trim(),
-        'manager_name': _managerController.text.trim(),
-        'manager_phone': _phoneController.text.trim(),
+        'managerName': _managerController.text.trim(),
+        'managerPhone': _phoneController.text.trim(),
       };
       await FirebaseFirestore.instance
         .collection('factories')
@@ -145,14 +145,14 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
           child: ListView(children: [
             TextFormField(
               controller: _nameArController,
-              decoration: InputDecoration(labelText: tr('name_arabic')),
+              decoration: InputDecoration(labelText: tr('nameArabic')),
               validator: (v) => v == null || v.isEmpty ? tr('required_field') : null,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nameEnController,
-              decoration: InputDecoration(labelText: tr('name_english')),
+              decoration: InputDecoration(labelText: tr('nameEnglish')),
               validator: (v) => v == null || v.isEmpty ? tr('required_field') : null,
             ),
             const SizedBox(height: 8),
@@ -163,12 +163,12 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _managerController,
-              decoration: InputDecoration(labelText: tr('manager_name')),
+              decoration: InputDecoration(labelText: tr('managerName')),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _phoneController,
-              decoration: InputDecoration(labelText: tr('manager_phone')),
+              decoration: InputDecoration(labelText: tr('managerPhone')),
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 24),
@@ -231,7 +231,7 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
         final data = doc.data();
         return {
           'id': doc.id,
-          'name': isArabic ? (data['name_ar'] ?? '') : (data['name_en'] ?? ''),
+          'name': isArabic ? (data['nameAr'] ?? '') : (data['nameEn'] ?? ''),
         };
       }).toList();
 
@@ -265,11 +265,11 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
       }
 
       final data = doc.data()!;
-      _nameArController.text = data['name_ar'] ?? '';
-      _nameEnController.text = data['name_en'] ?? '';
+      _nameArController.text = data['nameAr'] ?? '';
+      _nameEnController.text = data['nameEn'] ?? '';
       _locationController.text = data['location'] ?? '';
-      _managerController.text = data['manager_name'] ?? '';
-      _phoneController.text = data['manager_phone'] ?? '';
+      _managerController.text = data['managerName'] ?? '';
+      _phoneController.text = data['managerPhone'] ?? '';
 
       final List<dynamic> companyIdsFromDb = data['companyIds'] ?? [];
       setState(() {
@@ -293,11 +293,11 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
 
     try {
       final updateData = {
-        'name_ar': _nameArController.text.trim(),
-        'name_en': _nameEnController.text.trim(),
+        'nameAr': _nameArController.text.trim(),
+        'nameEn': _nameEnController.text.trim(),
         'location': _locationController.text.trim(),
-        'manager_name': _managerController.text.trim(),
-        'manager_phone': _phoneController.text.trim(),
+        'managerName': _managerController.text.trim(),
+        'managerPhone': _phoneController.text.trim(),
         'companyIds': _selectedCompanyIds,
       };
 
@@ -351,7 +351,7 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
             children: [
               TextFormField(
                 controller: _nameArController,
-                decoration: InputDecoration(labelText: tr('name_arabic')),
+                decoration: InputDecoration(labelText: tr('nameArabic')),
                 validator: (v) =>
                     v == null || v.isEmpty ? tr('required_field') : null,
                 textInputAction: TextInputAction.next,
@@ -359,7 +359,7 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameEnController,
-                decoration: InputDecoration(labelText: tr('name_english')),
+                decoration: InputDecoration(labelText: tr('nameEnglish')),
                 validator: (v) =>
                     v == null || v.isEmpty ? tr('required_field') : null,
               ),
@@ -371,12 +371,12 @@ class _EditFactoryPageState extends State<EditFactoryPage> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _managerController,
-                decoration: InputDecoration(labelText: tr('manager_name')),
+                decoration: InputDecoration(labelText: tr('managerName')),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
-                decoration: InputDecoration(labelText: tr('manager_phone')),
+                decoration: InputDecoration(labelText: tr('managerPhone')),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 24),

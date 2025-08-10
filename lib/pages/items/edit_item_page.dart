@@ -141,7 +141,7 @@ class _EditItemPageState extends State<EditItemPage> {
                   children: [
                     TextFormField(
                       controller: _nameArController,
-                      decoration: InputDecoration(labelText: tr('name_arabic')),
+                      decoration: InputDecoration(labelText: tr('nameArabic')),
                       validator: (value) => value == null || value.isEmpty
                           ? tr('required_field')
                           : null,
@@ -150,7 +150,7 @@ class _EditItemPageState extends State<EditItemPage> {
                     TextFormField(
                       controller: _nameEnController,
                       decoration:
-                          InputDecoration(labelText: tr('name_english')),
+                          InputDecoration(labelText: tr('nameEnglish')),
                       validator: (value) => value == null || value.isEmpty
                           ? tr('required_field')
                           : null,

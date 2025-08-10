@@ -4,9 +4,9 @@ import json
 
 # بيانات تجريبية
 example_company = {
-    "name_ar": "الشركة",
-    "name_en": "Company",
-    "logo_base64": ""
+    "nameAr": "الشركة",
+    "nameEn": "Company",
+    "logoBase64": ""
 }
 example_vendor = {
     "name": "المورد",

@@ -58,10 +58,10 @@ class _LoginFormState extends State<LoginForm> {
             .get();
         final userData = userDoc.data();
         debugPrint('userData: $userData');
-        debugPrint('userData: ${userData?['is_active']}');
+        debugPrint('userData: ${userData?['isActive']}');
 
         if (userData != null) {
-          final isActive = userData['is_active'];
+          final isActive = userData['isActive'];
           if (isActive == false) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +111,7 @@ class _LoginFormState extends State<LoginForm> {
           final userData = userDoc.data();
           debugPrint('userData: $userData');
           if (userData != null) {
-            final isActive = userData['is_active'];
+            final isActive = userData['isActive'];
 
             if (isActive == false) {
               if (mounted) {
@@ -192,10 +192,10 @@ class _LoginFormState extends State<LoginForm> {
           final userData = userDoc.data();
           debugPrint('User Data: $userData'); // تسجيل بيانات المستخدم للتحقق
 
-          final isActive = userData?['is_active'] ?? false;
+          final isActive = userData?['isActive'] ?? false;
           final licenseExpiry = userData?['license_expiry']?.toDate();
           debugPrint(
-              'is_active: $isActive, license_expiry: $licenseExpiry'); // تسجيل حالة الترخيص
+              'isActive: $isActive, license_expiry: $licenseExpiry'); // تسجيل حالة الترخيص
 
           // التحقق من الترخيص
           if (!isActive ||
@@ -261,9 +261,9 @@ class _LoginFormState extends State<LoginForm> {
         final userData = userDoc.data();
         debugPrint('User Data: $userData'); // Log user data for verification
 
-        final isActive = userData?['is_active'] ?? false;
+        final isActive = userData?['isActive'] ?? false;
         final licenseExpiry = userData?['license_expiry']?.toDate();
-        debugPrint('is_active: $isActive, license_expiry: $licenseExpiry'); // Log license status
+        debugPrint('isActive: $isActive, license_expiry: $licenseExpiry'); // Log license status
 
         // License validation
         if (!isActive || licenseExpiry == null || DateTime.now().isAfter(licenseExpiry)) {
@@ -343,10 +343,10 @@ class _LoginFormState extends State<LoginForm> {
         }
 
         final licenseData = licenseDoc.data();
-        final isActive = licenseData?['is_active'] ?? false;
+        final isActive = licenseData?['isActive'] ?? false;
         final licenseExpiry = licenseData?['expiry_date']?.toDate();  // Field name might differ
 
-        debugPrint('License Data - is_active: $isActive, expiry_date: $licenseExpiry');
+        debugPrint('License Data - isActive: $isActive, expiry_date: $licenseExpiry');
 
         // License validation
         if (!isActive || licenseExpiry == null || DateTime.now().isAfter(licenseExpiry)) {
@@ -384,7 +384,7 @@ class _LoginFormState extends State<LoginForm> {
 }
  */
 
-  Future<void> _loginWithEmailPassword() async {
+/*   Future<void> _loginWithEmailPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
@@ -412,7 +412,7 @@ class _LoginFormState extends State<LoginForm> {
           debugPrint('User Data: $userData');
 
           // 3. التحقق من أن الحساب مفعل
-          final isActive = userData['is_active'] as bool? ?? false;
+          final isActive = userData['isActive'] as bool? ?? false;
           if (!isActive) {
             if (mounted) _showErrorSnackBar('account_deactivated'.tr());
             return;
@@ -459,6 +459,59 @@ class _LoginFormState extends State<LoginForm> {
       }
     }
   }
+ */
+
+Future<void> _loginWithEmailPassword() async {
+  if (_formKey.currentState?.validate() ?? false) {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      final user = credential.user;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        debugPrint('User document exists: ${userDoc.exists}');
+        
+        if (!userDoc.exists) {
+          if (mounted) _showErrorSnackBar('user_not_found_in_db'.tr());
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        debugPrint('User Data: $userData');
+
+        // التحقق الأساسي فقط من isActive (تعليق التحقق من الترخيص مؤقتاً)
+        final isActive = userData['isActive'] as bool? ?? false;
+        if (!isActive) {
+          if (mounted) _showErrorSnackBar('account_deactivated'.tr());
+          return;
+        }
+
+        await UserLocalStorage.setUser(userData);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('login_success'.tr())),
+          );
+          debugPrint('Attempting to navigate to /dashboard');
+          context.go('/dashboard');
+        }
+      }
+    } catch (e) {
+      debugPrint('Login error: ${e.toString()}');
+      if (mounted) _showErrorSnackBar('login_error'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}
 
 // دالة مساعدة لعرض رسائل الخطأ
   void _showErrorSnackBar(String message) {

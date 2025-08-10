@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  Future<void> _startApp() async {
+/*   Future<void> _startApp() async {
   final subscriptionService = UserSubscriptionService();
   final result = await subscriptionService.checkUserSubscription();
 
@@ -53,7 +53,88 @@ class _SplashScreenState extends State<SplashScreen>
   SubscriptionNotifier.showWarning(context, result);
   context.go(result.isValid ? '/dashboard' : '/login');
 }
-  
+   */
+
+
+/* Future<void> _startApp() async {
+  try {
+    final subscriptionService = UserSubscriptionService();
+    final result = await subscriptionService.checkUserSubscription();
+
+    if (!mounted) return;
+
+    debugPrint('''
+      Subscription Check Results:
+      - isValid: ${result.isValid}
+      - isExpired: ${result.isExpired}
+      - Days Remaining: ${result.daysRemaining}
+    ''');
+
+    if (!result.isValid || result.isExpired) {
+      if (!mounted) return;
+      await SubscriptionNotifier.showExpiredDialog(context);
+      if (!mounted) return;
+      context.go('/login');
+      return;
+    }
+
+    if (result.daysRemaining <= 7) {
+      if (!mounted) return;
+      await SubscriptionNotifier.showWarning(context, result);
+    }
+
+    if (!mounted) return;
+    context.go('/dashboard');
+  } catch (e) {
+    debugPrint('Error in _startApp: $e');
+    if (!mounted) return;
+    context.go('/login');
+  }
+}
+ */
+
+Future<void> _startApp() async {
+  try {
+    final subscriptionService = UserSubscriptionService();
+    final result = await subscriptionService.checkUserSubscription();
+
+    if (!mounted) return;
+
+    debugPrint('''
+      Subscription Check Results:
+      - isValid: ${result.isValid}
+      - isExpired: ${result.isExpired}
+      - Days Left: ${result.daysLeft}
+    ''');
+
+    if (!result.isValid || result.isExpired) {
+      if (!mounted) return;
+      SubscriptionNotifier.showExpiredDialog(
+        context,
+        expiryDate: result.expiryDate ?? DateTime.now(),
+      );
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      context.go('/login');
+      return;
+    }
+
+    if (result.daysLeft <= 7) {
+      if (!mounted) return;
+      SubscriptionNotifier.showWarning(
+        context,
+        daysLeft: result.daysLeft,
+      );
+    }
+
+    if (!mounted) return;
+    context.go('/dashboard');
+  } catch (e) {
+    debugPrint('Error in _startApp: $e');
+    if (!mounted) return;
+    context.go('/login');
+  }
+}
 
   @override
   void dispose() {
@@ -174,7 +255,7 @@ class _SplashScreenState extends State<SplashScreen>
           .doc(user.uid)
           .get();
 
-      final isActive = userDoc.data()?['is_active'] == true;
+      final isActive = userDoc.data()?['isActive'] == true;
 
       if (!userDoc.exists || !isActive) {
         debugPrint('❗️ Showing inactive account dialog');
@@ -282,7 +363,7 @@ class _SplashScreenState extends State<SplashScreen>
           .doc(user.uid)
           .get();
 
-      final isActive = userDoc.data()?['is_active'] == true;
+      final isActive = userDoc.data()?['isActive'] == true;
 
       if (!userDoc.exists || !isActive) {
         debugPrint('⛔️ User inactive or document not found');
@@ -383,7 +464,7 @@ Future<void> _startApp() async {
     }
 
     final data = userDoc.data();
-    final isActive = data?['is_active'] == true;
+    final isActive = data?['isActive'] == true;
     final durationDays = data?['subscriptionDurationInDays'] ?? 30;
     final createdAt = (data?['createdAt'] as Timestamp?)?.toDate();
 
@@ -406,7 +487,7 @@ Future<void> _startApp() async {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .update({'is_active': false});
+          .update({'isActive': false});
 
       await FirebaseAuth.instance.signOut();
 
@@ -538,7 +619,7 @@ Future<void> _startApp() async {
       }
 
       final data = userDoc.data();
-      final isActive = data?['is_active'] == true;
+      final isActive = data?['isActive'] == true;
       final durationDays = data?['subscriptionDurationInDays'] ?? 30;
       final createdAt = (data?['createdAt'] as Timestamp?)?.toDate();
 
@@ -560,7 +641,7 @@ Future<void> _startApp() async {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
-            .update({'is_active': false});
+            .update({'isActive': false});
 
         await FirebaseAuth.instance.signOut();
 
@@ -596,7 +677,7 @@ Future<void> _startApp() async {
           companyIds: List<String>.from(data?['companyIds'] ?? []),
           factoryIds: List<String>.from(data?['factoryIds'] ?? []),
           supplierIds: List<String>.from(data?['supplierIds'] ?? []),
-          isActive: data?['is_active'] == true,
+          isActive: data?['isActive'] == true,
         );
         debugPrint('📦 Local user saved.');
       }
@@ -654,7 +735,7 @@ Future<void> _startApp() async {
               .doc(user.uid)
               .get();
 
-          if (!userDoc.exists || userDoc.data()?['is_active'] == false) {
+          if (!userDoc.exists || userDoc.data()?['isActive'] == false) {
             debugPrint('⛔️ ${'account_inactive'.tr()}');
             debugPrint('❗️ Showing inactive account dialog');
 
@@ -670,7 +751,7 @@ Future<void> _startApp() async {
           .doc(user.uid)
           .get();
 
-      if (!userDoc.exists || userDoc.data()?['is_active'] == false) {
+      if (!userDoc.exists || userDoc.data()?['isActive'] == false) {
         debugPrint('❗️ Showing inactive account dialog');
         await FirebaseAuth.instance.signOut();
 
@@ -931,7 +1012,7 @@ class _SplashScreenState extends State<SplashScreen>
         .doc(user.uid)
         .get();
 
-    if (!userDoc.exists || (userDoc.data()?['is_active'] == false)) {
+    if (!userDoc.exists || (userDoc.data()?['isActive'] == false)) {
       debugPrint('⛔️ User is not authorized.');
       await FirebaseAuth.instance.signOut();
       _showErrorAndExit('حسابك غير مفعل، تواصل مع الإدارة.');

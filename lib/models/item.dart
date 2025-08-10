@@ -2,12 +2,12 @@
 
 class Item {
   // ➤ ثابتات أسماء الحقول
-  static const fieldNameAr = 'name_ar';
-  static const fieldNameEn = 'name_en';
+  static const fieldNameAr = 'nameAr';
+  static const fieldNameEn = 'nameEn';
   static const fieldCategory = 'category';
   static const fieldUnit = 'unit';
   static const fieldDescription = 'description';
-  static const fieldUserId = 'user_id';
+  static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
   static const fieldUnitPrice = 'unit_price'; // 🆕 مضاف
  static const fieldIsTaxable = 'is_taxable'; // 🆕 حقل جديد
@@ -102,7 +102,7 @@ class Item {
   static const String fieldUnitPrice = 'unitPrice';
   static const String fieldIsTaxable = 'isTaxable';
   static const String fieldCreatedAt = 'createdAt';
-  static const String fieldUserId = 'user_id';
+  static const String fieldUserId = 'userId';
   final String itemId;
   final String nameAr;
   final String nameEn;

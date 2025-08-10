@@ -678,8 +678,8 @@ class _PurchaseOrderDetailsPageState extends State<PurchaseOrderDetailsPage> {
 
   String localizedName(Map<String, String?> nameMap) {
   return _isArabic
-      ? nameMap['name_ar'] ?? 'غير معروف'
-      : nameMap['name_en'] ?? 'Unknown';
+      ? nameMap['nameAr'] ?? 'غير معروف'
+      : nameMap['nameEn'] ?? 'Unknown';
 }
 
 

@@ -53,8 +53,8 @@ class _EditPurchaseOrderPageState extends State<EditPurchaseOrderPage> {
 
   String localizedName(Map<String, String?> nameMap) {
     return _isArabic
-        ? nameMap['name_ar'] ?? 'غير معروف'
-        : nameMap['name_en'] ?? 'Unknown';
+        ? nameMap['nameAr'] ?? 'غير معروف'
+        : nameMap['nameEn'] ?? 'Unknown';
   }
 
   Future<Map<String, String>> _loadCompanyAndSupplierNames() async {

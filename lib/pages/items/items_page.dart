@@ -57,7 +57,7 @@ Future<List<QueryDocumentSnapshot>> _fetchUserItems() async {
     debugPrint("📦 Fetching items for user: $userId...");
     final snapshot = await FirebaseFirestore.instance
         .collection('items')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .get();
 
@@ -287,7 +287,7 @@ class _ItemsPageState extends State<ItemsPage> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('items')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -361,7 +361,7 @@ class _ItemsPageState extends State<ItemsPage> {
   @override
   Widget build(BuildContext context) {
     final filteredItems = items.where((item) {
-      final name = (item['name_ar'] ?? '').toString().toLowerCase();
+      final name = (item['nameAr'] ?? '').toString().toLowerCase();
       return name.contains(searchQuery.toLowerCase());
     }).toList();
 
@@ -395,7 +395,7 @@ class _ItemsPageState extends State<ItemsPage> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               elevation: 2,
                               child: ListTile(
-                                title: Text(item['name_ar'] ?? ''),
+                                title: Text(item['nameAr'] ?? ''),
                                 subtitle: Text('${tr('unit_price')}: ${item['unit_price'] ?? '-'}'),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -482,7 +482,7 @@ class _ItemsPageState extends State<ItemsPage> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('items')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -564,7 +564,7 @@ class _ItemsPageState extends State<ItemsPage> {
   Widget build(BuildContext context) {
     final currentLocale = context.locale.languageCode;
     final filteredItems = items.where((item) {
-      final name = (currentLocale == 'ar' ? item['name_ar'] ?? '' : item['name_en'] ?? '').toString().toLowerCase();
+      final name = (currentLocale == 'ar' ? item['nameAr'] ?? '' : item['nameEn'] ?? '').toString().toLowerCase();
       return name.contains(searchQuery.toLowerCase());
     }).toList();
 
@@ -594,8 +594,8 @@ class _ItemsPageState extends State<ItemsPage> {
                           itemBuilder: (context, index) {
                             final item = filteredItems[index];
                             final itemName = currentLocale == 'ar'
-                                ? item['name_ar'] ?? ''
-                                : item['name_en'] ?? '';
+                                ? item['nameAr'] ?? ''
+                                : item['nameEn'] ?? '';
 
                             return Card(
                               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -702,7 +702,7 @@ class _ItemsPageState extends State<ItemsPage> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('items')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -804,8 +804,8 @@ class _ItemsPageState extends State<ItemsPage> {
     final currentLocale = context.locale.languageCode;
     final filteredItems = items.where((item) {
       final name = (currentLocale == 'ar'
-              ? item['name_ar'] ?? ''
-              : item['name_en'] ?? '')
+              ? item['nameAr'] ?? ''
+              : item['nameEn'] ?? '')
           .toString()
           .toLowerCase();
       return name.contains(searchQuery.toLowerCase());

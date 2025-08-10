@@ -166,10 +166,10 @@ class _CompaniesPageState extends State<CompaniesPage> {
 
                             final filtered = companies.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
-                              final nameAr = (data['name_ar'] ?? '')
+                              final nameAr = (data['nameAr'] ?? '')
                                   .toString()
                                   .toLowerCase();
-                              final nameEn = (data['name_en'] ?? '')
+                              final nameEn = (data['nameEn'] ?? '')
                                   .toString()
                                   .toLowerCase();
                               return nameAr.contains(searchQuery) ||
@@ -189,12 +189,12 @@ class _CompaniesPageState extends State<CompaniesPage> {
 
                                 Uint8List? imageBytes;
                                 try {
-                                  if (data['logo_base64'] != null &&
-                                      data['logo_base64']
+                                  if (data['logoBase64'] != null &&
+                                      data['logoBase64']
                                           .toString()
                                           .isNotEmpty) {
                                     imageBytes =
-                                        base64Decode(data['logo_base64']);
+                                        base64Decode(data['logoBase64']);
                                   }
                                 } catch (_) {}
 
@@ -220,17 +220,17 @@ class _CompaniesPageState extends State<CompaniesPage> {
                                               size: 40),
                                     ),
                                     title: Text(
-                                        '${data['name_ar'] ?? ''} - ${data['name_en'] ?? ''}'),
+                                        '${data['nameAr'] ?? ''} - ${data['nameEn'] ?? ''}'),
                                     subtitle: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         if (data['address'] != null)
                                           Text('📍 ${data['address']}'),
-                                        if (data['manager_name'] != null)
-                                          Text('👤 ${data['manager_name']}'),
-                                        if (data['manager_phone'] != null)
-                                          Text('📞 ${data['manager_phone']}'),
+                                        if (data['managerName'] != null)
+                                          Text('👤 ${data['managerName']}'),
+                                        if (data['managerPhone'] != null)
+                                          Text('📞 ${data['managerPhone']}'),
                                       ],
                                     ),
                                     trailing: Row(

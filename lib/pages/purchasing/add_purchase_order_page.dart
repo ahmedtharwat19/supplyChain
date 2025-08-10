@@ -184,7 +184,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
                       items: allFactories
                           .map((f) => DropdownMenuItem<String>(
                                 value: f['id'],
-                                child: Text(f['name_ar'] ?? ''),
+                                child: Text(f['nameAr'] ?? ''),
                               ))
                           .toList(),
                       onChanged: (v) => setState(() => factoryId = v),
@@ -288,7 +288,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
     // Load suppliers
     final suppliersSnapshot = await FirebaseFirestore.instance
         .collection('vendors')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     setState(() {
@@ -300,7 +300,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
     // Load all items
     final itemsSnapshot = await FirebaseFirestore.instance
         .collection('items')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     setState(() {
@@ -348,12 +348,12 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 
     final suppliersSnapshot = await FirebaseFirestore.instance
         .collection('vendors')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     final itemsSnapshot = await FirebaseFirestore.instance
         .collection('items')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     setState(() {
@@ -425,12 +425,12 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
     // جلب الموردين والأصناف
     final suppliersSnapshot = await FirebaseFirestore.instance
         .collection('vendors')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     final itemsSnapshot = await FirebaseFirestore.instance
         .collection('items')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     setState(() {
@@ -471,7 +471,7 @@ Future<void> _loadFactoriesForCompany(String companyId) async {
     final factoriesSnapshot = await FirebaseFirestore.instance
         .collection('factories')
         .where('companyIds', arrayContains: companyId)
-        .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
         .get();
 
     if (!mounted) return;
@@ -512,7 +512,7 @@ Future<void> _loadFactoriesForCompany(String companyId) async {
     final factoriesSnapshot = await FirebaseFirestore.instance
         .collection('factories')
         .where('companyIds', arrayContains: companyId)
-        .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
         .get();
 
     if (!mounted) return;
@@ -552,7 +552,7 @@ Future<void> _loadFactoriesForCompany(String companyId) async {
       final factoriesSnapshot = await FirebaseFirestore.instance
           .collection('factories')
           .where('companyIds', arrayContains: companyId)
-          .where('user_id',
+          .where('userId',
               isEqualTo: user.uid) // تأكد أن المصانع تخص المستخدم الحالي
           .get();
 
@@ -1193,7 +1193,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   Future<void> _loadSuppliers(Map<String, dynamic> user) async {
     final snapshot = await _firestore
         .collection('vendors')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     if (!mounted) return;
@@ -1208,7 +1208,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   Future<void> _loadItems(Map<String, dynamic> user) async {
     final snapshot = await _firestore
         .collection('items')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     if (!mounted) return;
@@ -1233,7 +1233,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       final snapshot = await _firestore
           .collection('factories')
           .where('companyIds', arrayContains: companyId)
-          .where('user_id', isEqualTo: _auth.currentUser?.uid)
+          .where('userId', isEqualTo: _auth.currentUser?.uid)
           .get();
 
       if (!mounted) return;
@@ -1841,7 +1841,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   Future<void> _loadSuppliers(Map<String, dynamic> user) async {
     final snapshot = await _firestore
         .collection('vendors')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     if (!mounted) return;
@@ -1856,7 +1856,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   Future<void> _loadItems(Map<String, dynamic> user) async {
     final snapshot = await _firestore
         .collection('items')
-        .where('user_id', isEqualTo: user['userId'])
+        .where('userId', isEqualTo: user['userId'])
         .get();
 
     if (!mounted) return;
@@ -1880,7 +1880,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
       final snapshot = await _firestore
           .collection('factories')
           .where('companyIds', arrayContains: companyId)
-          .where('user_id', isEqualTo: _auth.currentUser?.uid)
+          .where('userId', isEqualTo: _auth.currentUser?.uid)
           .get();
 
       if (!mounted) return;

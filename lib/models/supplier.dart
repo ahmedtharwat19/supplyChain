@@ -3,13 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Supplier {
   // ➤ ثابتات أسماء الحقول
 
-  static const fieldNameAr = 'name_ar';
-  static const fieldNameEn = 'name_en';
+  static const fieldNameAr = 'nameAr';
+  static const fieldNameEn = 'nameEn';
   static const fieldPhone = 'phone';
   static const fieldEmail = 'email';
   static const fieldAddress = 'address';
   static const fieldNotes = 'notes';
-  static const fieldUserId = 'user_id';
+  static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
 
   // ➤ الخصائص

@@ -27,12 +27,12 @@
       'id': supplierData['id'] ?? 'N/A',
     },
     'company': {
-      'name': isArabic ? companyData['name_ar'] : companyData['name_en'],
+      'name': isArabic ? companyData['nameAr'] : companyData['nameEn'],
       'tax_id': companyData['tax_id'] ?? 'N/A',
     },
     'items': (orderData['items'] as List).map((item) => {
       'itemId': item['itemId'] ?? 'N/A',
-      'name': isArabic ? itemData['name_ar'] ?? 'N/A' : itemData['name_en'] ?? 'N/A',
+      'name': isArabic ? itemData['nameAr'] ?? 'N/A' : itemData['nameEn'] ?? 'N/A',
       'quantity': item['quantity'],
       'price': item['unitPrice'],
     }).toList(),
@@ -51,14 +51,14 @@
   invoiceContent.writeln('${isArabic ? 'رقم الفاتورة' : 'Invoice No'}: $orderId');
   invoiceContent.writeln('${isArabic ? 'التاريخ' : 'Date'}: ${_formatOrderDate(orderData['orderDate'])}');
   invoiceContent.writeln('${isArabic ? 'المورد' : 'Supplier'}: ${supplierData['name']}');
-  invoiceContent.writeln('${isArabic ? 'الشركة' : 'Company'}: ${isArabic ? companyData['name_ar'] : companyData['name_en']}');
+  invoiceContent.writeln('${isArabic ? 'الشركة' : 'Company'}: ${isArabic ? companyData['nameAr'] : companyData['nameEn']}');
   invoiceContent.writeln('---------------------------------');
   
   // إضافة العناصر
   invoiceContent.writeln('${isArabic ? 'العناصر' : 'Items'}:');
   final items = orderData['items'] as List? ?? [];
   for (final item in items) {
-    final itemName = isArabic ? item['name_ar'] : item['name_en'];
+    final itemName = isArabic ? item['nameAr'] : item['nameEn'];
     invoiceContent.writeln(' - $itemName: ${item['quantity']} x ${_formatCurrency(item['unitPrice'])}');
   }
   
@@ -77,13 +77,13 @@
       'id': supplierData['id'],
     },
     'company': {
-      'name': isArabic ? companyData['name_ar'] : companyData['name_en'],
+      'name': isArabic ? companyData['nameAr'] : companyData['nameEn'],
       'tax_id': companyData['tax_id'],
     },
       'items': (orderData['items'] as List)
           .map((item) => {
                 'itemId': item['nameId'],
-                'name': isArabic ? itemsData['name_ar'] : item['name_en'],
+                'name': isArabic ? itemsData['nameAr'] : item['nameEn'],
                 'quantity': item['quantity'],
                 'price': item['unitPrice'],
               })
@@ -115,14 +115,14 @@
       },
       'company': {
         'id': companyData['id'],
-        'name': isArabic ? companyData['name_ar'] : companyData['name_en'],
+        'name': isArabic ? companyData['nameAr'] : companyData['nameEn'],
       },
       'amount': orderData['totalAmountAfterTax'],
       'currency': orderData['currency'],
       'items': (orderData['items'] as List)
           .map((item) => {
                 'itemId': item['nameId'],
-                'name': isArabic ? itemsData['name_ar'] : item['name_en'],
+                'name': isArabic ? itemsData['nameAr'] : item['nameEn'],
                 'quantity': item['quantity'],
                 'price': item['unitPrice'],
               })
@@ -150,7 +150,7 @@
         'currency': orderData['currency'],
       },
       'company': {
-        'name': isArabic ? companyData['name_ar'] : companyData['name_en'],
+        'name': isArabic ? companyData['nameAr'] : companyData['nameEn'],
         'tax_id': companyData['tax_id'] ?? '',
       },
       'supplier': {
@@ -159,7 +159,7 @@
       },
       'items': (orderData['items'] as List)
           .map((item) => {
-                'name': isArabic ? itemsData['name_ar'] : item['name_en'],
+                'name': isArabic ? itemsData['nameAr'] : item['nameEn'],
                 'quantity': item['quantity'],
                 'price': item['unitPrice'],
               })
@@ -171,7 +171,7 @@
     final invoiceContent = '''
 Invoice No: $orderId
 Date: ${_formatOrderDate(orderData['orderDate'])}
-Company: ${isArabic ? companyData['name_ar'] : companyData['name_en']}
+Company: ${isArabic ? companyData['nameAr'] : companyData['nameEn']}
 Supplier: ${supplierData['name']}
 Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
 ''';
@@ -200,7 +200,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
           children: [
             if (logoBytes != null) pw.Image(pw.MemoryImage(logoBytes)),
             pw.Text(
-              isArabic ? companyData['name_ar'] : companyData['name_en'],
+              isArabic ? companyData['nameAr'] : companyData['nameEn'],
               style: pw.TextStyle(
                 fontSize: _headerFontSize,
                 fontWeight: pw.FontWeight.bold,
@@ -265,7 +265,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
             children: [
               if (logoBytes != null) pw.Image(pw.MemoryImage(logoBytes)),
               pw.Text(
-                isArabic ? companyData['name_ar'] : companyData['name_en'],
+                isArabic ? companyData['nameAr'] : companyData['nameEn'],
                 style: pw.TextStyle(
                   fontSize: _headerFontSize,
                   fontWeight: pw.FontWeight.bold,
@@ -340,7 +340,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
                   : pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  isArabic ? companyData['name_ar'] : companyData['name_en'],
+                  isArabic ? companyData['nameAr'] : companyData['nameEn'],
                   style: pw.TextStyle(
                     fontSize: _headerFontSize + 2,
                     fontWeight: pw.FontWeight.bold,
@@ -390,7 +390,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
     bool isArabic,
   ) {
     return items.map<pw.TableRow>((item) {
-      final itemName = isArabic ? item['name_ar'] : item['name_en'];
+      final itemName = isArabic ? item['nameAr'] : item['nameEn'];
       return pw.TableRow(
         children: [
           pw.Padding(
@@ -403,7 +403,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
                         isArabic ? pw.TextAlign.right : pw.TextAlign.left,
                   )
                 : pw.Text(
-                  itemName ?? '',// (item[isArabic ? 'name_ar' : 'name_en']?.toString() ?? ''),
+                  itemName ?? '',// (item[isArabic ? 'nameAr' : 'nameEn']?.toString() ?? ''),
                     style: pw.TextStyle(font: arabicFont),
                     textAlign:
                         isArabic ? pw.TextAlign.right : pw.TextAlign.left,
@@ -473,7 +473,7 @@ Total: ${orderData['totalAmountAfterTax']} ${orderData['currency']}
 ${'invoice'.tr()}: #$orderId
 ${'date'.tr()}: ${_formatOrderDate(orderData['orderDate'])}
 ${'supplier'.tr()}: ${supplierData['name']}
-${'company'.tr()}: ${companyData['name_ar']}
+${'company'.tr()}: ${companyData['nameAr']}
 ${'total_amount'.tr()}: ${_formatCurrency(orderData['totalAmountAfterTax'])} ${orderData['currency']}
 ''';
   } */

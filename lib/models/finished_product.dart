@@ -8,7 +8,7 @@ class FinishedProduct {
   static const fieldManufacturingOrderId = 'manufacturing_order_id';
   static const fieldDate = 'date';
   static const fieldCompanyId = 'company_id';
-  static const fieldUserId = 'user_id';
+  static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
 
   // ➤ الخصائص

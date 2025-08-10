@@ -55,13 +55,13 @@
         debugPrint('Authenticated user: ${user.uid}');
 
         final companyData = {
-          'name_ar': nameAr,
-          'name_en': nameEn,
+          'nameAr': nameAr,
+          'nameEn': nameEn,
           'address': address,
-          'manager_name': managerName,
-          'manager_phone': managerPhone,
-          'logo_base64': _base64Logo,
-          'user_id': user.uid,
+          'managerName': managerName,
+          'managerPhone': managerPhone,
+          'logoBase64': _base64Logo,
+          'userId': user.uid,
           'createdAt': Timestamp.now(),
         };
         debugPrint('Company data prepared.');

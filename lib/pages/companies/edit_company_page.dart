@@ -61,12 +61,12 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
       }
 
       final data = doc.data()!;
-      _nameArController.text = data['name_ar'] ?? '';
-      _nameEnController.text = data['name_en'] ?? '';
+      _nameArController.text = data['nameAr'] ?? '';
+      _nameEnController.text = data['nameEn'] ?? '';
       _addressController.text = data['address'] ?? '';
-      _managerNameController.text = data['manager_name'] ?? '';
-      _managerPhoneController.text = data['manager_phone'] ?? '';
-      _logoBase64 = data['logo_base64'];
+      _managerNameController.text = data['managerName'] ?? '';
+      _managerPhoneController.text = data['managerPhone'] ?? '';
+      _logoBase64 = data['logoBase64'];
 
       if (_logoBase64 != null) {
         if (kIsWeb) {
@@ -326,12 +326,12 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
       }
 
       final data = doc.data()!;
-      _nameArController.text = data['name_ar'] ?? '';
-      _nameEnController.text = data['name_en'] ?? '';
+      _nameArController.text = data['nameAr'] ?? '';
+      _nameEnController.text = data['nameEn'] ?? '';
       _addressController.text = data['address'] ?? '';
-      _managerNameController.text = data['manager_name'] ?? '';
-      _managerPhoneController.text = data['manager_phone'] ?? '';
-      _base64Logo = data['logo_base64'];
+      _managerNameController.text = data['managerName'] ?? '';
+      _managerPhoneController.text = data['managerPhone'] ?? '';
+      _base64Logo = data['logoBase64'];
 
       if (_base64Logo != null && _base64Logo!.isNotEmpty) {
         if (kIsWeb) {
@@ -364,7 +364,7 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
           .doc(userId)
           .get();
       if (!userDoc.exists) return false;
-      final isActive = userDoc.data()?['is_active'] ?? false;
+      final isActive = userDoc.data()?['isActive'] ?? false;
       return isActive == true;
     } catch (e) {
       debugPrint('❌ خطأ في التحقق من حالة المستخدم: $e');
@@ -393,8 +393,8 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
     for (var doc in snapshot.docs) {
       if (doc.id == widget.companyId) continue; // استثناء الشركة الحالية
 
-      final existingAr = (doc['name_ar'] ?? '').toString().trim().toLowerCase();
-      final existingEn = (doc['name_en'] ?? '').toString().trim().toLowerCase();
+      final existingAr = (doc['nameAr'] ?? '').toString().trim().toLowerCase();
+      final existingEn = (doc['nameEn'] ?? '').toString().trim().toLowerCase();
       if (existingAr == normalizedAr || existingEn == normalizedEn) {
         return true;
       }
@@ -485,13 +485,13 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
 
     try {
       final companyData = {
-        'name_ar': _nameArController.text.trim(),
-        'name_en': _nameEnController.text.trim(),
+        'nameAr': _nameArController.text.trim(),
+        'nameEn': _nameEnController.text.trim(),
         'address': _addressController.text.trim(),
-        'manager_name': _managerNameController.text.trim(),
-        'manager_phone': _managerPhoneController.text.trim(),
-        'logo_base64': _base64Logo,
-        'user_id': userId,
+        'managerName': _managerNameController.text.trim(),
+        'managerPhone': _managerPhoneController.text.trim(),
+        'logoBase64': _base64Logo,
+        'userId': userId,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -540,14 +540,14 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
                   TextField(
                     controller: _nameArController,
                     decoration:
-                        InputDecoration(labelText: tr('company_name_arabic')),
+                        InputDecoration(labelText: tr('company_nameArabic')),
                     inputFormatters: [arabicOnlyFormatter],
                     textInputAction: TextInputAction.next,
                   ),
                   TextField(
                     controller: _nameEnController,
                     decoration:
-                        InputDecoration(labelText: tr('company_name_english')),
+                        InputDecoration(labelText: tr('company_nameEnglish')),
                     inputFormatters: [englishOnlyFormatter],
                     textInputAction: TextInputAction.next,
                   ),
@@ -560,13 +560,13 @@ class _EditCompanyPageState extends State<EditCompanyPage> {
                   TextField(
                     controller: _managerNameController,
                     decoration:
-                        InputDecoration(labelText: tr('company_manager_name')),
+                        InputDecoration(labelText: tr('company_managerName')),
                     textInputAction: TextInputAction.next,
                   ),
                   TextField(
                     controller: _managerPhoneController,
                     decoration:
-                        InputDecoration(labelText: tr('company_manager_phone')),
+                        InputDecoration(labelText: tr('company_managerPhone')),
                     keyboardType: TextInputType.phone,
                     inputFormatters: [numbersOnlyFormatter],
                     textInputAction: TextInputAction.next,

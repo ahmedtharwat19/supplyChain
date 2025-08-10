@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 class Company {
   // ➤ ثابتات الحقول
-  static const fieldNameAr = 'name_ar';
-  static const fieldNameEn = 'name_en';
+  static const fieldNameAr = 'nameAr';
+  static const fieldNameEn = 'nameEn';
   static const fieldAddress = 'address';
-  static const fieldManagerName = 'manager_name';
-  static const fieldManagerPhone = 'manager_phone';
-  static const fieldLogoBase64 = 'logo_base64';
-  static const fieldUserId = 'user_id';
+  static const fieldManagerName = 'managerName';
+  static const fieldManagerPhone = 'managerPhone';
+  static const fieldLogoBase64 = 'logoBase64';
+  static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
 
   // ➤ الخصائص

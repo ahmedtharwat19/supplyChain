@@ -28,7 +28,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
     Query query = _firestore.collection(collectionPath).where(field, whereIn: chunk);
 
     if (userId != null) {
-      query = query.where('user_id', isEqualTo: userId);
+      query = query.where('userId', isEqualTo: userId);
     }
 
     if (orderByField != null) {
@@ -54,7 +54,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<Company>> getCompanies(String userId) {
     return _firestore
         .collection('companies')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Company.fromMap(doc.data(), doc.id))
@@ -69,7 +69,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<Supplier>> getVendors(String userId) {
     return _firestore
         .collection('vendors')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Supplier.fromMap(doc.data(), doc.id))
@@ -84,7 +84,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<Item>> getItems(String userId) {
     return _firestore
         .collection('items')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -100,7 +100,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<PurchaseOrder>> getPurchaseOrders(String userId) {
     return _firestore
         .collection('purchase_orders')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) =>
@@ -116,7 +116,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<StockMovement>> getStockMovements(String userId) {
     return _firestore
         .collection('stock_movements')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -132,7 +132,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<ManufacturingOrder>> getManufacturingOrders(String userId) {
     return _firestore
         .collection('manufacturing_orders')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('start_date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -148,7 +148,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   Stream<List<FinishedProduct>> getFinishedProducts(String userId) {
     return _firestore
         .collection('finished_products')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -169,7 +169,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
         .snapshots()
         .map((snapshot) => snapshot.docs
             .where((doc) =>
-                doc.data()['user_id'] == userId ||
+                doc.data()['userId'] == userId ||
                 (doc.data()['companyIds'] as List)
                     .any((id) => userCompanyIds.contains(id)))
             .map((doc) => Factory.fromMap(doc.data(), doc.id))
@@ -205,7 +205,7 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
   }) async {
     Query query = _firestore.collection(collectionPath);
     if (userId != null) {
-      query = query.where('user_id', isEqualTo: userId);
+      query = query.where('userId', isEqualTo: userId);
     }
     return (await query.orderBy('created_at', descending: true).get()).docs;
   }
@@ -279,7 +279,7 @@ class FirestoreService {
 /*   Future<List<Supplier>> getUserVendors(String userId) async {
     final snapshot = await _firestore
         .collection('vendors')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .get();
 
@@ -294,7 +294,7 @@ class FirestoreService {
     // استعلام الموردين التي أنشأها المستخدم
     final createdByUserSnapshot = await _firestore
         .collection('vendors')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .get();
 
     allSuppliers.addAll(
@@ -340,7 +340,7 @@ class FirestoreService {
   Future<List<Item>> getUserItems(String userId) async {
     final querySnapshot = await _firestore
         .collection('items')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .get();
 
@@ -351,7 +351,7 @@ class FirestoreService {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('items')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
           .get();
 
@@ -374,7 +374,7 @@ class FirestoreService {
   Stream<List<PurchaseOrder>> getPurchaseOrders(String userId) {
     return _firestore
         .collection('purchase_orders')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) =>
@@ -432,7 +432,7 @@ class FirestoreService {
   Stream<List<StockMovement>> getStockMovements(String userId) {
     return _firestore
         .collection('stock_movements')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -448,7 +448,7 @@ class FirestoreService {
   Stream<List<ManufacturingOrder>> getManufacturingOrders(String userId) {
     return _firestore
         .collection('manufacturing_orders')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('start_date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -464,7 +464,7 @@ class FirestoreService {
   Stream<List<FinishedProduct>> getFinishedProducts(String userId) {
     return _firestore
         .collection('finished_products')
-        .where('user_id', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -480,7 +480,7 @@ class FirestoreService {
         .where('companyIds', arrayContainsAny: companyIds)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .where((doc) => doc.data()['user_id'] == userId)
+            .where((doc) => doc.data()['userId'] == userId)
             .map((doc) => Factory.fromMap(doc.data(), doc.id))
             .toList());
   }
@@ -518,7 +518,7 @@ class FirestoreService {
   }) async {
     Query query = _firestore.collection(collectionPath);
     if (userId != null) {
-      query = query.where('user_id', isEqualTo: userId);
+      query = query.where('userId', isEqualTo: userId);
     }
     return (await query.orderBy('created_at', descending: true).get()).docs;
   }
@@ -541,7 +541,7 @@ class FirestoreService {
           _firestore.collection(collectionPath).where(field, whereIn: chunk);
 
       if (userId != null) {
-        query = query.where('user_id', isEqualTo: userId);
+        query = query.where('userId', isEqualTo: userId);
       }
 
       if (orderByField != null) {
@@ -565,13 +565,13 @@ class FirestoreService {
       if (doc.exists) {
         final data = doc.data();
         return {
-          'name_ar': (data?['name_ar'] ?? 'غير معروف').toString(),
-          'name_en': (data?['name_en'] ?? 'Unknown').toString(),
+          'nameAr': (data?['nameAr'] ?? 'غير معروف').toString(),
+          'nameEn': (data?['nameEn'] ?? 'Unknown').toString(),
         };
       }
-      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+      return {'nameAr': 'غير معروف', 'nameEn': 'Unknown'};
     } catch (e) {
-      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+      return {'nameAr': 'غير معروف', 'nameEn': 'Unknown'};
     }
   }
 
@@ -585,13 +585,13 @@ class FirestoreService {
       if (doc.exists) {
         final data = doc.data();
         return {
-          'name_ar': (data?['name_ar'] ?? 'غير معروف').toString(),
-          'name_en': (data?['name_en'] ?? 'Unknown').toString(),
+          'nameAr': (data?['nameAr'] ?? 'غير معروف').toString(),
+          'nameEn': (data?['nameEn'] ?? 'Unknown').toString(),
         };
       }
-      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+      return {'nameAr': 'غير معروف', 'nameEn': 'Unknown'};
     } catch (e) {
-      return {'name_ar': 'غير معروف', 'name_en': 'Unknown'};
+      return {'nameAr': 'غير معروف', 'nameEn': 'Unknown'};
     }
   }
 }

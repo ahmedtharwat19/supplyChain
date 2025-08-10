@@ -90,7 +90,7 @@ class DashboardDataService {
     try {
       final snapshot = await _firestore
           .collection(collection)
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
       return snapshot.size;
     } catch (e) {
@@ -153,7 +153,7 @@ class DashboardDataService {
     try {
       final snapshot = await _firestore
           .collection('companies/$companyId/$collection')
-          .where('user_id', isEqualTo: userId)
+          .where('userId', isEqualTo: userId)
           .get();
 
       double amount = 0.0;

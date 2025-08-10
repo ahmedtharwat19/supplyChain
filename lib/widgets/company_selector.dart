@@ -10,8 +10,8 @@ Future<List<Map<String, dynamic>>> fetchUserCompanies(String uid) async {
   for (final id in companyIds) {
     final doc = await FirebaseFirestore.instance.collection('companies').doc(id).get();
     if (doc.exists) {
-      // اختر إما 'name_ar' أو 'name_en' أو 'name' حسب هيكل البيانات لديك
-      final name = doc.data()?['name_ar'] ?? doc.data()?['name_en'] ?? 'Unnamed Company';
+      // اختر إما 'nameAr' أو 'nameEn' أو 'name' حسب هيكل البيانات لديك
+      final name = doc.data()?['nameAr'] ?? doc.data()?['nameEn'] ?? 'Unnamed Company';
       companies.add({'id': doc.id, 'name': name});
     }
   }
