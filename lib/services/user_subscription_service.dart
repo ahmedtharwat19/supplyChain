@@ -308,7 +308,12 @@ class UserSubscriptionService {
     try {
       // 1. التحقق من حالة الاتصال بالإنترنت
       final connectivityResult = await _connectivity.checkConnectivity();
-      final isOnline = connectivityResult != ConnectivityResult.none;
+      //final isOnline = connectivityResult != ConnectivityResult.none;
+      //final isOnline = connectivityResult.any((result) => result != ConnectivityResult.none);
+      final isOnline = connectivityResult.isNotEmpty &&
+                 connectivityResult.any((result) => result != ConnectivityResult.none);
+
+
 
       // 2. التنفيذ بناءً على حالة الاتصال
       final result = isOnline

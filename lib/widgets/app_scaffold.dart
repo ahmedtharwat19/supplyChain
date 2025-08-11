@@ -484,9 +484,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:puresip_purchasing/services/license_service.dart';
 
 // نفترض وجود خدمة للتراخيص مع دالة للتحقق من وجود طلبات ترخيص معلقة
-class LicenseService {
+/* class LicenseService {
   Future<bool> hasPendingLicenseRequests() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('license_requests')
@@ -494,7 +495,10 @@ class LicenseService {
         .get();
     return snapshot.docs.isNotEmpty;
   }
-}
+} */
+
+
+//  late final LicenseService _licenseService;
 
 class AppScaffold extends StatefulWidget {
   final Widget body;

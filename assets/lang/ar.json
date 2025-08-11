@@ -594,7 +594,29 @@
     "no_requests" : " لا توجد طلبات تراخيص متاحه ...",
     "manage_licenses": "إدارة التراخيص",
       "admin_access_required": "يتطلب صلاحيات المدير",
-  "only_admins_can_access": "فقط المدراء يمكنهم الوصول إلى هذا القسم"
+  "only_admins_can_access": "فقط المدراء يمكنهم الوصول إلى هذا القسم",
+  "licenses" : "التراخيص",
+  "no_licenses" : "لا توجد تراخيص ...",
+
+  
+
+  "duration": "المدة",
+
+  "license_key": "مفتاح الترخيص",
+  "expires": "تاريخ الانتهاء",
+
+  "admin_check_failed": "فشل التحقق من صلاحيات المدير",
+  "request_not_found": "الطلب غير موجود",
+  "index_required": "مطلوب إنشاء فهرس (Index)",
+  "create_index_message": "يجب إنشاء فهرس في Firebase لعرض البيانات",
+  "create_index": "إنشاء الفهرس",
+  "license_expiry": "انتهاء الترخيص",
+  "existing_request_pending": "لديك طلب ترخيص قيد المراجعة، لا يمكنك إرسال طلب آخر الآن.",
+  "request_already_approved": "تمت الموافقة على طلب الترخيص الخاص بك مسبقًا."
+
+
+  
+
 
 
 

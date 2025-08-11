@@ -518,7 +518,29 @@
   "no_requests" : "No Licenses Requests available...",
   "manage_licenses" : "Manage Licenses",
     "admin_access_required": "Admin access required",
-  "only_admins_can_access": "Only admins can access this section"
+  "only_admins_can_access": "Only admins can access this section",
+  "licenses":"Licenses",
+  "no_licenses" : "No Licenses found ...",
+
+
+  
+
+
+  "license_key": "License Key",
+  "expires": "Expires",
+  "expired": "Expired",
+  "admin_check_failed": "Failed to check admin status",
+  "request_not_found": "Request not found",
+  "index_required": "Index Required",
+  "create_index_message": "You need to create a Firebase index to view data",
+  "create_index": "Create Index",
+  "license_expiry": "License Expiry",
+  "duration" : "Duration ",
+ "existing_request_pending": "You already have a pending license request. Please wait for it to be processed before submitting a new one.",
+   "request_already_approved": "Your license request has already been approved."
+
+
+
 
 
 }
