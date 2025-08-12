@@ -467,7 +467,7 @@
   "po_number": "PO Number",
 
 
-  "new_license_request": "New License Request",
+
   "loading_device_id": "Loading device ID...",
   "device_id_error": "Error getting device ID",
   "login_required": "Login required",
@@ -537,7 +537,59 @@
   "license_expiry": "License Expiry",
   "duration" : "Duration ",
  "existing_request_pending": "You already have a pending license request. Please wait for it to be processed before submitting a new one.",
-   "request_already_approved": "Your license request has already been approved."
+   "request_already_approved": "Your license request has already been approved.",
+     "account_inactive_title": "Account Inactive",
+  "account_inactive_message": "Your account is currently inactive. Would you like to go to the license page to request activation?",
+  
+  "go_to_license": "Go to License",
+
+  "active_licenses": "Active Licenses",
+
+  "no_active_licenses": "No active licenses",
+    "license_request": "License Request",
+  "number_of_devices": "Number of Devices",
+  "request_summary": "Request Summary", 
+  "current_devices": "Current Devices",
+
+
+
+  "submit_request": "Submit Request",
+  "request_submitted_successfully": "Request submitted successfully",
+  "submit_error": "Error submitting request: {0}",
+  "device_limit_warning": "You already have {0} devices registered",
+  "ADMIN_PERMISSION_REQUIRED": "Admin permission required",
+  "LICENSE_NOT_FOUND": "License not found",
+  "MAX_DEVICES_REACHED": "Maximum devices reached for this license",
+
+    "app_title": "PureSip",
+  
+  "request_license": "Request License",
+    "@@locale": "en",
+
+"current_device_id": "Current Device ID",
+
+"new_request_from": "New request from {0}",
+
+  "active_license_exists": "Active license already exists",
+
+  "load_device_count_error": "Failed to load device count",
+
+"error_loading_device_id": "Error loading device ID",
+  "new_notification": "New Notification",
+  "new_license_request": "You have a new license request",
+  "request_details": "Request Details",
+  "new_license_from": "New license request from {email}",
+
+  "done": "Done",
+
+    "license_approved_title": "License Approved",
+  "license_approved_body": "Your license has been approved: {0}",
+  "license_notifications_channel_desc": "License status notifications",
+
+  "new_license_notification": "New License Notification"
+
+
+  
 
 
 

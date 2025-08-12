@@ -90,7 +90,7 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
-  Future<void> _loginWithEmailPassword() async {
+/*   Future<void> _loginWithEmailPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
@@ -148,6 +148,93 @@ class _LoginFormState extends State<LoginForm> {
       }
     }
   }
+ */
+
+Future<void> _loginWithEmailPassword() async {
+  if (_formKey.currentState?.validate() ?? false) {
+    setState(() => _isLoading = true);
+    try {
+      final credential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      final user = credential.user;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        debugPrint('User document exists: ${userDoc.exists}');
+
+        if (!userDoc.exists) {
+          if (mounted) _showErrorSnackBar('user_not_found_in_db'.tr());
+          return;
+        }
+
+        final userData = userDoc.data()!;
+        debugPrint('User Data: $userData');
+
+        final isActive = userData['isActive'] as bool? ?? false;
+        if (!isActive) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            await _showInactiveAccountDialog(context);
+          }
+          return;
+        }
+
+        await UserLocalStorage.setUser(userData);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('login_success'.tr())),
+          );
+          debugPrint('Attempting to navigate to /dashboard');
+          context.go('/dashboard');
+        }
+      }
+    } catch (e) {
+      debugPrint('Login error: ${e.toString()}');
+      if (mounted) {
+        if (e is FirebaseAuthException) {
+          _showErrorSnackBar(_getAuthErrorMessage(e));
+        } else {
+          _showErrorSnackBar('login_error'.tr());
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}
+
+Future<void> _showInactiveAccountDialog(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('account_inactive_title'.tr()),
+      content: Text('account_inactive_message'.tr()),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text('try_again'.tr()),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text('go_to_license'.tr()),
+        ),
+      ],
+    ),
+  );
+
+  if (result == true && mounted) {
+    if (!context.mounted) return;
+    context.go('/license-request');
+  }
+}
 
 // دالة مساعدة لعرض رسائل الخطأ
   void _showErrorSnackBar(String message) {

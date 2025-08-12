@@ -194,6 +194,7 @@ final GoRouter appRouter = GoRouter(
     // 3. Check permissions
     try {
       final isAdmin = await _checkIfAdmin(user.uid);
+      
       final licenseStatus = await _licenseService.checkLicenseStatus();
 
       debugPrint('''

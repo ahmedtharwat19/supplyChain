@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/user_local_storage.dart';
 import '../../widgets/app_scaffold.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -36,6 +37,8 @@ class DashboardPageState extends State<DashboardPage> {
   bool isSubscriptionExpired = false;
   // Dashboard metrics
   final DashboardStats _stats = DashboardStats.empty();
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  StreamSubscription? _notificationSubscription;
 
   // User data
   String? userId;
@@ -48,13 +51,106 @@ class DashboardPageState extends State<DashboardPage> {
     _initializeData();
     _checkSubscriptionStatus();
     _startListeningToUserChanges();
+       _setupFCM();
+    _checkInitialNotification();
+
   }
 
   @override
   void dispose() {
     _userSubscription?.cancel();
     _refreshController.dispose();
+        _notificationSubscription?.cancel();
     super.dispose();
+  }
+
+Future<void> _setupFCM() async {
+    await _fcm.requestPermission();
+    _notificationSubscription = FirebaseMessaging.onMessage.listen((message) {
+      _showNotification(message);
+    });
+  }
+
+  void _checkInitialNotification() async {
+    RemoteMessage? initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotification(initialMessage);
+    }
+  }
+
+void _handleNotification(RemoteMessage message) {
+  // تأكد من أن الويدجيت ما زال mounted
+  if (!mounted) return;
+
+  // معالجة الإشعار حسب نوعه
+  if (message.data['type'] == 'license_request') {
+    // عرض تفاصيل الإشعار أولاً
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('request_details'.tr()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('new_license_from'.tr(namedArgs: {
+              'email': message.data['userEmail'] ?? 'unknown_user'.tr()
+            })),
+            const SizedBox(height: 8),
+            Text('request_id'.tr(args: [message.data['requestId'] ?? ''])),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // إغلاق الـ Dialog
+              _navigateToLicenseRequests(); // التنقل لصفحة الطلبات
+            },
+            child: Text('view_details'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ok'.tr()),
+          ),
+        ],
+      ),
+    );
+  } else {
+    // للإشعارات العامة
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(message.notification?.title ?? 'new_notification'.tr()),
+        content: Text(message.notification?.body ?? 'new_license_request'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ok'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _navigateToLicenseRequests() {
+  Navigator.pushNamed(context, '/license-requests');
+}
+
+  void _showNotification(RemoteMessage message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(message.notification?.title ?? 'New Notification'),
+        content: Text(message.notification?.body ?? 'New license request'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ok'.tr()),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initializeData() async {

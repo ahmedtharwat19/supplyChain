@@ -2441,7 +2441,7 @@ Future<void> _submitRequest() async {
   }
 }
  */
-
+/* 
 // lib/widgets/auth/admin_license_management.dart
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -3099,5 +3099,277 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
         Text('only_admins_can_access'.tr()),
       ]),
     );
+  }
+}
+ */
+
+
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../services/license_service.dart';
+
+class AdminLicenseManagementPage extends StatefulWidget {
+  const AdminLicenseManagementPage({super.key});
+
+  @override
+  State<AdminLicenseManagementPage> createState() => _AdminLicenseManagementPageState();
+}
+
+class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+//  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final LicenseService _licenseService;
+
+  @override
+  void initState() {
+    super.initState();
+    _licenseService = LicenseService();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('license_management'.tr()),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'pending_requests'.tr()),
+              Tab(text: 'active_licenses'.tr()),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildPendingRequestsList(),
+            _buildActiveLicensesList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingRequestsList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('license_requests')
+          .where('status', isEqualTo: 'pending')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final requests = snapshot.data!.docs;
+        if (requests.isEmpty) {
+          return Center(child: Text('no_pending_requests'.tr()));
+        }
+
+        return ListView.builder(
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            final request = requests[index];
+            return _buildRequestCard(request);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestCard(DocumentSnapshot request) {
+    final data = request.data() as Map<String, dynamic>;
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestore.collection('users').doc(data['userId']).get(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) {
+          return const ListTile(title: CircularProgressIndicator());
+        }
+
+        final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+        return Card(
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundImage: userData['photoUrl'] != null 
+                  ? NetworkImage(userData['photoUrl']) 
+                  : null,
+              child: userData['photoUrl'] == null 
+                  ? const Icon(Icons.person) 
+                  : null,
+            ),
+            title: Text(userData['displayName'] ?? 'Unknown User'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${'devices'.tr()}: ${data['maxDevices']}'),
+                Text('${'duration'.tr()}: ${data['durationMonths']} ${'months'.tr()}'),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.check, color: Colors.green),
+                  onPressed: () => _processRequest(request.id, true),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.red),
+                  onPressed: () => _processRequest(request.id, false),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _processRequest(String requestId, bool approve) async {
+    try {
+      if (approve) {
+        final requestDoc = await _firestore.collection('license_requests').doc(requestId).get();
+        final requestData = requestDoc.data() as Map<String, dynamic>;
+        
+        await _licenseService.createLicense(
+          userId: requestData['userId'],
+          durationMonths: requestData['durationMonths'],
+          maxDevices: requestData['maxDevices'],
+          requestId: requestId,
+        );
+      } else {
+        await _firestore.collection('license_requests').doc(requestId).update({
+          'status': 'rejected',
+          'processedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
+/*   Widget _buildActiveLicensesList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('licenses')
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final licenses = snapshot.data!.docs;
+        if (licenses.isEmpty) {
+          return Center(child: Text('no_active_licenses'.tr()));
+        }
+
+        return ListView.builder(
+          itemCount: licenses.length,
+          itemBuilder: (context, index) {
+            final license = licenses[index];
+            return _buildLicenseCard(license);
+          },
+        );
+      },
+    );
+  }
+ */
+Widget _buildActiveLicensesList() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: _firestore
+        .collection('licenses')
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (snapshot.hasError) {
+        debugPrint('Error: ${snapshot.error}');
+        return Center(child: Text('Error: ${snapshot.error}'));
+        
+      }
+
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return Center(child: Text('no_active_licenses'.tr()));
+      }
+
+      final licenses = snapshot.data!.docs;
+      return ListView.builder(
+        itemCount: licenses.length,
+        itemBuilder: (context, index) {
+          final license = licenses[index];
+          return _buildLicenseCard(license);
+        },
+      );
+    },
+  );
+}
+  Widget _buildLicenseCard(DocumentSnapshot license) {
+    final data = license.data() as Map<String, dynamic>;
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestore.collection('users').doc(data['userId']).get(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) {
+          return const ListTile(title: CircularProgressIndicator());
+        }
+
+        final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+        return Card(
+          child: ExpansionTile(
+            title: Text(data['licenseKey']),
+            subtitle: Text('Expires: ${_formatDate(data['expiryDate']?.toDate())}'),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('User: ${userData['displayName']}'),
+                    Text('Email: ${userData['email']}'),
+                    Text('Devices: ${(data['deviceIds'] as List).length}/${data['maxDevices']}'),
+                    if (data['originalRequestId'] != null)
+                      _buildRequestInfo(data['originalRequestId']),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestInfo(String requestId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestore.collection('license_requests').doc(requestId).get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox();
+        }
+        final requestData = snapshot.data!.data() as Map<String, dynamic>;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(),
+            Text('Original Request: $requestId'),
+            Text('Submitted: ${_formatDate(requestData['createdAt']?.toDate())}'),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

@@ -544,7 +544,6 @@
   "mark_as_cancelled": "تمييز كملغي",
   "order_details": "تفاصيل الطلب",
   "po_number": "رقم أمر الشراء",
-    "new_license_request": "طلب ترخيص جديد",
   "loading_device_id": "جاري تحميل معرف الجهاز...",
   "device_id_error": "خطأ في الحصول على معرف الجهاز",
   "login_required": "يجب تسجيل الدخول أولاً",
@@ -612,7 +611,57 @@
   "create_index": "إنشاء الفهرس",
   "license_expiry": "انتهاء الترخيص",
   "existing_request_pending": "لديك طلب ترخيص قيد المراجعة، لا يمكنك إرسال طلب آخر الآن.",
-  "request_already_approved": "تمت الموافقة على طلب الترخيص الخاص بك مسبقًا."
+  "request_already_approved": "تمت الموافقة على طلب الترخيص الخاص بك مسبقًا.",
+  "account_inactive_title": "الحساب غير مفعل",
+
+  "account_inactive_message": "حسابك غير مفعل حالياً. هل تريد الذهاب إلى صفحة التراخيص لطلب التفعيل؟",
+
+
+
+  "go_to_license": "الذهاب إلى التراخيص",
+  "active_licenses": "التراخيص النشطة",
+
+  "submit_request": "إرسال الطلب",
+  "request_submitted_successfully": "تم إرسال الطلب بنجاح",
+  "submit_error": "خطأ في إرسال الطلب: {0}",
+  "device_limit_warning": "لديك بالفعل {0} أجهزة مسجلة",
+  "ADMIN_PERMISSION_REQUIRED": "مطلوب صلاحيات مدير",
+  "LICENSE_NOT_FOUND": "الترخيص غير موجود",
+  "MAX_DEVICES_REACHED": "تم الوصول إلى الحد الأقصى للأجهزة لهذا الترخيص",
+
+    "app_title": "بورسيب",
+    "license_request": "طلب الترخيص",
+  "number_of_devices": "عدد الأجهزة",
+  "request_summary": "ملخص الطلب",
+  "current_devices": "الأجهزة الحالية",
+  "request_license": "طلب ترخيص",
+    "@@locale": "ar",
+
+  "active_license_exists": "هناك ترخيص نشط بالفعل",
+
+  "load_device_count_error": "فشل تحميل عدد الأجهزة",
+  "current_device_id": "معرف الجهاز الحالي",
+
+"new_request_from": "طلب جديد من {0}",
+
+"error_loading_device_id": "خطأ في تحميل معرف الجهاز",
+ "new_notification": "إشعار جديد",
+  "new_license_request": "لديك طلب ترخيص جديد",
+  "request_details": "تفاصيل الطلب",
+  "new_license_from": "طلب ترخيص جديد من {email}",
+  "done": "تم",
+  
+  "unknown_user": "مستخدم غير معروف",
+  "request_id": "رقم الطلب: {0}",
+  "view_details": "عرض التفاصيل",
+   "license_approved_title": "تمت الموافقة على الترخيص",
+  "license_approved_body": "تمت الموافقة على الترخيص الخاص بك: {0}",
+  "license_notifications_channel_desc": "إشعارات حالة الترخيص",
+
+  "new_license_notification": "إشعار ترخيص جديد"
+  
+
+
 
 
   
