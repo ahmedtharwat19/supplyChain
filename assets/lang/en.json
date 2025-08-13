@@ -545,6 +545,10 @@
 
   "active_licenses": "Active Licenses",
 
+  "USER_NOT_ACTIVE": "Your account is not active",
+"firebase_error": "Firebase error: {errorCode}",
+
+
   "no_active_licenses": "No active licenses",
     "license_request": "License Request",
   "number_of_devices": "Number of Devices",

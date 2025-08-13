@@ -1410,8 +1410,6 @@ if (!mounted) return;
 }
  */
 
-
-
 /* 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -1912,6 +1910,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 import '../../services/license_service.dart';
@@ -1940,7 +1939,27 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
   void initState() {
     super.initState();
     _loadDeviceData();
+    _setupLicenseListener();
   }
+
+void _setupLicenseListener() {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  _firestore
+      .collection('licenses')
+      .where('userId', isEqualTo: user.uid)
+      .where('isActive', isEqualTo: true)
+      .snapshots()
+      .listen((snapshot) {
+    if (snapshot.docs.isNotEmpty && mounted) {
+      // تأكد من أن المستخدم لا يزال في صفحة طلب الترخيص قبل التوجيه
+      if (ModalRoute.of(context)?.settings.name == '/license-request') {
+        context.go('/dashboard');
+      }
+    }
+  });
+}
 
   Future<void> _loadDeviceData() async {
     await _loadCurrentDeviceCount();
@@ -1960,9 +1979,15 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
 
       if (mounted) {
         setState(() {
-          _currentDevicesCount = licenseQuery.docs.isEmpty 
-              ? 0 
-              : (licenseQuery.docs.first['deviceIds'] as List? ?? []).length;
+          _currentDevicesCount = 0;
+          if (licenseQuery.docs.isNotEmpty) {
+            final doc = licenseQuery.docs.first.data();
+            final deviceIds = doc['deviceIds'];
+
+            if (deviceIds is List) {
+              _currentDevicesCount = deviceIds.length;
+            }
+          }
         });
       }
     } catch (e) {
@@ -1974,7 +1999,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     }
   }
 
-/*   Future<void> _loadCurrentDeviceId() async {
+  Future<void> _loadCurrentDeviceId() async {
     try {
       String deviceId;
       if (Platform.isAndroid) {
@@ -1984,7 +2009,12 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
         final iosInfo = await _deviceInfo.iosInfo;
         deviceId = 'ios_${iosInfo.identifierForVendor ?? _uuid.v4()}';
       } else {
-        deviceId = 'web_${_uuid.v4()}';
+        // للويب نستخدم localStorage كمصدر ثابت
+        final storage = const FlutterSecureStorage();
+        deviceId = await storage.read(key: 'deviceId') ?? 'web_${_uuid.v4()}';
+        debugPrint('_currentDeviceId: $_currentDeviceId');
+
+        await storage.write(key: 'deviceId', value: deviceId);
       }
 
       if (mounted) {
@@ -1992,40 +2022,21 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _currentDeviceId = 'error_loading_device_id'.tr());
+        setState(() => _currentDeviceId = 'web_${_uuid.v4()}');
       }
     }
-  } */
-
-Future<void> _loadCurrentDeviceId() async {
-  try {
-    String deviceId;
-    if (Platform.isAndroid) {
-      final androidInfo = await _deviceInfo.androidInfo;
-      deviceId = 'android_${androidInfo.id}';
-    } else if (Platform.isIOS) {
-      final iosInfo = await _deviceInfo.iosInfo;
-      deviceId = 'ios_${iosInfo.identifierForVendor ?? _uuid.v4()}';
-    } else {
-      // للويب نستخدم localStorage كمصدر ثابت
-      final storage = const FlutterSecureStorage();
-      deviceId = await storage.read(key: 'deviceId') ?? 'web_${_uuid.v4()}';
-      await storage.write(key: 'deviceId', value: deviceId);
-    }
-
-    if (mounted) {
-      setState(() => _currentDeviceId = deviceId);
-    }
-  } catch (e) {
-    if (mounted) {
-      setState(() => _currentDeviceId = 'web_${_uuid.v4()}');
-    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
+      // تحقق من حالة الترخيص عند بناء الصفحة
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    final licenseStatus = await _licenseService.checkLicenseStatus();
+    if (licenseStatus.isValid && mounted) {
+      if (!context.mounted)return;
+      context.go('/dashboard');
+    }
+  });
     return Scaffold(
       appBar: AppBar(
         title: Text('license_request'.tr()),
@@ -2142,7 +2153,8 @@ Future<void> _loadCurrentDeviceId() async {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'device_limit_warning'.tr(args: [_selectedDevices.toString()]),
+                  'device_limit_warning'
+                      .tr(args: [_selectedDevices.toString()]),
                   style: const TextStyle(color: Colors.orange),
                 ),
               ),
@@ -2168,7 +2180,8 @@ Future<void> _loadCurrentDeviceId() async {
                   ),
             ),
             const SizedBox(height: 12),
-            _buildInfoRow('duration'.tr(), '$_selectedDuration ${'months'.tr()}'),
+            _buildInfoRow(
+                'duration'.tr(), '$_selectedDuration ${'months'.tr()}'),
             _buildInfoRow('devices_allowed'.tr(), '$_selectedDevices'),
             _buildInfoRow('current_devices'.tr(), '$_currentDevicesCount'),
             _buildInfoRow('current_device_id'.tr(), _currentDeviceId),
@@ -2185,9 +2198,10 @@ Future<void> _loadCurrentDeviceId() async {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              )),
+          Text(value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  )),
         ],
       ),
     );
@@ -2228,42 +2242,45 @@ Future<void> _loadCurrentDeviceId() async {
     try {
       final user = _auth.currentUser;
       if (user == null || user.email == null) {
-        throw Exception('user_not_logged_in'.tr());
+        throw LicenseException('user_not_logged_in'.tr());
       }
 
-      // Check for existing pending request
-      final pendingRequest = await _firestore
+      // Validate request doesn't exist
+      final requestQuery = await _firestore
           .collection('license_requests')
           .where('userId', isEqualTo: user.uid)
           .where('status', isEqualTo: 'pending')
           .limit(1)
           .get();
 
-      if (pendingRequest.docs.isNotEmpty) {
-        throw Exception('existing_request_pending'.tr());
+      if (requestQuery.docs.isNotEmpty) {
+        throw LicenseException('existing_request_pending'.tr());
       }
 
-      // Check active license
-      final activeLicense = await _firestore
+      // Validate no active license
+      final licenseQuery = await _firestore
           .collection('licenses')
           .where('userId', isEqualTo: user.uid)
           .where('isActive', isEqualTo: true)
           .limit(1)
           .get();
 
-      if (activeLicense.docs.isNotEmpty) {
-        final expiryDate = activeLicense.docs.first['expiryDate'] as Timestamp?;
-        if (expiryDate != null && expiryDate.toDate().isAfter(DateTime.now())) {
-          throw Exception('active_license_exists'.tr());
+      if (licenseQuery.docs.isNotEmpty) {
+        final expiryDate =
+            licenseQuery.docs.first.get('expiryDate') as Timestamp?;
+        if (expiryDate?.toDate().isAfter(DateTime.now()) ?? false) {
+          throw LicenseException('active_license_exists'.tr());
         }
+    
       }
 
-      // Create request
-      final requestId = _licenseService.generateStandardizedId(isLicense: false);
+      // Create and submit new request
+      final requestId =
+          _licenseService.generateStandardizedId(isLicense: false);
       final batch = _firestore.batch();
-      
-      // Add request
-      final requestRef = _firestore.collection('license_requests').doc(requestId);
+
+      final requestRef =
+          _firestore.collection('license_requests').doc(requestId);
       batch.set(requestRef, {
         'id': requestId,
         'userId': user.uid,
@@ -2273,30 +2290,123 @@ Future<void> _loadCurrentDeviceId() async {
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'currentDeviceId': _currentDeviceId,
       });
 
-      // Notify admins
-      await _notifyAdmins(user.email!, requestId, batch);
+      // await _notifyAdmins(user.email!, requestId, batch);
 
       await batch.commit();
 
       if (!mounted) return;
-      
+
+      // Show success and update UI
+      _showSuccessMessage();
+      await _loadCurrentDeviceCount();
+    } on FirebaseException catch (e) {
+      _handleError('firebase_error'.tr(namedArgs: {'errorCode': e.code}));
+    } on LicenseException catch (e) {
+      _handleError(e.message);
+    } catch (e) {
+      _handleError('unknown_error'.tr(args: [e.toString()]));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+ 
+
+/*   Future<void> _submitRequest() async {
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        throw LicenseException('user_not_logged_in'.tr());
+      }
+
+      // التحقق من وجود طلب معلق
+      final requestQuery = await _firestore
+          .collection('license_requests')
+          .where('userId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+
+      if (requestQuery.docs.isNotEmpty) {
+        throw LicenseException('existing_request_pending'.tr());
+      }
+
+      // التحقق من وجود ترخيص نشط
+      final licenseQuery = await _firestore
+          .collection('licenses')
+          .where('userId', isEqualTo: user.uid)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (licenseQuery.docs.isNotEmpty) {
+        final expiryDate =
+            licenseQuery.docs.first.get('expiryDate') as Timestamp?;
+        if (expiryDate?.toDate().isAfter(DateTime.now()) ?? false) {
+          throw LicenseException('active_license_exists'.tr());
+        }
+        // إذا كان الترخيص منتهيًا، نستمر في إنشاء الطلب الجديد
+      }
+
+      // إنشاء طلب جديد
+      final requestId =
+          _licenseService.generateStandardizedId(isLicense: false);
+      final batch = _firestore.batch();
+
+      final requestRef =
+          _firestore.collection('license_requests').doc(requestId);
+      batch.set(requestRef, {
+        'id': requestId,
+        'userId': user.uid,
+        'userEmail': user.email,
+        'durationMonths': _selectedDuration,
+        'maxDevices': _selectedDevices,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await _notifyAdmins(user.email!, requestId, batch);
+      await batch.commit();
+
+      if (!mounted) return;
+
       _showSuccessMessage();
       await _loadCurrentDeviceCount();
 
+      // لا نوجه إلى dashboard هنا، بل ننتظر الموافقة من الأدمن
+      // يمكن إضافة listener لتغييرات حالة الطلب إذا لزم الأمر
     } catch (e) {
-      if (!mounted) return;
-      _showError(e.toString());
+      _handleError(e is LicenseException ? e.message : e.toString());
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
+ */
+  void _handleError(String message) {
+    if (!mounted) return;
 
-  Future<void> _notifyAdmins(String userEmail, String requestId, WriteBatch batch) async {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+  }
+
+  Future<void> _notifyAdmins(
+      String userEmail, String requestId, WriteBatch batch) async {
     final admins = await _firestore
         .collection('users')
         .where('isAdmin', isEqualTo: true)
@@ -2338,7 +2448,7 @@ Future<void> _loadCurrentDeviceId() async {
     );
   }
 
-  void _showError(String error) {
+/*   void _showError(String error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('submit_error'.tr(args: [error])),
@@ -2347,5 +2457,5 @@ Future<void> _loadCurrentDeviceId() async {
         duration: const Duration(seconds: 5),
       ),
     );
-  }
+  } */
 }

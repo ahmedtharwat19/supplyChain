@@ -32,6 +32,8 @@
   "confirmed": "مؤكد",
   "not_confirmed": "غير مؤكد",
   "export_pdf": "تصدير PDF",
+  "USER_NOT_ACTIVE": "حسابك غير مفعل",
+  "firebase_error": "خطأ في Firebase: {errorCode}",
 
   "delete_order": "حذف الطلب",
   "delete_confirmation": "تأكيد الحذف",

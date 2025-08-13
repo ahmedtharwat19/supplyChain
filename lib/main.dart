@@ -8,6 +8,10 @@ import 'firebase_options.dart';
 import 'router.dart';
 import 'services/license_service.dart';
 import 'notifications/license_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+
+
 
 /* Future<void> _initializeFirebase() async {
   try {
@@ -28,6 +32,13 @@ import 'notifications/license_notifications.dart';
   }
 }
  */
+// دالة خلفية لمعالجة رسائل FCM حتى عندما يكون التطبيق مغلقًا أو في الخلفية
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LicenseNotifications.showFcmNotification(message);
+}
+
 
 Future<void> _initializeFirebase() async {
   try {
@@ -85,7 +96,13 @@ Future<void> _loadAppResources() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // تسجيل المعالج الخلفي
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  await LicenseNotifications.initialize();
+
   try {
     // التهيئة المتوازية للخدمات
     await Future.wait([

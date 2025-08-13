@@ -123,7 +123,7 @@ class LicenseNotifications {
 
   static Future<void> _setupFCM() async {
     await _fcm.requestPermission();
-    FirebaseMessaging.onMessage.listen(_showFcmNotification);
+    FirebaseMessaging.onMessage.listen(showFcmNotification);
   }
 
   static void _onNotificationTap(NotificationResponse response) {
@@ -184,7 +184,7 @@ class LicenseNotifications {
     );
   }
 
-  static Future<void> _showFcmNotification(RemoteMessage message) async {
+  static Future<void> showFcmNotification(RemoteMessage message) async {
     await _showLocalNotification(
       title: message.notification?.title ?? 'new_notification'.tr(),
       body: message.notification?.body ?? 'new_license_notification'.tr(),

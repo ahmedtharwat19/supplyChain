@@ -174,7 +174,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const AdminLicenseManagementPage(),
     ),
   ],
-  redirect: (context, state) async {
+/*   redirect: (context, state) async {
     final user = FirebaseAuth.instance.currentUser;
     final isSplash = state.fullPath == '/splash';
     final isAuth = ['/login', '/signup'].contains(state.fullPath);
@@ -252,7 +252,69 @@ final GoRouter appRouter = GoRouter(
       return '/login';
     }
   },
-);
+ */
+redirect: (context, state) async {
+  final user = FirebaseAuth.instance.currentUser;
+  final currentPath = state.matchedLocation; // استخدام matchedLocation بدلاً من fullPath
+  
+  // 1. معالجة شاشة البداية
+  if (currentPath == '/splash') {
+    return user != null ? '/dashboard' : '/login';
+  }
+
+  // 2. المستخدمون غير المسجلين
+  if (user == null) {
+    return ['/login', '/signup'].contains(currentPath) ? null : '/login';
+  }
+
+  try {
+    final isAdmin = await _checkIfAdmin(user.uid);
+    final licenseStatus = await _licenseService.checkLicenseStatus();
+
+    debugPrint('''
+      Auth State:
+      User: ${user.uid}
+      Is Admin: $isAdmin
+      License Valid: ${licenseStatus.isValid}
+      Current Path: $currentPath
+    ''');
+
+    // 3. توجيه الأدمن
+    if (isAdmin) {
+      if (currentPath == '/license-request') {
+        return '/admin/licenses';
+      }
+      // السماح للأدمن بالوصول إلى جميع الصفحات
+      return null;
+    }
+
+    // 4. التحقق من الترخيص للمستخدمين العاديين
+    final licenseExemptPaths = [
+      '/license-request',
+      '/logout' // إذا كان لديك مسار تسجيل خروج
+    ];
+
+    // إذا كان الترخيص غير صالح والصفحة الحالية ليست من الصفحات المعفاة
+    if (!licenseStatus.isValid && !licenseExemptPaths.contains(currentPath)) {
+      return '/license-request';
+    }
+
+    // إذا كان الترخيص صالحًا والمستخدم في صفحة ترخيص
+    if (licenseStatus.isValid && licenseExemptPaths.contains(currentPath)) {
+      return '/dashboard';
+    }
+
+    // 5. منع المستخدمين المسجلين من الوصول إلى صفحات التسجيل
+    if (['/login', '/signup'].contains(currentPath)) {
+      return '/dashboard';
+    }
+
+    return null;
+  } catch (e) {
+    debugPrint('Router Error: $e');
+    return '/login';
+  }
+},);
 
 Future<bool> _checkIfAdmin(String userId) async {
   try {
