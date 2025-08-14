@@ -2647,6 +2647,28 @@ class LicenseService {
     return licenseKey;
   }
 
+
+Future<void> requestLicense({
+  required String userId,
+  required int durationMonths,
+  required int allowedDevices,
+  required String currentDeviceId,
+}) async {
+  final requestId = generateStandardizedId(isLicense: false);
+
+  await _firestore.collection('license_requests').doc(requestId).set({
+    'requestId': requestId,
+    'userId': userId,
+    'durationMonths': durationMonths,
+    'allowedDevices': allowedDevices,
+    'currentDeviceId': currentDeviceId,
+    'status': 'pending',
+    'createdAt': FieldValue.serverTimestamp(),
+  });
+}
+
+
+
   /// Checks the current license status for the authenticated user
   Future<LicenseStatus> checkLicenseStatus() async {
     final user = _auth.currentUser;

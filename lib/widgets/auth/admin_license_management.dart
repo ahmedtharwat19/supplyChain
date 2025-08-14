@@ -3103,7 +3103,6 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
 }
  */
 
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -3113,10 +3112,12 @@ class AdminLicenseManagementPage extends StatefulWidget {
   const AdminLicenseManagementPage({super.key});
 
   @override
-  State<AdminLicenseManagementPage> createState() => _AdminLicenseManagementPageState();
+  State<AdminLicenseManagementPage> createState() =>
+      _AdminLicenseManagementPageState();
 }
 
-class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage> {
+class _AdminLicenseManagementPageState
+    extends State<AdminLicenseManagementPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 //  final FirebaseAuth _auth = FirebaseAuth.instance;
   late final LicenseService _licenseService;
@@ -3188,15 +3189,20 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
           return const ListTile(title: CircularProgressIndicator());
         }
 
-        final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+        final userDoc = userSnapshot.data;
+        if (userDoc == null || userDoc.data() == null) {
+          return const ListTile(title: Text('User data not found'));
+        }
+        final userData = userDoc.data() as Map<String, dynamic>;
+
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundImage: userData['photoUrl'] != null 
-                  ? NetworkImage(userData['photoUrl']) 
+              backgroundImage: userData['photoUrl'] != null
+                  ? NetworkImage(userData['photoUrl'])
                   : null,
-              child: userData['photoUrl'] == null 
-                  ? const Icon(Icons.person) 
+              child: userData['photoUrl'] == null
+                  ? const Icon(Icons.person)
                   : null,
             ),
             title: Text(userData['displayName'] ?? 'Unknown User'),
@@ -3204,7 +3210,8 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${'devices'.tr()}: ${data['maxDevices']}'),
-                Text('${'duration'.tr()}: ${data['durationMonths']} ${'months'.tr()}'),
+                Text(
+                    '${'duration'.tr()}: ${data['durationMonths']} ${'months'.tr()}'),
               ],
             ),
             trailing: Row(
@@ -3226,12 +3233,41 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
     );
   }
 
+  Future<void> _deactivateLicense(String licenseId, String userId) async {
+    try {
+    // 1. تحديث الترخيص إلى غير نشط
+    await _firestore.collection('licenses').doc(licenseId).update({
+      'isActive': false,
+      'deactivatedAt': FieldValue.serverTimestamp(),
+    });
+
+    // 2. مسح الجلسات / الأجهزة من قاعدة البيانات الخاصة بالمستخدم
+    await _firestore.collection('users').doc(userId).update({
+      'deviceIds': [],
+      'isActive': false, // خطوة 3 مدموجة هنا
+    });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('License deactivated successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
   Future<void> _processRequest(String requestId, bool approve) async {
     try {
       if (approve) {
-        final requestDoc = await _firestore.collection('license_requests').doc(requestId).get();
+        final requestDoc = await _firestore
+            .collection('license_requests')
+            .doc(requestId)
+            .get();
         final requestData = requestDoc.data() as Map<String, dynamic>;
-        
+
         await _licenseService.createLicense(
           userId: requestData['userId'],
           durationMonths: requestData['durationMonths'],
@@ -3280,39 +3316,39 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
     );
   }
  */
-Widget _buildActiveLicensesList() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: _firestore
-        .collection('licenses')
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
+  Widget _buildActiveLicensesList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('licenses')
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-      if (snapshot.hasError) {
-        debugPrint('Error: ${snapshot.error}');
-        return Center(child: Text('Error: ${snapshot.error}'));
-        
-      }
+        if (snapshot.hasError) {
+          debugPrint('Error: ${snapshot.error}');
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
 
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return Center(child: Text('no_active_licenses'.tr()));
-      }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('no_active_licenses'.tr()));
+        }
 
-      final licenses = snapshot.data!.docs;
-      return ListView.builder(
-        itemCount: licenses.length,
-        itemBuilder: (context, index) {
-          final license = licenses[index];
-          return _buildLicenseCard(license);
-        },
-      );
-    },
-  );
-}
+        final licenses = snapshot.data!.docs;
+        return ListView.builder(
+          itemCount: licenses.length,
+          itemBuilder: (context, index) {
+            final license = licenses[index];
+            return _buildLicenseCard(license);
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildLicenseCard(DocumentSnapshot license) {
     final data = license.data() as Map<String, dynamic>;
     return FutureBuilder<DocumentSnapshot>(
@@ -3322,11 +3358,21 @@ Widget _buildActiveLicensesList() {
           return const ListTile(title: CircularProgressIndicator());
         }
 
-        final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+        final userDoc = userSnapshot.data;
+        if (userDoc == null || userDoc.data() == null) {
+          return const ListTile(title: Text('User data not found'));
+        }
+        final userData = userDoc.data() as Map<String, dynamic>;
         return Card(
           child: ExpansionTile(
             title: Text(data['licenseKey']),
-            subtitle: Text('Expires: ${_formatDate(data['expiryDate']?.toDate())}'),
+            subtitle:
+                Text('Expires: ${_formatDate(data['expiryDate']?.toDate())}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              tooltip: 'Deactivate License',
+              onPressed: () => _deactivateLicense(license.id, data['userId']),
+            ),
             children: [
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -3335,7 +3381,8 @@ Widget _buildActiveLicensesList() {
                   children: [
                     Text('User: ${userData['displayName']}'),
                     Text('Email: ${userData['email']}'),
-                    Text('Devices: ${(data['deviceIds'] as List).length}/${data['maxDevices']}'),
+                    Text(
+                        'Devices: ${(data['deviceIds'] as List).length}/${data['maxDevices']}'),
                     if (data['originalRequestId'] != null)
                       _buildRequestInfo(data['originalRequestId']),
                   ],
@@ -3344,6 +3391,30 @@ Widget _buildActiveLicensesList() {
             ],
           ),
         );
+
+/*         return Card(
+          child: ExpansionTile(
+            title: Text(data['licenseKey']),
+            subtitle:
+                Text('Expires: ${_formatDate(data['expiryDate']?.toDate())}'),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('User: ${userData['displayName']}'),
+                    Text('Email: ${userData['email']}'),
+                    Text(
+                        'Devices: ${(data['deviceIds'] as List).length}/${data['maxDevices']}'),
+                    if (data['originalRequestId'] != null)
+                      _buildRequestInfo(data['originalRequestId']),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ); */
       },
     );
   }
@@ -3355,13 +3426,19 @@ Widget _buildActiveLicensesList() {
         if (!snapshot.hasData) {
           return const SizedBox();
         }
-        final requestData = snapshot.data!.data() as Map<String, dynamic>;
+        final doc = snapshot.data;
+        if (doc == null || doc.data() == null) {
+          return const Text('Request data not found');
+        }
+        final requestData = doc.data() as Map<String, dynamic>;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(),
             Text('Original Request: $requestId'),
-            Text('Submitted: ${_formatDate(requestData['createdAt']?.toDate())}'),
+            Text(
+                'Submitted: ${_formatDate(requestData['createdAt']?.toDate())}'),
           ],
         );
       },

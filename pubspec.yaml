@@ -82,6 +82,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   firebase_crashlytics: ^4.3.10
   web: ^1.1.1
+  collection: ^1.19.1
 
 # -----------------------------
 # Dev Dependencies
