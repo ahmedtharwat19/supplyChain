@@ -630,7 +630,6 @@
   "MAX_DEVICES_REACHED": "تم الوصول إلى الحد الأقصى للأجهزة لهذا الترخيص",
 
     "app_title": "بورسيب",
-    "license_request": "طلب الترخيص",
   "number_of_devices": "عدد الأجهزة",
   "request_summary": "ملخص الطلب",
   "current_devices": "الأجهزة الحالية",
@@ -658,7 +657,7 @@
   "license_approved_body": "تمت الموافقة على الترخيص الخاص بك: {0}",
   "license_notifications_channel_desc": "إشعارات حالة الترخيص",
 
-  "new_license_notification": "إشعار ترخيص جديد"
+  "new_license_notification": "إشعار ترخيص جديد",
   
 
 
@@ -670,4 +669,42 @@
 
 
 
+
+
+
+  "license_request": {
+    "title": "طلب ترخيص",
+    "duration_label": "مدة الاشتراك",
+    "months": "أشهر",
+    "devices_label": "عدد الأجهزة",
+    "devices": "أجهزة",
+    "summary": "ملخص الطلب",
+    "status": "الحالة",
+    "pending_status": "بانتظار الموافقة",
+    "request_date": "تاريخ الطلب",
+    "devices_count": "عدد الأجهزة",
+    "duration": "المدة",
+    "allowed_devices": "الأجهزة المسموحة",
+    "current_devices": "الأجهزة الحالية",
+    "device_id": "معرف الجهاز",
+    "mac_address": "عنوان MAC",
+    "pending_title": "طلب معلق",
+    "pending_message": "لديك طلب معلق بالفعل. يرجى الانتظار حتى يتم معالجته.",
+    "submit_button": "إرسال الطلب",
+    "success_message": "تم إرسال طلبك بنجاح. سيتم إعلامك عند الموافقة.",
+    "pending_error": "لديك طلب معلق بالفعل. يرجى الانتظار حتى يتم معالجته.",
+    "active_license_error": "لديك رخصة نشطة بالفعل. لا يمكنك تقديم طلب جديد.",
+    "network_error": "لا يوجد اتصال بالإنترنت. يرجى المحاولة لاحقاً.",
+    "auth_error": "يجب تسجيل الدخول أولاً",
+    "submit_error": "حدث خطأ أثناء إرسال الطلب: {0}",
+    "approved_notification": "تمت الموافقة على طلبك!",
+    "admin_notification_title": "طلب ترخيص جديد",
+    "admin_notification_body": "تم تقديم طلب ترخيص جديد من {0}",
+    "device_limit_warning": "لقد وصلت إلى الحد الأقصى ({0} أجهزة). سيتم استبدال الجهاز القديم.",
+    "load_device_error": "خطأ في تحميل بيانات الأجهزة",
+    "device_id_error": "خطأ في جلب معرف الجهاز",
+    "not_available": "غير متاح",
+    "not_supported": "غير مدعوم",
+    "error_fetching_mac": "خطأ في جلب العنوان"
+  }
 }

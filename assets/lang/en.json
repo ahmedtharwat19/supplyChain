@@ -546,7 +546,7 @@
   "active_licenses": "Active Licenses",
 
   "no_active_licenses": "No active licenses",
-    "license_request": "License Request",
+  
   "number_of_devices": "Number of Devices",
   "request_summary": "Request Summary", 
   "current_devices": "Current Devices",
@@ -586,13 +586,52 @@
   "license_approved_body": "Your license has been approved: {0}",
   "license_notifications_channel_desc": "License status notifications",
 
-  "new_license_notification": "New License Notification"
+  "new_license_notification": "New License Notification",
 
+  
+ 
+  "request_id": "Request ID: {0}",
+  "view_details": "View Details",
+  
+  "license_request": {
+    "title": "License Request",
+    "duration_label": "Subscription Duration",
+    "months": "months",
+    "devices_label": "Number of Devices",
+    "devices": "devices",
+    "summary": "Request Summary",
+    "status": "Status",
+    "pending_status": "Pending Approval",
+    "request_date": "Request Date",
+    "devices_count": "Devices Count",
+    "duration": "Duration",
+    "allowed_devices": "Allowed Devices",
+    "current_devices": "Current Devices",
+    "device_id": "Device ID",
+    "mac_address": "MAC Address",
+    "pending_title": "Pending Request",
+    "pending_message": "You already have a pending request. Please wait for it to be processed.",
+    "submit_button": "Submit Request",
+    "success_message": "Your request has been submitted successfully. You will be notified when approved.",
+    "pending_error": "You already have a pending request. Please wait for it to be processed.",
+    "active_license_error": "You already have an active license. You cannot submit a new request.",
+    "network_error": "No internet connection. Please try again later.",
+    "auth_error": "You must be logged in first",
+    "submit_error": "Error submitting request: {0}",
+    "approved_notification": "Your request has been approved!",
+    "admin_notification_title": "New License Request",
+    "admin_notification_body": "A new license request has been submitted by {0}",
+    "device_limit_warning": "You have reached the maximum limit ({0} devices). The oldest device will be replaced.",
+    "load_device_error": "Error loading device data",
+    "device_id_error": "Error loading device ID",
+    "not_available": "Not Available",
+    "not_supported": "Not Supported",
+    "error_fetching_mac": "Error fetching MAC address"
+  }
+}
 
   
 
 
 
 
-
-}

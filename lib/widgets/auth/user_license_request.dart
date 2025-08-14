@@ -1968,7 +1968,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('load_device_count_error'.tr())),
+          SnackBar(content: Text('load_device_count_error'.toString().tr())),
         );
       }
     }
