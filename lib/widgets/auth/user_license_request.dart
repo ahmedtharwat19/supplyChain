@@ -1904,6 +1904,7 @@ class LicenseException implements Exception {
 }
  */
 
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -1916,7 +1917,6 @@ import 'package:uuid/uuid.dart';
 import 'dart:io';
 import '../../services/license_service.dart';
 import 'package:collection/collection.dart';
-
 
 class UserLicenseRequestPage extends StatefulWidget {
   const UserLicenseRequestPage({super.key});
@@ -1931,88 +1931,103 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
   final _firestore = FirebaseFirestore.instance;
   final _uuid = const Uuid();
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  StreamSubscription? _licenseStatusSubscription;
+  StreamSubscription? _requestStatusSubscription;
+  StreamSubscription? _licenseListenerSubscription;
 
   int _selectedDuration = 1;
   int _selectedDevices = 1;
   bool _isSubmitting = false;
   int _currentDevicesCount = 0;
   String _currentDeviceId = '';
-  bool _licenseActivated = false;
+  //bool _licenseActivated = false;
 
   @override
   void initState() {
     super.initState();
     _loadDeviceData();
     _setupLicenseListener();
-    _setupLicenseStatusListener();
     _setupRequestStatusListener();
+    _setupLicenseStatusListener();
   }
 
-void _setupLicenseStatusListener() {
-  final user = _auth.currentUser;
-  if (user == null) return;
+  @override
+  void dispose() {
+    _licenseStatusSubscription?.cancel();
+    _requestStatusSubscription?.cancel();
+    _licenseListenerSubscription?.cancel();
+    super.dispose();
+  }
 
-  _firestore
-      .collection('licenses')
-      .where('userId', isEqualTo: user.uid)
-      .snapshots()
-      .listen((snapshot) {
-    if (!mounted) return;
+  void _setupLicenseStatusListener() {
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
+    _licenseStatusSubscription = _firestore
+        .collection('licenses')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
 
-    if (licenseDoc == null) {
-      // لا يوجد ترخيص على الإطلاق، توجه المستخدم لطلب ترخيص
-      context.go('/license/request');
-      return;
-    }
+      final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
 
-    final isActive = licenseDoc.get('isActive') as bool? ?? false;
-    final expiryDate = (licenseDoc.get('expiryDate') as Timestamp?)?.toDate();
+      if (licenseDoc == null) {
+        // لا يوجد ترخيص على الإطلاق، توجه المستخدم لطلب ترخيص
+        debugPrint('user license page : No License found ...');
+        context.go('/license-request');
+        return;
+      }
 
-    final isExpired = expiryDate != null && expiryDate.isBefore(DateTime.now());
+      final isActive = licenseDoc.get('isActive') as bool? ?? false;
+      final expiryDate = (licenseDoc.get('expiryDate') as Timestamp?)?.toDate();
 
-    if (!isActive || isExpired) {
-      // الترخيص ملغي أو منتهي
-      context.go('/license/request');
-    }
-  });
-}
+      final isExpired =
+          expiryDate != null && expiryDate.isBefore(DateTime.now());
 
+      if (!isActive || isExpired) {
+        // الترخيص ملغي أو منتهي
+        debugPrint('user license page : Licesne is canseled or expired...');
+        context.go('/license-request');
+      }
+    });
+  }
 
   void _setupRequestStatusListener() {
-  final user = _auth.currentUser;
-  if (user == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-  _firestore
-      .collection('license_requests')
-      .where('userId', isEqualTo: user.uid)
-      .where('status', whereIn: ['pending', 'approved']) // نستمع فقط للحالات المهمة
-      .snapshots()
-      .listen((snapshot) {
-    if (!mounted) return;
+    _requestStatusSubscription = _firestore
+        .collection('license_requests')
+        .where('userId', isEqualTo: user.uid)
+        .where('status',
+            whereIn: ['pending', 'approved']) // نستمع فقط للحالات المهمة
+        .snapshots()
+        .listen((snapshot) {
+          if (!mounted) return;
 
-    if (snapshot.docs.isNotEmpty) {
-      final doc = snapshot.docs.first;
-      final status = doc.get('status');
+          if (snapshot.docs.isNotEmpty) {
+            final doc = snapshot.docs.first;
+            final status = doc.get('status');
 
-      if (status == 'approved') {
-        // الطلب تم قبوله
-        setState(() {return;});//=> _licenseActivated = true);
-
-        // توجيه المستخدم إلى لوحة التحكم
-        context.go('/dashboard');
-      } else if (status == 'pending') {
-        // يمكن هنا تحديث واجهة المستخدم مثلا للإشارة إلى أن الطلب قيد المراجعة
-        setState(() {
-          // تحديثات حسب الحاجة
-          return;
+            if (status == 'approved') {
+              // الطلب تم قبوله
+              setState(() {
+                return;
+              }); //=> _licenseActivated = true);
+              //    setState(() => _licenseActivated = true);
+              // توجيه المستخدم إلى لوحة التحكم
+              context.go('/dashboard');
+            } else if (status == 'pending') {
+              // يمكن هنا تحديث واجهة المستخدم مثلا للإشارة إلى أن الطلب قيد المراجعة
+              setState(() {
+                // تحديثات حسب الحاجة
+                return;
+              });
+            }
+          }
         });
-      }
-    }
-  });
-}
-
+  }
 
   final bool _hasSubmittedRequest = false;
 
@@ -2020,7 +2035,7 @@ final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
     final user = _auth.currentUser;
     if (user == null) return;
 
-    _firestore
+    _licenseListenerSubscription = _firestore
         .collection('licenses')
         .where('userId', isEqualTo: user.uid)
         .where('isActive', isEqualTo: true)
@@ -2029,7 +2044,10 @@ final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
       if (!mounted) return;
 
       if (snapshot.docs.isNotEmpty && _hasSubmittedRequest) {
-        setState(() => _licenseActivated = true);
+        //setState(() => _licenseActivated = true);
+        setState(() {
+          return;
+        }); //=> _licenseActivated = true);
         context.go('/dashboard');
       }
     });
@@ -2410,7 +2428,7 @@ final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
       ),
     );
   } */
-Widget _buildSubmitButton() {
+  Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -2486,7 +2504,7 @@ Widget _buildSubmitButton() {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-    //   await _notifyAdmins(user.email!, requestId, batch);
+      //   await _notifyAdmins(user.email!, requestId, batch);
 
       await batch.commit();
 
@@ -2598,7 +2616,7 @@ Widget _buildSubmitButton() {
       );
   }
 
-  Future<void> _notifyAdmins(
+  /*  Future<void> _notifyAdmins(
       String userEmail, String requestId, WriteBatch batch) async {
     final admins = await _firestore
         .collection('users')
@@ -2626,7 +2644,7 @@ Widget _buildSubmitButton() {
       });
     }
   }
-
+ */
   void _showSuccessMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

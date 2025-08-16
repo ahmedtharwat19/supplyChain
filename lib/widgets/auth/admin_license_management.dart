@@ -3235,17 +3235,17 @@ class _AdminLicenseManagementPageState
 
   Future<void> _deactivateLicense(String licenseId, String userId) async {
     try {
-    // 1. تحديث الترخيص إلى غير نشط
-    await _firestore.collection('licenses').doc(licenseId).update({
-      'isActive': false,
-      'deactivatedAt': FieldValue.serverTimestamp(),
-    });
+      // 1. تحديث الترخيص إلى غير نشط
+      await _firestore.collection('licenses').doc(licenseId).update({
+        'isActive': false,
+        'deactivatedAt': FieldValue.serverTimestamp(),
+      });
 
-    // 2. مسح الجلسات / الأجهزة من قاعدة البيانات الخاصة بالمستخدم
-    await _firestore.collection('users').doc(userId).update({
-      'deviceIds': [],
-      'isActive': false, // خطوة 3 مدموجة هنا
-    });
+      // 2. مسح الجلسات / الأجهزة من قاعدة البيانات الخاصة بالمستخدم
+      await _firestore.collection('users').doc(userId).update({
+        'deviceIds': [],
+        'isActive': false, // خطوة 3 مدموجة هنا
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3259,7 +3259,7 @@ class _AdminLicenseManagementPageState
     }
   }
 
-  Future<void> _processRequest(String requestId, bool approve) async {
+/*   Future<void> _processRequest(String requestId, bool approve) async {
     try {
       if (approve) {
         final requestDoc = await _firestore
@@ -3279,6 +3279,63 @@ class _AdminLicenseManagementPageState
           'status': 'rejected',
           'processedAt': FieldValue.serverTimestamp(),
         });
+      }
+
+      // افترض أن الترخيص مرتبط بالطلب، قم بتحديث الترخيص هنا:
+      final licenseQuery = await _firestore
+          .collection('licenses')
+          .where('originalRequestId', isEqualTo: requestId)
+          .get();
+
+      for (var doc in licenseQuery.docs) {
+        await doc.reference.update({
+          'isActive': false,
+          'deactivatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+ */
+
+  Future<void> _processRequest(String requestId, bool approve) async {
+    try {
+      if (approve) {
+        final requestDoc = await _firestore
+            .collection('license_requests')
+            .doc(requestId)
+            .get();
+        final requestData = requestDoc.data() as Map<String, dynamic>;
+
+        await _licenseService.createLicense(
+          userId: requestData['userId'],
+          durationMonths: requestData['durationMonths'],
+          maxDevices: requestData['maxDevices'],
+          requestId: requestId,
+        );
+      } else {
+        // ❌ فقط في حالة الرفض، نحدّث الطلب ونلغي الترخيص المرتبط
+        await _firestore.collection('license_requests').doc(requestId).update({
+          'status': 'rejected',
+          'processedAt': FieldValue.serverTimestamp(),
+        });
+
+        // ❌ ابحث عن ترخيص مرتبط وقم بإلغائه إن وجد
+        final licenseQuery = await _firestore
+            .collection('licenses')
+            .where('originalRequestId', isEqualTo: requestId)
+            .get();
+
+        for (var doc in licenseQuery.docs) {
+          await doc.reference.update({
+            'isActive': false,
+            'deactivatedAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;

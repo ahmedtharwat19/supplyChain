@@ -661,6 +661,8 @@
 
   "new_license_notification": "إشعار ترخيص جديد",
   
+"license_expired_title": "انتهاء الترخيص",
+"license_expired_body": "انتهى ترخيصك في {{0}}",
 
 
 

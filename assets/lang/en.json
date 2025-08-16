@@ -592,7 +592,9 @@
 
   "new_license_notification": "New License Notification",
 
-  
+  "license_expired_title": "License Expired",
+"license_expired_body": "you license expired in {{0}}",
+
  
   "request_id": "Request ID: {0}",
   "view_details": "View Details",

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_tile_widget.dart';
 import 'package:puresip_purchasing/pages/settings_page.dart';
@@ -24,6 +25,7 @@ enum DashboardView { short, long }
 
 class DashboardPageState extends State<DashboardPage> {
   StreamSubscription<DocumentSnapshot>? _userSubscription;
+  StreamSubscription<QuerySnapshot>? _licenseStatusSubscription;
 
   // Controllers and State
   final RefreshController _refreshController =
@@ -53,6 +55,7 @@ class DashboardPageState extends State<DashboardPage> {
     _startListeningToUserChanges();
     _setupFCM();
     _checkInitialNotification();
+    _setupLicenseStatusListener(); // ⬅️ أضف هذا هنا أيضًا
   }
 
   @override
@@ -60,7 +63,60 @@ class DashboardPageState extends State<DashboardPage> {
     _userSubscription?.cancel();
     _refreshController.dispose();
     _notificationSubscription?.cancel();
+    _licenseStatusSubscription?.cancel();
     super.dispose();
+  }
+
+  void _setupLicenseStatusListener() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _licenseStatusSubscription = FirebaseFirestore.instance
+        .collection('licenses')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
+/* 
+      final licenseDoc = snapshot.docs.firstWhere(
+        (doc) => doc.exists,
+        orElse: () => null,
+      );
+
+      if (licenseDoc == null) {
+        // لا يوجد ترخيص - توجيه المستخدم
+        context.go('/license/request');
+        return;
+      } */
+
+      debugPrint('License docs count: ${snapshot.docs.length}');
+      for (var doc in snapshot.docs) {
+        debugPrint('License id: ${doc.id}, data: ${doc.data()}');
+      }
+
+      final docs = snapshot.docs.where((doc) => doc.exists).toList();
+      if (docs.isEmpty) {
+        // لا يوجد ترخيص - توجيه المستخدم
+        debugPrint('no license found');
+        context.go('/license-request');
+        return;
+      }
+
+      final licenseDoc = docs.first;
+      final isActive = licenseDoc.get('isActive') as bool? ?? false;
+      final expiryTimestamp = licenseDoc.get('expiryDate') as Timestamp?;
+      final expiryDate = expiryTimestamp?.toDate();
+      final isExpired =
+          expiryDate != null && expiryDate.isBefore(DateTime.now());
+
+      debugPrint('License isActive: $isActive, isExpired: $isExpired');
+
+      if (!isActive || isExpired) {
+        // الترخيص ملغي أو منتهي
+        debugPrint('License is expired or canceled');
+        context.go('/license-request');
+      }
+    });
   }
 
   Future<void> _setupFCM() async {

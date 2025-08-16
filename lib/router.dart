@@ -224,7 +224,7 @@ final GoRouter appRouter = GoRouter(
 // ✅ فقط وجّه إلى /dashboard إذا كان الترخيص فعال **بشكل مؤكد**
       if (licenseStatus.isValid && currentPath == '/license-request') {
         return '/dashboard';
-      }
+      } 
 
 /*     // إذا كان الترخيص صالحًا والمستخدم في صفحة ترخيص
     if (licenseStatus.isValid && licenseExemptPaths.contains(currentPath)) {
