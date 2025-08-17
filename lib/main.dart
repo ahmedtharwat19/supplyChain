@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'; //show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
@@ -9,9 +8,6 @@ import 'router.dart';
 import 'services/license_service.dart';
 import 'notifications/license_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
-
-
 
 /* Future<void> _initializeFirebase() async {
   try {
@@ -39,20 +35,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await LicenseNotifications.showFcmNotification(message);
 }
 
-
 Future<void> _initializeFirebase() async {
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+
       // تهيئة خدمات التراخيص والإشعارات
       final licenseService = LicenseService();
-      await licenseService.initialize(); // استخدم initialize() بدلاً من initializeForAdmin()
-      
+      await licenseService
+          .initialize(); // استخدم initialize() بدلاً من initializeForAdmin()
+
       await LicenseNotifications.initialize();
-      
+
       debugPrint('Firebase initialization completed');
     }
   } catch (e) {
@@ -61,7 +59,6 @@ Future<void> _initializeFirebase() async {
   }
 }
 
-
 Future<void> _requestPermissions() async {
   if (!kIsWeb) {
     try {
@@ -69,9 +66,9 @@ Future<void> _requestPermissions() async {
       if (!status.isGranted) {
         await Permission.notification.request();
       }
-      
-      // طلب أذونات إضافية للأندرويد
-      if (Platform.isAndroid) {
+
+      // ✅ طلب أذونات إضافية للأندرويد بطريقة آمنة
+      if (defaultTargetPlatform == TargetPlatform.android) {
         await Permission.storage.request();
         await Permission.manageExternalStorage.request();
       }
@@ -80,6 +77,7 @@ Future<void> _requestPermissions() async {
     }
   }
 }
+
 
 Future<void> _loadAppResources() async {
   try {
@@ -96,12 +94,12 @@ Future<void> _loadAppResources() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // تسجيل المعالج الخلفي
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await LicenseNotifications.initialize();
+  // await LicenseNotifications.initialize();
 
   try {
     // التهيئة المتوازية للخدمات
@@ -142,7 +140,8 @@ class MyApp extends StatelessWidget {
       routerConfig: appRouter,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          data:
+              MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         );
       },
@@ -152,7 +151,7 @@ class MyApp extends StatelessWidget {
   ThemeData _buildAppTheme() {
     return ThemeData(
       primarySwatch: Colors.green,
-      fontFamily: 'Cairo', // استخدام خط عربي افتراضي
+      fontFamily: 'Cairo-Regular', // استخدام خط عربي افتراضي
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 2,

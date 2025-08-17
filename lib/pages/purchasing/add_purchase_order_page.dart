@@ -3693,7 +3693,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 
   Widget _buildCompanyDropdown() {
     return DropdownButtonFormField<String>(
-      value: _companies.any((c) => c.id == _selectedCompanyId)
+      initialValue: _companies.any((c) => c.id == _selectedCompanyId)
           ? _selectedCompanyId
           : null,
       decoration: InputDecoration(
@@ -3728,7 +3728,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 
   Widget _buildFactoryDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedFactoryId,
+      initialValue: _selectedFactoryId,
       decoration: InputDecoration(
         labelText: 'factory'.tr(),
         border: const OutlineInputBorder(),
@@ -3742,7 +3742,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
 
   Widget _buildSupplierDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedSupplierId,
+      initialValue: _selectedSupplierId,
       decoration: InputDecoration(
         labelText: 'supplier'.tr(),
         border: const OutlineInputBorder(),

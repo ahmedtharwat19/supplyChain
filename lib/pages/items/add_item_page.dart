@@ -397,7 +397,7 @@ class _AddItemPageState extends State<AddItemPage> {
                   }
                 },
                 child: DropdownButtonFormField<String>(
-                  value: _category,
+                  initialValue: _category,
                   decoration: InputDecoration(labelText: tr('category')),
                   items: Item.allowedCategories
                       .map((cat) => DropdownMenuItem(
@@ -419,7 +419,7 @@ class _AddItemPageState extends State<AddItemPage> {
                   }
                 },
                 child: DropdownButtonFormField<String>(
-                  value: _unit,
+                  initialValue: _unit,
                   decoration: InputDecoration(labelText: tr('unit')),
                   items: Item.allowedUnits
                       .map((unit) => DropdownMenuItem(

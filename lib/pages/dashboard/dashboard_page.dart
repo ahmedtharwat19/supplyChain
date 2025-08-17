@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -98,13 +99,21 @@ class DashboardPageState extends State<DashboardPage> {
       if (docs.isEmpty) {
         // لا يوجد ترخيص - توجيه المستخدم
         debugPrint('no license found');
-        context.go('/license-request');
+        context.go('/license/request');
         return;
       }
 
-      final licenseDoc = docs.first;
-      final isActive = licenseDoc.get('isActive') as bool? ?? false;
-      final expiryTimestamp = licenseDoc.get('expiryDate') as Timestamp?;
+      //final licenseDoc = docs.first;
+      final now = DateTime.now();
+      final licenseDoc = docs.firstWhereOrNull((doc) {
+        final isActive = doc.get('isActive') as bool? ?? false;
+        final expiry = (doc.get('expiryDate') as Timestamp?)?.toDate();
+        final isExpired = expiry != null && expiry.isBefore(now);
+        return isActive && !isExpired;
+      });
+
+      final isActive = licenseDoc?.get('isActive') as bool? ?? false;
+      final expiryTimestamp = licenseDoc?.get('expiryDate') as Timestamp?;
       final expiryDate = expiryTimestamp?.toDate();
       final isExpired =
           expiryDate != null && expiryDate.isBefore(DateTime.now());
@@ -114,7 +123,7 @@ class DashboardPageState extends State<DashboardPage> {
       if (!isActive || isExpired) {
         // الترخيص ملغي أو منتهي
         debugPrint('License is expired or canceled');
-        context.go('/license-request');
+        context.go('/license/request');
       }
     });
   }

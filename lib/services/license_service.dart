@@ -2554,7 +2554,8 @@ class LicenseException implements Exception {
 }
  */
 
-import 'dart:io';
+
+
 import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -2564,6 +2565,7 @@ import 'package:flutter/foundation.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:puresip_purchasing/models/license_status.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 /// A comprehensive license management service for handling device registration,
@@ -2594,19 +2596,26 @@ class LicenseService {
   /// Initializes the license service and performs any required setup.
   Future<void> initialize() async {
     debugPrint('LicenseService initialized');
-    
-    // Example connectivity check (can be used for offline license validation)
+
+    // فحص الاتصال
     final connectivityResult = await _connectivity.checkConnectivity();
     debugPrint('Connectivity: $connectivityResult');
 
-    if (Platform.isAndroid || Platform.isIOS) {
+    // ✅ تأكد أنك لا تستخدم Platform في الويب
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
       final deviceInfo = await _deviceInfo.deviceInfo;
       debugPrint('Device info: ${deviceInfo.data}');
     }
 
-    // Can be used for location-based license restrictions
-    final wifiName = await _networkInfo.getWifiName();
-    debugPrint('Wifi name: $wifiName');
+    // معلومات الشبكة (يدعم الويب أيضًا إذا كانت المكتبة تدعمه)
+    try {
+      final wifiName = await _networkInfo.getWifiName();
+      debugPrint('Wifi name: $wifiName');
+    } catch (e) {
+      debugPrint('Failed to get wifi name: $e');
+    }
   }
 
   /// Generates a standardized ID for licenses or requests
@@ -2647,30 +2656,71 @@ class LicenseService {
     return licenseKey;
   }
 
+  Future<void> requestLicense({
+    required String userId,
+    required int durationMonths,
+    required int allowedDevices,
+    required String currentDeviceId,
+  }) async {
+    final requestId = generateStandardizedId(isLicense: false);
 
-Future<void> requestLicense({
-  required String userId,
-  required int durationMonths,
-  required int allowedDevices,
-  required String currentDeviceId,
-}) async {
-  final requestId = generateStandardizedId(isLicense: false);
-
-  await _firestore.collection('license_requests').doc(requestId).set({
-    'requestId': requestId,
-    'userId': userId,
-    'durationMonths': durationMonths,
-    'allowedDevices': allowedDevices,
-    'currentDeviceId': currentDeviceId,
-    'status': 'pending',
-    'createdAt': FieldValue.serverTimestamp(),
-  });
-}
-
-
+    await _firestore.collection('license_requests').doc(requestId).set({
+      'requestId': requestId,
+      'userId': userId,
+      'durationMonths': durationMonths,
+      'allowedDevices': allowedDevices,
+      'currentDeviceId': currentDeviceId,
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 
   /// Checks the current license status for the authenticated user
   Future<LicenseStatus> checkLicenseStatus() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return LicenseStatus.invalid(reason: 'USER_NOT_LOGGED_IN'.tr());
+    }
+
+    final userDoc = await _firestore.collection('users').doc(user.uid).get();
+    if (!userDoc.exists) {
+      return LicenseStatus.invalid(reason: 'USER_NOT_FOUND'.tr());
+    }
+
+    final data = userDoc.data()!;
+    if (data['isActive'] != true) {
+      return LicenseStatus.invalid(reason: 'USER_NOT_ACTIVE'.tr());
+    }
+
+    final expiryDate = data['license_expiry']?.toDate();
+    if (expiryDate == null) {
+      return LicenseStatus.invalid(reason: 'NO_EXPIRY_DATE'.tr());
+    }
+
+    final now = DateTime.now();
+    final isValid = expiryDate.isAfter(now);
+    final daysLeft = expiryDate.difference(now).inDays;
+
+    // (اختياري) طباعة للمساعدة في التصحيح
+    debugPrint('''
+  [LicenseCheck]
+  Now: $now
+  Expiry: $expiryDate
+  Is Valid: $isValid
+  Days Left: $daysLeft
+  ''');
+
+    return LicenseStatus(
+      isValid: isValid,
+      licenseKey: data['licenseKey'],
+      expiryDate: expiryDate,
+      maxDevices: data['maxDevices'] ?? 1,
+      usedDevices: (data['deviceIds'] as List?)?.length ?? 0,
+      daysLeft: daysLeft,
+    );
+  }
+
+  /*  Future<LicenseStatus> checkLicenseStatus() async {
     final user = _auth.currentUser;
     if (user == null) {
       return LicenseStatus.invalid(reason: 'USER_NOT_LOGGED_IN'.tr());
@@ -2703,11 +2753,12 @@ Future<void> requestLicense({
       daysLeft: daysLeft,
     );
   }
+ */
 
   /// Validates both the user account and device registration status
   Future<void> validateDeviceAndLicense(String userId) async {
     final userDoc = await _firestore.collection('users').doc(userId).get();
-    
+
     // Check user account status
     if (!userDoc.exists || !(userDoc.data()?['isActive'] ?? false)) {
       throw LicenseException('USER_NOT_ACTIVE'.tr());
@@ -2724,7 +2775,8 @@ Future<void> requestLicense({
       try {
         await registerCurrentDevice(licenseKey);
       } catch (e) {
-        throw LicenseException('${'DEVICE_REGISTRATION_FAILED'.tr()}: ${e.toString()}');
+        throw LicenseException(
+            '${'DEVICE_REGISTRATION_FAILED'.tr()}: ${e.toString()}');
       }
     }
   }
@@ -2738,16 +2790,45 @@ Future<void> requestLicense({
   /// Checks if the current device is registered with the given license
   Future<bool> isDeviceRegistered(String licenseKey) async {
     final deviceId = await getDeviceUniqueId();
-    final licenseDoc = await _firestore.collection('licenses').doc(licenseKey).get();
-    
+    final licenseDoc =
+        await _firestore.collection('licenses').doc(licenseKey).get();
+
     if (!licenseDoc.exists) return false;
-    
+
     final deviceIds = List<String>.from(licenseDoc['deviceIds'] ?? []);
     return deviceIds.contains(deviceId);
   }
 
   /// Gets a unique identifier for the current device
-  Future<String> getDeviceUniqueId() async {
+    Future<String> getDeviceUniqueId() async {
+    try {
+      if (kIsWeb) {
+        // تخزين ID في localStorage للثبات
+        final prefs = await SharedPreferences.getInstance();
+        var id = prefs.getString('web_device_id');
+        if (id == null) {
+          id = _uuid.v4();
+          await prefs.setString('web_device_id', id);
+        }
+        return 'web_$id';
+      }
+
+      // باقي المنصات
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        return 'android_${androidInfo.id}';
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        return 'ios_${iosInfo.identifierForVendor ?? _uuid.v4()}';
+      } else {
+        return 'other_${_uuid.v4()}';
+      }
+    } catch (e) {
+      debugPrint('Error getting device ID: $e');
+      return 'unknown_${_uuid.v4()}';
+    }
+  }
+/*   Future<String> getDeviceUniqueId() async {
     try {
       if (Platform.isAndroid) {
         final androidInfo = await _deviceInfo.androidInfo;
@@ -2762,17 +2843,17 @@ Future<void> requestLicense({
       return 'unknown_${_uuid.v4()}';
     }
   }
-
+ */
   /// Registers a specific device with a license
   Future<void> registerDevice({
     required String licenseKey,
     required String deviceId,
   }) async {
     final licenseRef = _firestore.collection('licenses').doc(licenseKey);
-    
+
     await _firestore.runTransaction((transaction) async {
       final licenseDoc = await transaction.get(licenseRef);
-      
+
       if (!licenseDoc.exists) {
         throw LicenseException('LICENSE_NOT_FOUND'.tr());
       }
@@ -2781,7 +2862,8 @@ Future<void> requestLicense({
       final maxDevices = licenseDoc['maxDevices'] ?? 1;
 
       if (deviceIds.length >= maxDevices) {
-        throw LicenseException('MAX_DEVICES_REACHED'.tr(args: [maxDevices.toString()]));
+        throw LicenseException(
+            'MAX_DEVICES_REACHED'.tr(args: [maxDevices.toString()]));
       }
 
       if (deviceIds.contains(deviceId)) {
@@ -2821,7 +2903,7 @@ Future<void> requestLicense({
   }
 
   Future<void> _updateUserLicense(
-    String userId, 
+    String userId,
     Timestamp expiryDate,
     String licenseKey,
     int maxDevices,
@@ -2834,7 +2916,8 @@ Future<void> requestLicense({
     });
   }
 
-  Future<void> _linkRequestToLicense(String requestId, String licenseKey) async {
+  Future<void> _linkRequestToLicense(
+      String requestId, String licenseKey) async {
     await _firestore.collection('license_requests').doc(requestId).update({
       'approvedLicenseId': licenseKey,
       'status': 'approved',

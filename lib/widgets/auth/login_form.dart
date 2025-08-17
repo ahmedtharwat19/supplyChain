@@ -232,7 +232,7 @@ Future<void> _showInactiveAccountDialog(BuildContext context) async {
 
   if (result == true && mounted) {
     if (!context.mounted) return;
-    context.go('/license-request');
+    context.go('/license/request');
   }
 }
 

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 /* import 'package:flutter/material.dart';
 import 'package:puresip_purchasing/pages/dashboard/dashboard_metrics.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';

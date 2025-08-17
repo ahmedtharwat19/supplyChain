@@ -3106,6 +3106,7 @@ class _AdminLicenseManagementPageState extends State<AdminLicenseManagementPage>
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/widgets/app_scaffold.dart';
 import '../../services/license_service.dart';
 
 class AdminLicenseManagementPage extends StatefulWidget {
@@ -3132,20 +3133,25 @@ class _AdminLicenseManagementPageState
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('license_management'.tr()),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'pending_requests'.tr()),
-              Tab(text: 'active_licenses'.tr()),
-            ],
-          ),
-        ),
-        body: TabBarView(
+      child: AppScaffold(
+        title: 'license_management'.tr(),
+        isDashboard: false, // لأن هذه صفحة فرعية وليست صفحة رئيسية
+        body: Column(
           children: [
-            _buildPendingRequestsList(),
-            _buildActiveLicensesList(),
+            TabBar(
+              tabs: [
+                Tab(text: 'pending_requests'.tr()),
+                Tab(text: 'active_licenses'.tr()),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildPendingRequestsList(),
+                  _buildActiveLicensesList(),
+                ],
+              ),
+            ),
           ],
         ),
       ),

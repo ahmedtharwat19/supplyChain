@@ -1906,6 +1906,7 @@ class LicenseException implements Exception {
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1914,7 +1915,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io';
 import '../../services/license_service.dart';
 import 'package:collection/collection.dart';
 
@@ -1931,6 +1931,8 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
   final _firestore = FirebaseFirestore.instance;
   final _uuid = const Uuid();
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  final _secureStorage = const FlutterSecureStorage();
+
   StreamSubscription? _licenseStatusSubscription;
   StreamSubscription? _requestStatusSubscription;
   StreamSubscription? _licenseListenerSubscription;
@@ -1970,25 +1972,39 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
         .listen((snapshot) {
       if (!mounted) return;
 
-      final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
+      //  final licenseDoc = snapshot.docs.firstWhereOrNull((doc) => doc.exists);
+      final licenseDoc =
+          snapshot.docs.where((doc) => doc.exists).firstWhereOrNull((doc) {
+        final isActive = doc.get('isActive') as bool? ?? false;
+        final expiry = (doc.get('expiryDate') as Timestamp?)?.toDate();
+        final now = DateTime.now().toUtc();
+        final isExpired = expiry != null && expiry.isBefore(now);
+        return isActive && !isExpired;
+      });
 
       if (licenseDoc == null) {
         // لا يوجد ترخيص على الإطلاق، توجه المستخدم لطلب ترخيص
         debugPrint('user license page : No License found ...');
-        context.go('/license-request');
+        context.go('/license/request');
         return;
       }
 
       final isActive = licenseDoc.get('isActive') as bool? ?? false;
       final expiryDate = (licenseDoc.get('expiryDate') as Timestamp?)?.toDate();
+      final nowUtc = DateTime.now().toUtc();
+      final isExpired = expiryDate != null && expiryDate.isBefore(nowUtc);
+      debugPrint('expiryDate: $expiryDate');
+      debugPrint('nowUtc: $nowUtc');
+      debugPrint('isExpired: $isExpired');
+      debugPrint('isActive: $isActive');
 
-      final isExpired =
-          expiryDate != null && expiryDate.isBefore(DateTime.now());
+      // final isExpired =
+      //     expiryDate != null && expiryDate.isBefore(DateTime.now());
 
       if (!isActive || isExpired) {
         // الترخيص ملغي أو منتهي
         debugPrint('user license page : Licesne is canseled or expired...');
-        context.go('/license-request');
+        context.go('/license/request');
       }
     });
   }
@@ -2137,6 +2153,39 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
   }
 
   Future<void> _loadCurrentDeviceId() async {
+  try {
+    String deviceId;
+
+    if (kIsWeb) {
+      // استخدام التخزين الآمن للويب
+      deviceId = await _secureStorage.read(key: 'deviceId') ?? 'web_${_uuid.v4()}';
+      await _secureStorage.write(key: 'deviceId', value: deviceId);
+    } else {
+      // باقي المنصات: Android / iOS
+      final androidInfo = await _deviceInfo.androidInfo;
+      final iosInfo = await _deviceInfo.iosInfo;
+
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        deviceId = 'android_${androidInfo.id}';
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        deviceId = 'ios_${iosInfo.identifierForVendor ?? _uuid.v4()}';
+      } else {
+        deviceId = 'unknown_${_uuid.v4()}';
+      }
+    }
+
+    if (mounted) {
+      setState(() => _currentDeviceId = deviceId);
+    }
+  } catch (e) {
+    debugPrint('Error loading device ID: $e');
+    if (mounted) {
+      setState(() => _currentDeviceId = 'error_${_uuid.v4()}');
+    }
+  }
+}
+
+ /*  Future<void> _loadCurrentDeviceId() async {
     try {
       String deviceId;
       if (Platform.isAndroid) {
@@ -2163,7 +2212,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
       }
     }
   }
-
+ */
   @override
   Widget build(BuildContext context) {
     // تحقق من حالة الترخيص عند بناء الصفحة
@@ -2278,7 +2327,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<int>(
-              value: _selectedDuration,
+              initialValue: _selectedDuration,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -2314,7 +2363,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<int>(
-              value: _selectedDevices,
+              initialValue: _selectedDevices,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),

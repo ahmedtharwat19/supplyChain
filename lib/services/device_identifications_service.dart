@@ -1,6 +1,6 @@
-import 'dart:io' show Platform, Process;
+import 'dart:io';// show Platform, Process;
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';// show kIsWeb, TargetPlatform, defaultTargetPlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -18,27 +18,28 @@ class DeviceIdentifierService {
 
     final deviceInfo = DeviceInfoPlugin();
 
-    if (Platform.isAndroid) {
-      var androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id; // AndroidId
-    }
+    // ✅ استخدم defaultTargetPlatform لتجنب المشاكل على الويب
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        var androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id;
 
-    if (Platform.isIOS) {
-      var iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor ?? "unknown_ios";
-    }
+      case TargetPlatform.iOS:
+        var iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor ?? "unknown_ios";
 
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      // يمكن هنا استخدام أوامر النظام لجلب MAC
-      // مثال لـ Windows
-      try {
-        final result = await Process.run("getmac", []);
-        return result.stdout.toString().split("\n").first.trim();
-      } catch (e) {
-        return "unknown_desktop";
-      }
-    }
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+        try {
+          final result = await Process.run("getmac", []);
+          return result.stdout.toString().split("\n").first.trim();
+        } catch (e) {
+          return "unknown_desktop";
+        }
 
-    return "unknown_device";
+      default:
+        return "unknown_device";
+    }
   }
 }
