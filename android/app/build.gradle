@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'dev.flutter.flutter-gradle-plugin'
+    id 'com.google.gms.google-services'
+}
+
+def flutterVersionCode = project.hasProperty("flutter.versionCode") ? project.getProperty("flutter.versionCode").toInteger() : 1
+def flutterVersionName = project.hasProperty("flutter.versionName") ? project.getProperty("flutter.versionName") : "1.0"
+
+android {
+    namespace "com.puresip.purchasing"
+    compileSdkVersion 36 // ✅ استبدل بالقيمة المناسبة لمشروعك
+    ndkVersion "27.0.12077973"
+
+    defaultConfig {
+        applicationId "com.puresip.purchasing"
+        minSdkVersion flutter.minSdkVersion // ✅ استبدل بالقيمة المناسبة لمشروعك
+        targetSdkVersion 36 // ✅ استبدل بالقيمة المناسبة لمشروعك
+        versionCode flutterVersionCode
+        versionName flutterVersionName
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled true
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:33.16.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-storage'
+    implementation "androidx.window:window:1.2.0"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}

@@ -2554,8 +2554,6 @@ class LicenseException implements Exception {
 }
  */
 
-
-
 import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -2638,6 +2636,9 @@ class LicenseService {
 
     final licenseKey = generateStandardizedId(isLicense: true);
     final expiryDate = _calculateExpiryDate(durationMonths);
+    // final now = DateTime.now();
+    // final expiryDate = now.add(Duration(days: durationMonths * 30));
+    // final expiryTimestamp = Timestamp.fromDate(expiryDate);
 
     await _firestore.collection('licenses').doc(licenseKey).set({
       'licenseKey': licenseKey,
@@ -2652,6 +2653,14 @@ class LicenseService {
 
     await _linkRequestToLicense(requestId, licenseKey);
     await _updateUserLicense(userId, expiryDate, licenseKey, maxDevices);
+
+    // تحديث المستخدم
+    await _firestore.collection('users').doc(userId).update({
+      'licenseKey': licenseKey,
+      'license_expiry': expiryDate,
+      'maxDevices': maxDevices,
+      'isActive': true,
+    });
 
     return licenseKey;
   }
@@ -2800,7 +2809,7 @@ class LicenseService {
   }
 
   /// Gets a unique identifier for the current device
-    Future<String> getDeviceUniqueId() async {
+  Future<String> getDeviceUniqueId() async {
     try {
       if (kIsWeb) {
         // تخزين ID في localStorage للثبات
@@ -2828,6 +2837,7 @@ class LicenseService {
       return 'unknown_${_uuid.v4()}';
     }
   }
+
 /*   Future<String> getDeviceUniqueId() async {
     try {
       if (Platform.isAndroid) {
@@ -2896,11 +2906,13 @@ class LicenseService {
     return userDoc.data()?['isAdmin'] ?? false;
   }
 
-  Timestamp _calculateExpiryDate(int months) {
-    final now = DateTime.now();
-    final expiry = DateTime(now.year, now.month + months, now.day);
-    return Timestamp.fromDate(expiry);
-  }
+Timestamp _calculateExpiryDate(int months) {
+  final now = DateTime.now();
+  // بافتراض أن كل شهر = 30 يوم (للتبسيط)
+  final expiry = now.add(Duration(days: months * 30));
+  return Timestamp.fromDate(expiry);
+}
+
 
   Future<void> _updateUserLicense(
     String userId,

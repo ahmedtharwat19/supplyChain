@@ -663,8 +663,14 @@
   
 "license_expired_title": "انتهاء الترخيص",
 "license_expired_body": "انتهى ترخيصك في {{0}}",
+  "invalid_order_data": "بيانات الطلب غير صالحة",
 
-
+ "confirm_delivery": "تأكيد التسليم",
+  "confirm_mark_delivered": "هل تريد تأكيد تسليم هذا الطلب؟ سيتم تحديث المخزون تلقائياً.",
+  "order_status_updated": "تم تحديث حالة الطلب بنجاح",
+  "permission_error": "خطأ في الصلاحيات",
+  "not_found_error": "العنصر غير موجود",
+  "unknown_error": "خطأ غير معروف",
 
 
   
@@ -710,5 +716,21 @@
     "not_available": "غير متاح",
     "not_supported": "غير مدعوم",
     "error_fetching_mac": "خطأ في جلب العنوان"
-  }
+  },
+
+  "permission_denied_error": "تم رفض الإذن - تحقق من صلاحيات الوصول",
+  "document_not_found_error": "الوثيقة غير موجودة",
+  "invalid_data_error": "تم تقديم بيانات غير صالحة",
+  "unknown_error_occurred": "حدث خطأ غير معروف",
+    "inventory_query": "استعلام المخزون",
+  "search_products": "بحث بالأصناف...",
+  "no_results": "لا توجد نتائج",
+  "stock_history": "تاريخ الحركات",
+  "no_stock_history": "لا توجد حركات سابقة",
+ 
+  "last_updated": "آخر تحديث",
+  "product_name": "اسم المنتج",
+    "search_products_hint": "اكتب للبحث عن الأصناف..."
+
+
 }

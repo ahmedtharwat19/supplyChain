@@ -1,6 +1,6 @@
 name: puresip_purchasing
 description: A purchasing system for multiple companies.
-version: 1.0.0+1
+version: 1.5.0+0
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -15,12 +15,12 @@ dependencies:
     sdk: flutter
 
   # Firebase Core & Features
-  firebase_core: ^3.14.0
-  firebase_auth: ^5.6.0
-  cloud_firestore: ^5.6.9
-  firebase_storage: ^12.4.8
-  firebase_app_check: ^0.3.2+9
-  firebase_data_connect: ^0.1.5+4
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  cloud_firestore: ^6.0.0
+  firebase_storage: ^13.0.0
+  firebase_app_check: ^0.4.0
+  firebase_data_connect: ^0.2.0+1
 
   # Authentication & Sign-in
   google_sign_in: ^7.1.0
@@ -63,10 +63,10 @@ dependencies:
   # Other Features
   pull_to_refresh: ^2.0.0
   excel: ^4.0.6
-  file_picker: ^10.2.0
+  file_picker: ^10.3.1
   qr_flutter: ^4.1.0
   qr: ^3.0.2
-  share_plus: ^7.0.0
+  share_plus: ^11.1.0
   path_provider: ^2.1.2
   http: ^1.1.0
   image: ^4.3.0
@@ -77,12 +77,13 @@ dependencies:
   network_info_plus: ^6.1.4
   url_launcher: ^6.3.2
   flutter_local_notifications: ^19.4.0
-  firebase_messaging: ^15.2.10
+  firebase_messaging: ^16.0.0
   uuid: ^4.5.1
   flutter_secure_storage: ^9.2.4
-  firebase_crashlytics: ^4.3.10
+  firebase_crashlytics: ^5.0.0
   web: ^1.1.1
   collection: ^1.19.1
+  package_info_plus: ^8.3.1
 
 # -----------------------------
 # Dev Dependencies

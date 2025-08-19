@@ -1,0 +1,46 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'
+        classpath 'com.google.gms:google-services:4.4.3' // ✅ Firebase plugin
+    }
+}
+
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+    id 'org.jetbrains.kotlin.android' version '2.1.0' apply false
+    id 'com.google.gms.google-services' version '4.4.3' apply false
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// (اختياري) تغيير مجلد البناء لكل المشروع
+gradle.projectsEvaluated {
+    def newBuildDir = file("${rootDir}/../build")
+    rootProject.buildDir = newBuildDir
+
+    subprojects {
+        buildDir = new File(newBuildDir, name)
+    }
+}
+
+// Task clean
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+// إعدادات إضافية لكومبايلر كوتلن
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        freeCompilerArgs += ["-Xlint:deprecation"]
+    }
+}

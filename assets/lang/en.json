@@ -591,14 +591,17 @@
   "license_notifications_channel_desc": "License status notifications",
 
   "new_license_notification": "New License Notification",
-
+  "confirm_delivery": "Confirm Delivery",
+  "confirm_mark_delivered": "Do you want to confirm delivery of this order? Inventory will be updated automatically.",
   "license_expired_title": "License Expired",
 "license_expired_body": "you license expired in {{0}}",
-
- 
+"order_status_updated":"Order Status Updated",
+ "invalid_order_data":"Invalid Order Data",
   "request_id": "Request ID: {0}",
   "view_details": "View Details",
-  
+    "permission_error": "Permission denied - check Firebase rules",
+  "not_found_error": "Document not found",
+  "unknown_error": "Unknown error occurred",
   "license_request": {
     "title": "License Request",
     "duration_label": "Subscription Duration",
@@ -633,11 +636,24 @@
     "not_available": "Not Available",
     "not_supported": "Not Supported",
     "error_fetching_mac": "Error fetching MAC address"
-  }
+  },
+  "permission_denied_error": "Permission denied - check access rights",
+  "document_not_found_error": "Document not found", 
+  "invalid_data_error": "Invalid data provided",
+  "unknown_error_occurred": "Unknown error occurred",
+    "inventory_query": "Inventory Query",
+  "search_products": "Search products...",
+  "no_results": "No results found",
+  "stock_history": "Stock History", 
+  "no_stock_history": "No stock history",
+
+
+  "last_updated": "Last Updated",
+  "product_name": "Product Name",
+    "search_products_hint": "Type to search for products..."
+
+
 }
-
-  
-
 
 
 

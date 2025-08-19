@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:puresip_purchasing/services/license_service.dart';
 
 class SignupForm extends StatefulWidget {
   const SignupForm({super.key});
@@ -58,8 +59,20 @@ class _SignupFormState extends State<SignupForm> {
           'isActive': true,
           'subscriptionDurationInDays': 30,
           'createdAt': FieldValue.serverTimestamp(),
-          
         });
+
+        final licenseService = LicenseService();
+        await licenseService.initialize();
+
+        final licenseKey = await licenseService.createLicense(
+          userId: user.uid,
+          durationMonths: 1,
+          maxDevices: 1,
+          requestId: 'demo_${DateTime.now().millisecondsSinceEpoch}',
+        );
+
+// تسجيل الجهاز الحالي تلقائيًا
+        await licenseService.registerCurrentDevice(licenseKey);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

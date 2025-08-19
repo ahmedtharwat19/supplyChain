@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.puresip.purchasing">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"><!-- package="com.puresip.purchasing">-->
 
     <!-- This is required to make the app work on Android 13 and above.
          See https://developer.android.com/about/versions/13/privacy/changes-13#tiramisu-privacy-changes -->

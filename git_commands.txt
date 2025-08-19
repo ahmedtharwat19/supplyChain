@@ -51,3 +51,12 @@ flutter run -d chrome --web-port=4999
 
 flutter run -d CPH2235 -v
 flutter run -d windows -v
+
+
+dart increment_build_number.dart
+
+
+dart increment_build.dart && flutter build apk
+
+Get-ChildItem -Path E:\purchasing -Recurse -Filter gradle.properties -ErrorAction SilentlyContinue | Select-String "android.enableR8"
+
