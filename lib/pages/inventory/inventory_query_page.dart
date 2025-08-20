@@ -15,6 +15,7 @@ class _InventoryQueryPageState extends State<InventoryQueryPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isLoading = false;
+  bool get _isArabic => context.locale.languageCode == 'ar';
   final List<Map<String, dynamic>> _inventoryResults = [];
 
   @override
@@ -37,187 +38,150 @@ class _InventoryQueryPageState extends State<InventoryQueryPage> {
     super.dispose();
   }
 
-  Future<void> _searchInventory({bool showAll = false}) async {
-    if (_searchQuery.isEmpty && !showAll) {
+Future<void> _searchInventory({bool showAll = false}) async {
+  if (_searchQuery.isEmpty && !showAll) {
+    setState(() {
+      _inventoryResults.clear();
+    });
+    return;
+  }
+
+  setState(() => _isLoading = true);
+  _inventoryResults.clear();
+
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    debugPrint('--- _searchInventory started ---');
+    debugPrint('User ID: ${user.uid}');
+
+    // 1. بيانات المستخدم
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userData = userDoc.data();
+
+    final userCompanyIds = (userData?['companyIds'] as List?)?.cast<String>() ?? [];
+    final userFactoryIds = (userData?['factoryIds'] as List?)?.cast<String>() ?? [];
+
+    debugPrint('User companyIds: $userCompanyIds');
+    debugPrint('User factories: $userFactoryIds');
+
+    // 2. الأصناف التي يملكها المستخدم
+    final itemsSnapshot = await FirebaseFirestore.instance
+        .collection('items')
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    final userProducts = <String, Map<String, dynamic>>{};
+    for (var doc in itemsSnapshot.docs) {
+      userProducts[doc.id] = doc.data();
+    }
+
+    debugPrint('User products count: ${userProducts.length}');
+    if (userProducts.isEmpty) {
+      debugPrint('No user products found.');
       setState(() {
         _inventoryResults.clear();
+        _isLoading = false;
       });
       return;
     }
 
-    setState(() => _isLoading = true);
-    _inventoryResults.clear();
+    // 3. تفحص كل مصنع مرتبط بالمستخدم
+    for (final factoryId in userFactoryIds) {
+      final factoryDoc = await FirebaseFirestore.instance.collection('factories').doc(factoryId).get();
+      final factoryData = factoryDoc.data();
+      if (factoryData == null) continue;
 
-    try {
-      /*       final user = FirebaseAuth.instance.currentUser;
-          if (user == null) return;
+      final factoryCompanyIds = (factoryData['companyIds'] as List?)?.cast<String>() ?? [];
 
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
+      if (!factoryCompanyIds.any((id) => userCompanyIds.contains(id))) {
+        debugPrint('Factory $factoryId ignored: no matching user company.');
+        continue;
+      }
 
-          final userData = userDoc.data();
+      debugPrint('Processing factory: $factoryId');
 
-          final factoryIds =
-              (userData?['factoryIds'] as List?)?.cast<String>() ?? [];
+      // 4. جلب مخزون المصنع
+      final inventorySnapshot = await FirebaseFirestore.instance
+          .collection('factories/$factoryId/inventory')
+          .get();
 
-          for (final factoryId in factoryIds) {
-            Query query = FirebaseFirestore.instance
-                .collection('factories/$factoryId/inventory');
+      debugPrint('Inventory count in factory $factoryId: ${inventorySnapshot.docs.length}');
 
-            if (!showAll) {
-              query = query
-                  .where('productName', isGreaterThanOrEqualTo: _searchQuery)
-                  .where('productName', isLessThanOrEqualTo: '$_searchQuery\uf8ff');
-            }
+      for (final invDoc in inventorySnapshot.docs) {
+        final productId = invDoc.id;
 
-            final inventorySnapshot = await query.get();
-
-            for (final doc in inventorySnapshot.docs) {
-              final inventoryData = doc.data() as Map<String, dynamic>;
-              final productId = doc.id;
-
-              final itemDoc = await FirebaseFirestore.instance
-                  .collection('items')
-                  .doc(productId)
-                  .get();
-              final itemData = itemDoc.data();
-
-              final factoryDoc = await FirebaseFirestore.instance
-                  .collection('factories')
-                  .doc(factoryId)
-                  .get();
-              final factoryData = factoryDoc.data();
-
-              final companyIds =
-                  (factoryData?['companyIds'] as List?)?.cast<String>() ?? [];
-              List<String> companyNames = [];
-
-              for (var companyId in companyIds) {
-                final companyDoc = await FirebaseFirestore.instance
-                    .collection('companies')
-                    .doc(companyId)
-                    .get();
-
-                final companyData = companyDoc.data();
-                if (companyData != null) {
-                  if (!mounted) return;
-                  final lang = context.locale.languageCode;
-                  final companyName = lang == 'ar'
-                      ? companyData['nameAr'] ?? companyData['nameEn'] ?? ''
-                      : companyData['nameEn'] ?? companyData['nameAr'] ?? '';
-                  companyNames.add(companyName);
-                }
-              }
-
-              if (!mounted) return;
-              final lang = context.locale.languageCode;
-              final productName = lang == 'ar'
-                  ? (itemData?['nameAr'] ?? itemData?['nameEn'])
-                  : (itemData?['nameEn'] ?? itemData?['nameAr']);
-
-              final factoryName = lang == 'ar'
-                  ? (factoryData?['nameAr'] ?? factoryData?['nameEn'])
-                  : (factoryData?['nameEn'] ?? factoryData?['nameAr']);
-
-              _inventoryResults.add({
-                'productId': productId,
-                'productName': productName,
-                'quantity': inventoryData['quantity'] ?? 0,
-                'factoryId': factoryId,
-                'factoryName': factoryName,
-                'companyNames': companyNames,
-                'lastUpdated': inventoryData['lastUpdated'],
-                'documentId': doc.id,
-              });
-            }
-          } */final user = FirebaseAuth.instance.currentUser;
-if (user == null) return;
-
-final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-final userData = userDoc.data();
-final userCompanyIds = (userData?['companyIds'] as List?)?.cast<String>() ?? [];
-final factoryIds = (userData?['factoryIds'] as List?)?.cast<String>() ?? [];
-
-_inventoryResults.clear();
-
-for (final factoryId in factoryIds) {
-  final factoryDoc = await FirebaseFirestore.instance.collection('factories').doc(factoryId).get();
-  final factoryData = factoryDoc.data();
-  if (factoryData == null) continue;
-
-  final factoryCompanyIds = (factoryData['companyIds'] as List?)?.cast<String>() ?? [];
-  if (!factoryCompanyIds.any((id) => userCompanyIds.contains(id))) continue;
-
-  Query query = FirebaseFirestore.instance.collection('factories/$factoryId/inventory');
-  if (!showAll) {
-    query = query
-      .where('productName', isGreaterThanOrEqualTo: _searchQuery)
-      .where('productName', isLessThanOrEqualTo: '$_searchQuery\uf8ff');
-  }
-  final inventorySnapshot = await query.get();
-
-  for (final doc in inventorySnapshot.docs) {
-    final inventoryData = doc.data() as Map<String, dynamic>;
-
-    final productId = doc.id;
-
-    final itemDoc = await FirebaseFirestore.instance.collection('items').doc(productId).get();
-    final itemData = itemDoc.data();
-
-    if (!mounted) return;
-    final lang = context.locale.languageCode;
-
-    final productName = itemData != null
-      ? (lang == 'ar' ? (itemData['nameAr'] ?? itemData['nameEn'] ?? 'Unknown Product')
-                     : (itemData['nameEn'] ?? itemData['nameAr'] ?? 'Unknown Product'))
-      : 'Unknown Product';
-
-    final factoryName = lang == 'ar'
-        ? (factoryData['nameAr'] ?? factoryData['nameEn'])
-        : (factoryData['nameEn'] ?? factoryData['nameAr']);
-
-    final relevantCompanyNames = <String>[];
-    for (final companyId in factoryCompanyIds) {
-      if (userCompanyIds.contains(companyId)) {
-        final companyDoc = await FirebaseFirestore.instance.collection('companies').doc(companyId).get();
-        final companyData = companyDoc.data();
-        if (companyData != null) {
-          final companyName = lang == 'ar'
-              ? (companyData['nameAr'] ?? companyData['nameEn'] ?? '')
-              : (companyData['nameEn'] ?? companyData['nameAr'] ?? '');
-          if (companyName.isNotEmpty) relevantCompanyNames.add(companyName);
+        // فقط المنتجات التي يملكها المستخدم
+        if (!userProducts.containsKey(productId)) {
+          debugPrint('Inventory product $productId ignored: not in user products.');
+          continue;
         }
+
+        final productData = userProducts[productId]!;
+        final inventoryData = invDoc.data();
+
+        final productName = _isArabic
+            ? (productData['nameAr'] ?? productData['nameEn'] ?? '')
+            : (productData['nameEn'] ?? productData['nameAr'] ?? '');
+
+        // فلترة البحث
+        if (!showAll &&
+            _searchQuery.isNotEmpty &&
+            !productName.toLowerCase().contains(_searchQuery.toLowerCase())) {
+          debugPrint('Inventory product $productId ignored: search query mismatch.');
+          continue;
+        }
+
+        final factoryName = _isArabic
+            ? (factoryData['nameAr'] ?? factoryData['nameEn'] ?? '')
+            : (factoryData['nameEn'] ?? factoryData['nameAr'] ?? '');
+
+        // جلب أسماء الشركات ذات الصلة
+        final relevantCompanyNames = <String>[];
+        for (final companyId in factoryCompanyIds) {
+          if (userCompanyIds.contains(companyId)) {
+            final companyDoc = await FirebaseFirestore.instance
+                .collection('companies')
+                .doc(companyId)
+                .get();
+            final companyData = companyDoc.data();
+            if (companyData != null) {
+              final companyName = _isArabic
+                  ? (companyData['nameAr'] ?? companyData['nameEn'] ?? '')
+                  : (companyData['nameEn'] ?? companyData['nameAr'] ?? '');
+              if (companyName.isNotEmpty) relevantCompanyNames.add(companyName);
+            }
+          }
+        }
+
+        _inventoryResults.add({
+          'productId': productId,
+          'productName': productName,
+          'quantity': inventoryData['quantity'] ?? 0,
+          'factoryId': factoryId,
+          'factoryName': factoryName,
+          'companyNames': relevantCompanyNames,
+          'lastUpdated': inventoryData['lastUpdated'],
+        });
+
+        debugPrint('Added inventory result: ${_inventoryResults.last}');
       }
     }
 
-    _inventoryResults.add({
-      'productId': productId,
-      'productName': productName,
-      'quantity': inventoryData['quantity'] ?? 0,
-      'factoryId': factoryId,
-      'factoryName': factoryName,
-      'companyNames': relevantCompanyNames,
-      'llastUpdated': inventoryData['lastUpdated'],
-
-    });
+    debugPrint('Total inventory results: ${_inventoryResults.length}');
+    debugPrint('--- _searchInventory finished ---');
+  } catch (e) {
+    debugPrint('Search error: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('error_loading_data'.tr())),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
 }
-
-    } catch (e) {
-      debugPrint('Search error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('error_loading_data'.tr())),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
   Widget _buildResultsList() {
     if (_isLoading) {

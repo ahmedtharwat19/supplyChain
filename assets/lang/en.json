@@ -647,10 +647,28 @@
   "stock_history": "Stock History", 
   "no_stock_history": "No stock history",
 
-
+  "delete_order_confirm": "Are you sure you want to delete the purchase order?",
   "last_updated": "Last Updated",
   "product_name": "Product Name",
-    "search_products_hint": "Type to search for products..."
+    "search_products_hint": "Type to search for products...",
+
+  "no_stock_movements": "No stock movements available",
+  
+  "movement_type": "Movement Type",
+  "loading_error": "Error loading data",
+
+ 
+  "current_stock": "Current Stock",
+  
+
+
+
+  "select_factory": "اختر المصنع",
+  "select_product": "اختر الصنف",
+  "select_filters_first": "يرجى اختيار الشركة والمصنع والصنف أولاً"
+ 
+
+
 
 
 }

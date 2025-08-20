@@ -104,6 +104,19 @@ final List<DashboardMetric> dashboardMetrics = [
     },
     defaultMenuType: 'long', // short, long, أو custom
   ),
+    DashboardMetric(
+    titleKey: 'inventory_query',
+    valueBuilder: (data) => (data['totalStockMovements'] ?? 0).toString(),
+    icon: Icons.move_to_inbox,
+    color: Colors.cyan,
+    route: '/inventory-query',
+    progressBuilder: (data) {
+      final value = (data['totalStockMovements'] ?? 0) as int;
+      final max = 300;
+      return (value / max).clamp(0.0, 1.0);
+    },
+    defaultMenuType: 'long', // short, long, أو custom
+  ),
   DashboardMetric(
     titleKey: 'totalManufacturingOrders',
     valueBuilder: (data) => (data['totalManufacturingOrders'] ?? 0).toString(),

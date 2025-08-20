@@ -717,7 +717,7 @@
     "not_supported": "غير مدعوم",
     "error_fetching_mac": "خطأ في جلب العنوان"
   },
-
+  "delete_order_confirm": "هل أنت متأكد أنك تريد حذف أمر الشراء؟",
   "permission_denied_error": "تم رفض الإذن - تحقق من صلاحيات الوصول",
   "document_not_found_error": "الوثيقة غير موجودة",
   "invalid_data_error": "تم تقديم بيانات غير صالحة",
@@ -730,7 +730,34 @@
  
   "last_updated": "آخر تحديث",
   "product_name": "اسم المنتج",
-    "search_products_hint": "اكتب للبحث عن الأصناف..."
+    "search_products_hint": "اكتب للبحث عن الأصناف...",
+
+  "no_stock_movements": "لا توجد حركات مخزون",
+
+  "movement_type": "نوع الحركة",
+  "loading_error": "حدث خطأ أثناء تحميل البيانات",
+
+  "current_stock": "الرصيد الحالي",
+
+  "select_factory": "اختر المصنع",
+  "select_product": "اختر الصنف",
+  "select_filters_first": "يرجى اختيار الشركة والمصنع والصنف أولاً",
+    "newest_first": "الأحدث أولاً",
+  "oldest_first": "الأقدم أولاً",
+  "from": "من",
+  "to": "إلى",
+  "select_start_date": "اختر تاريخ البداية",
+  "select_end_date": "اختر تاريخ النهاية",
+
+  "exporting": "جاري التصدير",
+  "pdf_export_success": "تم تصدير PDF بنجاح",
+  "pdf_export_failed": "فشل في تصدير PDF",
+  "no_data_to_export": "لا توجد بيانات للتصدير",
+  "stock_movements_report": "تقرير حركات المخزون",
+  "generated_on": "تم إنشاؤه في",
+  "date_range": "نطاق التاريخ"
+  
+
 
 
 }

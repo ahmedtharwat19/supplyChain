@@ -1,3 +1,760 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_purchasing/models/company.dart';
+import 'package:puresip_purchasing/models/factory.dart';
+import 'package:puresip_purchasing/models/item.dart';
+import 'package:puresip_purchasing/models/purchase_order.dart';
+import 'package:puresip_purchasing/models/supplier.dart';
+import '../../services/firestore_service.dart';
+import '../../utils/user_local_storage.dart';
+import './item_selection_dialog.dart';
+
+class AddPurchaseOrderPage extends StatefulWidget {
+  final String? selectedCompany;
+  const AddPurchaseOrderPage({super.key, this.selectedCompany});
+
+  @override
+  State<AddPurchaseOrderPage> createState() => _AddPurchaseOrderPageState();
+}
+
+class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
+  final _formKey = GlobalKey<FormState>();
+  final FirestoreService _firestoreService = FirestoreService();
+  final _auth = FirebaseAuth.instance;
+
+  double _taxRate = 14.0;
+  final List<Item> _items = [];
+  List<Company> _companies = [];
+  List<Factory> _factories = [];
+  List<Supplier> _suppliers = [];
+  List<Item> _allItems = [];
+
+  String? _selectedCompanyId;
+  String? _selectedFactoryId;
+  String? _selectedSupplierId;
+  DateTime _orderDate = DateTime.now();
+  bool _isLoading = false;
+  bool _isDelivered = false; // غير ثابت لأننا سنغيره من الواجهة
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCompanyId = widget.selectedCompany;
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    debugPrint('⬇️ Start loading initial data...');
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await UserLocalStorage.getUser();
+      debugPrint('🧑 user from storage: $user');
+
+      if (user == null) {
+        debugPrint('❌ User is null, stopping load.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final userId = user['userId'] as String;
+      final companyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
+      debugPrint('🚀 userId: $userId');
+      debugPrint('🚀 companyIds: $companyIds');
+      final currentUser = FirebaseAuth.instance.currentUser;
+      debugPrint('Current Firebase userId: ${currentUser?.uid}');
+      debugPrint('UserId from local storage: $userId');
+      if (companyIds.isEmpty) {
+        debugPrint('❌ companyIds is empty, stopping load.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final companies = await _firestoreService.getUserCompanies(companyIds);
+      debugPrint('✅ Loaded companies count: ${companies.length}');
+
+      final suppliers = await _firestoreService.getUserVendors(
+        userId,
+        (user['supplierIds'] as List?)?.cast<String>() ?? [],
+      );
+
+      debugPrint('✅ Loaded suppliers count: ${suppliers.length}');
+
+      final items = await _firestoreService.getUserItems(userId);
+      debugPrint('✅ Loaded items count: ${items.length}');
+
+      List<Factory> factories = [];
+      if (_selectedCompanyId != null) {
+        factories =
+            await _firestoreService.getUserFactories(userId, companyIds).first;
+        debugPrint('✅ Loaded factories count: ${factories.length}');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _companies = companies;
+        _suppliers = suppliers;
+        _allItems = items;
+        _factories = factories;
+
+        if (_companies.isNotEmpty &&
+            (_selectedCompanyId == null ||
+                !_companies.any((c) => c.id == _selectedCompanyId))) {
+          _selectedCompanyId = _companies.first.id;
+          debugPrint(
+              'ℹ️ _selectedCompanyId was reset to first company: $_selectedCompanyId');
+        }
+
+        if (_factories.isNotEmpty && _selectedFactoryId == null) {
+          _selectedFactoryId = _factories.first.id;
+          debugPrint(
+              'ℹ️ _selectedFactoryId was set to first factory: $_selectedFactoryId');
+        }
+      });
+
+      debugPrint('📊 State after loading:');
+      debugPrint('  _companies.length: ${_companies.length}');
+      debugPrint('  _suppliers.length: ${_suppliers.length}');
+      debugPrint('  _allItems.length: ${_allItems.length}');
+      debugPrint('  _factories.length: ${_factories.length}');
+      debugPrint('  _selectedCompanyId: $_selectedCompanyId');
+      debugPrint('  _selectedFactoryId: $_selectedFactoryId');
+    } catch (e, st) {
+      debugPrint('❌ Exception in _loadInitialData: $e');
+      debugPrint(st.toString());
+      _showErrorSnackbar('error_loading_data'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+      debugPrint('⬆️ Finished loading initial data.');
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _buildCompanyDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _companies.any((c) => c.id == _selectedCompanyId)
+          ? _selectedCompanyId
+          : null,
+      decoration: InputDecoration(
+        labelText: 'company'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _companies
+          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nameAr)))
+          .toList(),
+      onChanged: (val) async {
+        if (val == null) return;
+        setState(() => _selectedCompanyId = val);
+        final user = await UserLocalStorage.getUser();
+        final companyIds = (user?['companyIds'] as List?)?.cast<String>() ?? [];
+        final userId = user?['userId'];
+        debugPrint('🚀 userId: $userId');
+        debugPrint('🚀 companyIds: $companyIds');
+        final factories = await _firestoreService
+            .getUserFactories(user?['userId'] ?? '', companyIds)
+            .first;
+        if (!mounted) return;
+        setState(() {
+          _factories =
+              factories.where((f) => f.companyIds.contains(val)).toList();
+          _selectedFactoryId =
+              _factories.isNotEmpty ? _factories.first.id : null;
+        });
+      },
+      validator: (val) => val == null ? 'required_field'.tr() : null,
+    );
+  }
+
+  Widget _buildFactoryDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedFactoryId,
+      decoration: InputDecoration(
+        labelText: 'factory'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _factories
+          .map((f) => DropdownMenuItem(value: f.id, child: Text(f.nameAr)))
+          .toList(),
+      onChanged: (val) => setState(() => _selectedFactoryId = val),
+    );
+  }
+
+  Widget _buildSupplierDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedSupplierId,
+      decoration: InputDecoration(
+        labelText: 'supplier'.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: _suppliers
+          .map((v) => DropdownMenuItem(
+              value: v.id, child: Text('${v.nameAr} (${v.nameEn})')))
+          .toList(),
+      onChanged: (val) => setState(() => _selectedSupplierId = val),
+      validator: (val) => val == null ? 'required_field'.tr() : null,
+    );
+  }
+
+  Future<void> _showItemSelectionDialog() async {
+    final selected = await showDialog<List<Item>>(
+      context: context,
+      builder: (_) => ItemSelectionDialog(
+        allItems: _allItems,
+        preSelectedItems: _items.map((i) => i.itemId).toList(),
+      ),
+    );
+    if (selected == null || selected.isEmpty) return;
+    setState(() {
+      for (var i in selected) {
+        if (!_items.any((e) => e.itemId == i.itemId)) {
+          _items.add(i);
+        }
+      }
+    });
+  }
+
+  bool _validateForm() {
+    if (_selectedCompanyId == null ||
+        _selectedSupplierId == null ||
+        _items.isEmpty) {
+      _showErrorSnackbar('missing_required_fields'.tr());
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _submitOrder() async {
+    if (!_validateForm()) return;
+    setState(() => _isLoading = true);
+    try {
+      final poNumber =
+          await _firestoreService.generatePoNumber(_selectedCompanyId!);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final orderId = 'PO-$timestamp';
+      final order = PurchaseOrder(
+        id: orderId,
+        poNumber: poNumber,
+        userId: _auth.currentUser?.uid ?? '',
+        companyId: _selectedCompanyId!,
+        factoryId: _selectedFactoryId,
+        supplierId: _selectedSupplierId!,
+        orderDate: _orderDate,
+        status: 'pending',
+        items: _items,
+        taxRate: _taxRate,
+        totalAmount: _items.fold(0, (sTotal, item) => sTotal + item.totalPrice),
+        totalTax: _items.fold(0, (sTotal, item) => sTotal + item.taxAmount),
+        totalAmountAfterTax:
+            _items.fold(0, (sTotal, item) => sTotal + item.totalAfterTaxAmount),
+        isDelivered: _isDelivered,
+      );
+      await _firestoreService.createPurchaseOrder(order);
+      // ✅ إذا كان الطلب مسلَّم مباشرةً، قم بتحديث المخزون
+/*       if (_isDelivered) {
+        final user = _auth.currentUser;
+        if (user != null) {
+          debugPrint(
+              '📦 Order is marked as delivered. Processing stock movements.');
+
+          for (final item in _items) {
+            final productId = item.itemId;
+            final quantity = item.quantity;
+
+            if (productId.isEmpty || quantity <= 0) continue;
+
+            try {
+              // 1. أضف حركة المخزون
+              await FirebaseFirestore.instance
+                  .collection('companies/$_selectedCompanyId/stock_movements')
+                  .add({
+                'type': 'purchase',
+                'productId': productId,
+                'quantity': quantity,
+                'date': FieldValue.serverTimestamp(),
+                'referenceId': orderId,
+                'userId': user.uid,
+                'factoryId': _selectedFactoryId,
+              });
+
+              // 2. تحديث الكمية في المخزون
+              final stockRef = FirebaseFirestore.instance
+                  .collection('factories/$_selectedFactoryId/inventory')
+                  .doc(productId);
+
+              await stockRef.set({
+                'quantity': FieldValue.increment(quantity),
+                'lastUpdated': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+            } catch (e) {
+              debugPrint('❌ Error processing item $productId: $e');
+            }
+          }
+        }
+      }
+ */
+if (_isDelivered) {
+  final user = _auth.currentUser;
+  if (user != null) {
+    debugPrint('📦 Order is marked as delivered. Processing stock movements.');
+    await _firestoreService.processStockDelivery(
+      companyId: _selectedCompanyId!,
+      factoryId: _selectedFactoryId!,
+      orderId: orderId,
+      userId: user.uid,
+      items: _items,
+    );
+  }
+}
+
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('order_saved'.tr())));
+      Navigator.pop(context, true);
+    } catch (e) {
+      _showErrorSnackbar('save_order_error'.tr());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  final currencyFormat = NumberFormat.currency(locale: 'ar', symbol: 'ج.م');
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text('new_purchase_order'.tr())),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    debugPrint('📦 building main UI');
+    debugPrint('📦 companies length: ${_companies.length}');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('new_purchase_order'.tr()),
+        actions: [
+          IconButton(icon: const Icon(Icons.save), onPressed: _submitOrder),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildCompanyDropdown(),
+              const SizedBox(height: 16),
+              if (_selectedCompanyId != null) _buildFactoryDropdown(),
+              const SizedBox(height: 16),
+              _buildSupplierDropdown(),
+              const SizedBox(height: 16),
+              ListTile(
+                title: Text('order_date'.tr()),
+                subtitle: Text(DateFormat.yMd().format(_orderDate)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _orderDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (d != null && mounted) setState(() => _orderDate = d);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                initialValue: _taxRate.toString(),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'tax_rate_percent'.tr(),
+                  suffixText: '%',
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (v) {
+                  final rate = double.tryParse(v) ?? _taxRate;
+                  setState(() => _taxRate = rate);
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Switch للتحكم بحالة التسليم
+              SwitchListTile(
+                  title: Text('delivered'.tr()),
+                  value: _isDelivered,
+                  onChanged: (val) {
+                    setState(() {
+                      _isDelivered = val;
+                    });
+                  }),
+
+              // عرض الأصناف المضافة
+              _items.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'no_items_added_to_order'.tr(),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _items.length,
+                      itemBuilder: (context, index) {
+                        final item = _items[index];
+
+                        return Card(
+                          color: Colors.grey[100],
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // اسم الصنف
+                                Text(
+                                  context.locale.languageCode == 'ar'
+                                      ? item.nameAr
+                                      : item.nameEn,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // الكمية والسعر في صف واحد
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue: item.quantity.toString(),
+                                        decoration: InputDecoration(
+                                          labelText: 'quantity'.tr(),
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (v) {
+                                          final newQty = double.tryParse(v) ??
+                                              item.quantity;
+                                          setState(() {
+                                            _items[index] = item
+                                                .updateQuantity(newQty)
+                                                .updateTaxStatus(
+                                                    item.isTaxable,
+                                                    item.isTaxable
+                                                        ? _taxRate
+                                                        : 0);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue:
+                                            item.unitPrice.toStringAsFixed(2),
+                                        decoration: InputDecoration(
+                                          labelText: 'unit_price'.tr(),
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (v) {
+                                          final newPrice = double.tryParse(v) ??
+                                              item.unitPrice;
+                                          setState(() {
+                                            _items[index] = item
+                                                .updateUnitPrice(newPrice)
+                                                .updateTaxStatus(
+                                                    item.isTaxable,
+                                                    item.isTaxable
+                                                        ? _taxRate
+                                                        : 0);
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // مفتاح هل خاضع للضريبة
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text('is_taxable'.tr()),
+                                  value: item.isTaxable,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _items[index] = item.updateTaxStatus(
+                                          val, val ? _taxRate : 0);
+                                    });
+                                  },
+                                ),
+
+                                const Divider(),
+
+                                // تفاصيل المبلغ
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('${'tax'.tr()}:'),
+                                    Text(currencyFormat.format(item.taxAmount)),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('${'total'.tr()}:',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    Text(
+                                      currencyFormat
+                                          .format(item.totalAfterTaxAmount),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text('add_items'.tr()),
+                onPressed: _showItemSelectionDialog,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+  // تعديل الكمية والسعر للوحدة في الأصناف
+/*   void _editItemQuantityAndPrice(int index) async {
+    final item = _items[index];
+    double newQuantity = item.quantity;
+    double newUnitPrice = item.unitPrice;
+
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('edit_item'.tr()),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: item.quantity.toString(),
+                  decoration: InputDecoration(labelText: 'quantity'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newQuantity = double.tryParse(v) ?? newQuantity;
+                  },
+                ),
+                TextFormField(
+                  initialValue: item.unitPrice.toString(),
+                  decoration: InputDecoration(labelText: 'unit_price'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newUnitPrice = double.tryParse(v) ?? newUnitPrice;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('cancel'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: Text('save'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      setState(() {
+        var updatedItem = item.updateQuantity(newQuantity);
+        updatedItem = updatedItem.updateUnitPrice(newUnitPrice);
+        _items[index] = updatedItem;
+      });
+    }
+  }
+ */
+
+/*   void _editItemQuantityAndPrice(int index) async {
+    final item = _items[index];
+    double newQuantity = item.quantity;
+    double newUnitPrice = item.unitPrice;
+    bool isTaxable = item.isTaxable;
+
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('edit_item'.tr()),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: item.quantity.toString(),
+                  decoration: InputDecoration(labelText: 'quantity'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newQuantity = double.tryParse(v) ?? newQuantity;
+                  },
+                ),
+                TextFormField(
+                  initialValue: item.unitPrice.toString(),
+                  decoration: InputDecoration(labelText: 'unit_price'.tr()),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'required_field'.tr();
+                    if (double.tryParse(v) == null) {
+                      return 'invalid_number'.tr();
+                    }
+                    return null;
+                  },
+                  onChanged: (v) {
+                    newUnitPrice = double.tryParse(v) ?? newUnitPrice;
+                  },
+                ),
+                CheckboxListTile(
+                  title: Text('is_taxable'.tr()),
+                  value: isTaxable,
+                  onChanged: (val) {
+                    if (val != null) isTaxable = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('cancel'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: Text('save'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      setState(() {
+        var updatedItem = item
+            .updateQuantity(newQuantity)
+            .updateUnitPrice(newUnitPrice)
+            .updateTaxStatus(isTaxable, isTaxable ? _taxRate : 0.0);
+        _items[index] = updatedItem;
+      });
+    }
+  }
+ */
+
+
+/*                         return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ListTile(
+                            title: Text(
+                              context.locale.languageCode == 'ar'
+                                  ? item.nameAr
+                                  : item.nameEn,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${'quantity'.tr()}: ${item.quantity}'),
+                                Text(
+                                    '${'unit_price'.tr()}: ${item.unitPrice.toStringAsFixed(2)}'),
+                                Text(
+                                    '${'tax'.tr()}: ${item.taxAmount.toStringAsFixed(2)}'),
+                                Text(
+                                    '${'total'.tr()}: ${item.totalAfterTaxAmount.toStringAsFixed(2)}'),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _editItemQuantityAndPrice(index),
+                            ),
+                          ),
+                        );
+                    },  */ 
+          //         import 'package:intl/intl.dart';
+
 /* import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -3551,699 +4308,3 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
   }
 }
   */
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:puresip_purchasing/models/company.dart';
-import 'package:puresip_purchasing/models/factory.dart';
-import 'package:puresip_purchasing/models/item.dart';
-import 'package:puresip_purchasing/models/purchase_order.dart';
-import 'package:puresip_purchasing/models/supplier.dart';
-import '../../services/firestore_service.dart';
-import '../../utils/user_local_storage.dart';
-import './item_selection_dialog.dart';
-
-class AddPurchaseOrderPage extends StatefulWidget {
-  final String? selectedCompany;
-  const AddPurchaseOrderPage({super.key, this.selectedCompany});
-
-  @override
-  State<AddPurchaseOrderPage> createState() => _AddPurchaseOrderPageState();
-}
-
-class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
-  final _formKey = GlobalKey<FormState>();
-  final FirestoreService _firestoreService = FirestoreService();
-  final _auth = FirebaseAuth.instance;
-
-  double _taxRate = 14.0;
-  final List<Item> _items = [];
-  List<Company> _companies = [];
-  List<Factory> _factories = [];
-  List<Supplier> _suppliers = [];
-  List<Item> _allItems = [];
-
-  String? _selectedCompanyId;
-  String? _selectedFactoryId;
-  String? _selectedSupplierId;
-  DateTime _orderDate = DateTime.now();
-  bool _isLoading = false;
-  bool _isDelivered = false; // غير ثابت لأننا سنغيره من الواجهة
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCompanyId = widget.selectedCompany;
-    _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    debugPrint('⬇️ Start loading initial data...');
-    setState(() => _isLoading = true);
-
-    try {
-      final user = await UserLocalStorage.getUser();
-      debugPrint('🧑 user from storage: $user');
-
-      if (user == null) {
-        debugPrint('❌ User is null, stopping load.');
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final userId = user['userId'] as String;
-      final companyIds = (user['companyIds'] as List?)?.cast<String>() ?? [];
-      debugPrint('🚀 userId: $userId');
-      debugPrint('🚀 companyIds: $companyIds');
-      final currentUser = FirebaseAuth.instance.currentUser;
-      debugPrint('Current Firebase userId: ${currentUser?.uid}');
-      debugPrint('UserId from local storage: $userId');
-      if (companyIds.isEmpty) {
-        debugPrint('❌ companyIds is empty, stopping load.');
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final companies = await _firestoreService.getUserCompanies(companyIds);
-      debugPrint('✅ Loaded companies count: ${companies.length}');
-
-      final suppliers = await _firestoreService.getUserVendors(
-        userId,
-        (user['supplierIds'] as List?)?.cast<String>() ?? [],
-      );
-
-      debugPrint('✅ Loaded suppliers count: ${suppliers.length}');
-
-      final items = await _firestoreService.getUserItems(userId);
-      debugPrint('✅ Loaded items count: ${items.length}');
-
-      List<Factory> factories = [];
-      if (_selectedCompanyId != null) {
-        factories =
-            await _firestoreService.getUserFactories(userId, companyIds).first;
-        debugPrint('✅ Loaded factories count: ${factories.length}');
-      }
-
-      if (!mounted) return;
-
-      setState(() {
-        _companies = companies;
-        _suppliers = suppliers;
-        _allItems = items;
-        _factories = factories;
-
-        if (_companies.isNotEmpty &&
-            (_selectedCompanyId == null ||
-                !_companies.any((c) => c.id == _selectedCompanyId))) {
-          _selectedCompanyId = _companies.first.id;
-          debugPrint(
-              'ℹ️ _selectedCompanyId was reset to first company: $_selectedCompanyId');
-        }
-
-        if (_factories.isNotEmpty && _selectedFactoryId == null) {
-          _selectedFactoryId = _factories.first.id;
-          debugPrint(
-              'ℹ️ _selectedFactoryId was set to first factory: $_selectedFactoryId');
-        }
-      });
-
-      debugPrint('📊 State after loading:');
-      debugPrint('  _companies.length: ${_companies.length}');
-      debugPrint('  _suppliers.length: ${_suppliers.length}');
-      debugPrint('  _allItems.length: ${_allItems.length}');
-      debugPrint('  _factories.length: ${_factories.length}');
-      debugPrint('  _selectedCompanyId: $_selectedCompanyId');
-      debugPrint('  _selectedFactoryId: $_selectedFactoryId');
-    } catch (e, st) {
-      debugPrint('❌ Exception in _loadInitialData: $e');
-      debugPrint(st.toString());
-      _showErrorSnackbar('error_loading_data'.tr());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-      debugPrint('⬆️ Finished loading initial data.');
-    }
-  }
-
-  void _showErrorSnackbar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Widget _buildCompanyDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _companies.any((c) => c.id == _selectedCompanyId)
-          ? _selectedCompanyId
-          : null,
-      decoration: InputDecoration(
-        labelText: 'company'.tr(),
-        border: const OutlineInputBorder(),
-      ),
-      items: _companies
-          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nameAr)))
-          .toList(),
-      onChanged: (val) async {
-        if (val == null) return;
-        setState(() => _selectedCompanyId = val);
-        final user = await UserLocalStorage.getUser();
-        final companyIds = (user?['companyIds'] as List?)?.cast<String>() ?? [];
-        final userId = user?['userId'];
-        debugPrint('🚀 userId: $userId');
-        debugPrint('🚀 companyIds: $companyIds');
-        final factories = await _firestoreService
-            .getUserFactories(user?['userId'] ?? '', companyIds)
-            .first;
-        if (!mounted) return;
-        setState(() {
-          _factories =
-              factories.where((f) => f.companyIds.contains(val)).toList();
-          _selectedFactoryId =
-              _factories.isNotEmpty ? _factories.first.id : null;
-        });
-      },
-      validator: (val) => val == null ? 'required_field'.tr() : null,
-    );
-  }
-
-  Widget _buildFactoryDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedFactoryId,
-      decoration: InputDecoration(
-        labelText: 'factory'.tr(),
-        border: const OutlineInputBorder(),
-      ),
-      items: _factories
-          .map((f) => DropdownMenuItem(value: f.id, child: Text(f.nameAr)))
-          .toList(),
-      onChanged: (val) => setState(() => _selectedFactoryId = val),
-    );
-  }
-
-  Widget _buildSupplierDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedSupplierId,
-      decoration: InputDecoration(
-        labelText: 'supplier'.tr(),
-        border: const OutlineInputBorder(),
-      ),
-      items: _suppliers
-          .map((v) => DropdownMenuItem(
-              value: v.id, child: Text('${v.nameAr} (${v.nameEn})')))
-          .toList(),
-      onChanged: (val) => setState(() => _selectedSupplierId = val),
-      validator: (val) => val == null ? 'required_field'.tr() : null,
-    );
-  }
-
-  Future<void> _showItemSelectionDialog() async {
-    final selected = await showDialog<List<Item>>(
-      context: context,
-      builder: (_) => ItemSelectionDialog(
-        allItems: _allItems,
-        preSelectedItems: _items.map((i) => i.itemId).toList(),
-      ),
-    );
-    if (selected == null || selected.isEmpty) return;
-    setState(() {
-      for (var i in selected) {
-        if (!_items.any((e) => e.itemId == i.itemId)) {
-          _items.add(i);
-        }
-      }
-    });
-  }
-
-  bool _validateForm() {
-    if (_selectedCompanyId == null ||
-        _selectedSupplierId == null ||
-        _items.isEmpty) {
-      _showErrorSnackbar('missing_required_fields'.tr());
-      return false;
-    }
-    return true;
-  }
-
-  Future<void> _submitOrder() async {
-    if (!_validateForm()) return;
-    setState(() => _isLoading = true);
-    try {
-      final poNumber =
-          await _firestoreService.generatePoNumber(_selectedCompanyId!);
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final orderId = 'PO-$timestamp';
-      final order = PurchaseOrder(
-        id: orderId,
-        poNumber: poNumber,
-        userId: _auth.currentUser?.uid ?? '',
-        companyId: _selectedCompanyId!,
-        factoryId: _selectedFactoryId,
-        supplierId: _selectedSupplierId!,
-        orderDate: _orderDate,
-        status: 'pending',
-        items: _items,
-        taxRate: _taxRate,
-        totalAmount: _items.fold(0, (sTotal, item) => sTotal + item.totalPrice),
-        totalTax: _items.fold(0, (sTotal, item) => sTotal + item.taxAmount),
-        totalAmountAfterTax:
-            _items.fold(0, (sTotal, item) => sTotal + item.totalAfterTaxAmount),
-        isDelivered: _isDelivered,
-      );
-      await _firestoreService.createPurchaseOrder(order);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('order_saved'.tr())));
-      Navigator.pop(context, true);
-    } catch (e) {
-      _showErrorSnackbar('save_order_error'.tr());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  // تعديل الكمية والسعر للوحدة في الأصناف
-/*   void _editItemQuantityAndPrice(int index) async {
-    final item = _items[index];
-    double newQuantity = item.quantity;
-    double newUnitPrice = item.unitPrice;
-
-    final formKey = GlobalKey<FormState>();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('edit_item'.tr()),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  initialValue: item.quantity.toString(),
-                  decoration: InputDecoration(labelText: 'quantity'.tr()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'required_field'.tr();
-                    if (double.tryParse(v) == null) {
-                      return 'invalid_number'.tr();
-                    }
-                    return null;
-                  },
-                  onChanged: (v) {
-                    newQuantity = double.tryParse(v) ?? newQuantity;
-                  },
-                ),
-                TextFormField(
-                  initialValue: item.unitPrice.toString(),
-                  decoration: InputDecoration(labelText: 'unit_price'.tr()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'required_field'.tr();
-                    if (double.tryParse(v) == null) {
-                      return 'invalid_number'.tr();
-                    }
-                    return null;
-                  },
-                  onChanged: (v) {
-                    newUnitPrice = double.tryParse(v) ?? newUnitPrice;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('cancel'.tr()),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Navigator.pop(context, true);
-                }
-              },
-              child: Text('save'.tr()),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result == true) {
-      setState(() {
-        var updatedItem = item.updateQuantity(newQuantity);
-        updatedItem = updatedItem.updateUnitPrice(newUnitPrice);
-        _items[index] = updatedItem;
-      });
-    }
-  }
- */
-  final currencyFormat = NumberFormat.currency(locale: 'ar', symbol: 'ج.م');
-/*   void _editItemQuantityAndPrice(int index) async {
-    final item = _items[index];
-    double newQuantity = item.quantity;
-    double newUnitPrice = item.unitPrice;
-    bool isTaxable = item.isTaxable;
-
-    final formKey = GlobalKey<FormState>();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('edit_item'.tr()),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  initialValue: item.quantity.toString(),
-                  decoration: InputDecoration(labelText: 'quantity'.tr()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'required_field'.tr();
-                    if (double.tryParse(v) == null) {
-                      return 'invalid_number'.tr();
-                    }
-                    return null;
-                  },
-                  onChanged: (v) {
-                    newQuantity = double.tryParse(v) ?? newQuantity;
-                  },
-                ),
-                TextFormField(
-                  initialValue: item.unitPrice.toString(),
-                  decoration: InputDecoration(labelText: 'unit_price'.tr()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'required_field'.tr();
-                    if (double.tryParse(v) == null) {
-                      return 'invalid_number'.tr();
-                    }
-                    return null;
-                  },
-                  onChanged: (v) {
-                    newUnitPrice = double.tryParse(v) ?? newUnitPrice;
-                  },
-                ),
-                CheckboxListTile(
-                  title: Text('is_taxable'.tr()),
-                  value: isTaxable,
-                  onChanged: (val) {
-                    if (val != null) isTaxable = val;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('cancel'.tr()),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Navigator.pop(context, true);
-                }
-              },
-              child: Text('save'.tr()),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result == true) {
-      setState(() {
-        var updatedItem = item
-            .updateQuantity(newQuantity)
-            .updateUnitPrice(newUnitPrice)
-            .updateTaxStatus(isTaxable, isTaxable ? _taxRate : 0.0);
-        _items[index] = updatedItem;
-      });
-    }
-  }
- */
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: Text('new_purchase_order'.tr())),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    debugPrint('📦 building main UI');
-    debugPrint('📦 companies length: ${_companies.length}');
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('new_purchase_order'.tr()),
-        actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _submitOrder),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildCompanyDropdown(),
-              const SizedBox(height: 16),
-              if (_selectedCompanyId != null) _buildFactoryDropdown(),
-              const SizedBox(height: 16),
-              _buildSupplierDropdown(),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text('order_date'.tr()),
-                subtitle: Text(DateFormat.yMd().format(_orderDate)),
-                trailing: IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: _orderDate,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (d != null && mounted) setState(() => _orderDate = d);
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: _taxRate.toString(),
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'tax_rate_percent'.tr(),
-                  suffixText: '%',
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (v) {
-                  final rate = double.tryParse(v) ?? _taxRate;
-                  setState(() => _taxRate = rate);
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Switch للتحكم بحالة التسليم
-              SwitchListTile(
-                  title: Text('delivered'.tr()),
-                  value: _isDelivered,
-                  onChanged: (val) {
-                    setState(() {
-                      _isDelivered = val;
-                    });
-                  }),
-
-              // عرض الأصناف المضافة
-              _items.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'no_items_added_to_order'.tr(),
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        final item = _items[index];
-
-                        return Card(
-                          color: Colors.grey[100],
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // اسم الصنف
-                                Text(
-                                  context.locale.languageCode == 'ar'
-                                      ? item.nameAr
-                                      : item.nameEn,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // الكمية والسعر في صف واحد
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        initialValue: item.quantity.toString(),
-                                        decoration: InputDecoration(
-                                          labelText: 'quantity'.tr(),
-                                          border: const OutlineInputBorder(),
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                        onChanged: (v) {
-                                          final newQty = double.tryParse(v) ??
-                                              item.quantity;
-                                          setState(() {
-                                            _items[index] = item
-                                                .updateQuantity(newQty)
-                                                .updateTaxStatus(
-                                                    item.isTaxable,
-                                                    item.isTaxable
-                                                        ? _taxRate
-                                                        : 0);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: TextFormField(
-                                        initialValue:
-                                            item.unitPrice.toStringAsFixed(2),
-                                        decoration: InputDecoration(
-                                          labelText: 'unit_price'.tr(),
-                                          border: const OutlineInputBorder(),
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                        onChanged: (v) {
-                                          final newPrice = double.tryParse(v) ??
-                                              item.unitPrice;
-                                          setState(() {
-                                            _items[index] = item
-                                                .updateUnitPrice(newPrice)
-                                                .updateTaxStatus(
-                                                    item.isTaxable,
-                                                    item.isTaxable
-                                                        ? _taxRate
-                                                        : 0);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-
-                                // مفتاح هل خاضع للضريبة
-                                SwitchListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text('is_taxable'.tr()),
-                                  value: item.isTaxable,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _items[index] = item.updateTaxStatus(
-                                          val, val ? _taxRate : 0);
-                                    });
-                                  },
-                                ),
-
-                                const Divider(),
-
-                                // تفاصيل المبلغ
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('${'tax'.tr()}:'),
-                                    Text(currencyFormat.format(item.taxAmount)),
-                                  ],
-                                ),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('${'total'.tr()}:',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    Text(
-                                      currencyFormat
-                                          .format(item.totalAfterTaxAmount),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text('add_items'.tr()),
-                onPressed: _showItemSelectionDialog,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-/*                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            title: Text(
-                              context.locale.languageCode == 'ar'
-                                  ? item.nameAr
-                                  : item.nameEn,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('${'quantity'.tr()}: ${item.quantity}'),
-                                Text(
-                                    '${'unit_price'.tr()}: ${item.unitPrice.toStringAsFixed(2)}'),
-                                Text(
-                                    '${'tax'.tr()}: ${item.taxAmount.toStringAsFixed(2)}'),
-                                Text(
-                                    '${'total'.tr()}: ${item.totalAfterTaxAmount.toStringAsFixed(2)}'),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _editItemQuantityAndPrice(index),
-                            ),
-                          ),
-                        );
-                    },  */ 
-          //         import 'package:intl/intl.dart';
-

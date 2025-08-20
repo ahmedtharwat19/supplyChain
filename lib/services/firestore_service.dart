@@ -594,4 +594,104 @@ class FirestoreService {
       return {'nameAr': 'غير معروف', 'nameEn': 'Unknown'};
     }
   }
+
+/*   Future<void> processStockDelivery({
+  required String companyId,
+  required String factoryId,
+  required String orderId,
+  required String userId,
+  required List<Item> items,
+}) async {
+  final batch = FirebaseFirestore.instance.batch();
+  final stockMovementsRef = FirebaseFirestore.instance
+      .collection('companies/$companyId/stock_movements');
+
+  final inventoryCollection = FirebaseFirestore.instance
+      .collection('factories/$factoryId/inventory');
+
+  for (final item in items) {
+    final productId = item.itemId;
+    final quantity = item.quantity;
+
+    if (productId.isEmpty || quantity <= 0) continue;
+
+    final newMovementRef = stockMovementsRef.doc();
+
+    batch.set(newMovementRef, {
+      'type': 'purchase',
+      'productId': productId,
+      'quantity': quantity,
+      'date': FieldValue.serverTimestamp(),
+      'referenceId': orderId,
+      'userId': userId,
+      'factoryId': factoryId,
+    });
+
+    final stockRef = inventoryCollection.doc(productId);
+
+    batch.set(
+      stockRef,
+      {
+        'quantity': FieldValue.increment(quantity),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  await batch.commit();
+}
+ */
+
+  Future<void> processStockDelivery({
+    required String companyId,
+    required String factoryId,
+    required String orderId,
+    required String userId,
+    required List<dynamic> items,
+  }) async {
+    final batch = FirebaseFirestore.instance.batch();
+    final stockMovementsRef = FirebaseFirestore.instance
+        .collection('companies/$companyId/stock_movements');
+    final inventoryRef =
+        FirebaseFirestore.instance.collection('factories/$factoryId/inventory');
+
+    for (final item in items) {
+      final itemMap = item as Map<String, dynamic>;
+      final productId = itemMap['itemId']?.toString();
+      final quantity = _parseQuantity(itemMap['quantity']);
+
+      if (productId == null || productId.isEmpty || quantity <= 0) continue;
+
+      final newMovementRef = stockMovementsRef.doc();
+
+      batch.set(newMovementRef, {
+        'type': 'purchase',
+        'productId': productId,
+        'quantity': quantity,
+        'date': FieldValue.serverTimestamp(),
+        'referenceId': orderId,
+        'userId': userId,
+        'factoryId': factoryId,
+      });
+
+      final stockDoc = inventoryRef.doc(productId);
+      batch.set(
+          stockDoc,
+          {
+            'quantity': FieldValue.increment(quantity),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+    }
+
+    await batch.commit();
+  }
+
+  double _parseQuantity(dynamic value) {
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 }
