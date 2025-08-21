@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/models/purchase_order.dart';
 import 'package:puresip_purchasing/pages/companies/company_added_page.dart';
 import 'package:puresip_purchasing/pages/inventory/inventory_query_page.dart';
-import 'package:puresip_purchasing/pages/inventory/stock_movements_page.dart';
+import 'package:puresip_purchasing/pages/stock_movements/stock_movements_page.dart';
 import 'package:puresip_purchasing/pages/items/add_item_page.dart';
 import 'package:puresip_purchasing/pages/items/edit_item_page.dart';
 import 'package:puresip_purchasing/pages/manufacturing/add_factory_page.dart';
@@ -102,7 +102,7 @@ final GoRouter appRouter = GoRouter(
         name: 'stock_movements',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: const StockMovementsPage(),
+          child: const StockMovementsTable(),
         ),
       ),
       GoRoute(

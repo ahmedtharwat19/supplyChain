@@ -661,11 +661,16 @@
   "current_stock": "Current Stock",
   
 
+ "select_factory": "Select Factory",
+  "select_product": "Select Product",
+  "select_filters_first": "Please select the company, factory, and product first",
 
-
-  "select_factory": "اختر المصنع",
-  "select_product": "اختر الصنف",
-  "select_filters_first": "يرجى اختيار الشركة والمصنع والصنف أولاً"
+    "purchase": "Purchase",
+  "manufacturing": "Manufacturing",
+  "transfer_in": "Transfer In",
+  "transfer_out": "Transfer Out",
+  "adjustment": "Adjustment",
+  "unknown": "Unknown"
  
 
 

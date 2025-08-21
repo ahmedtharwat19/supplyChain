@@ -755,8 +755,14 @@
   "no_data_to_export": "لا توجد بيانات للتصدير",
   "stock_movements_report": "تقرير حركات المخزون",
   "generated_on": "تم إنشاؤه في",
-  "date_range": "نطاق التاريخ"
+  "date_range": "نطاق التاريخ",
   
+    "purchase": "شراء",
+  "manufacturing": "تصنيع",
+  "transfer_in": "تحويل داخلي",
+  "transfer_out": "تحويل خارجي",
+  "adjustment": "تعديل",
+  "unknown": "غير معروف"
 
 
 
