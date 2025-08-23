@@ -666,17 +666,82 @@
   "select_filters_first": "Please select the company, factory, and product first",
 
     "purchase": "Purchase",
-  "manufacturing": "Manufacturing",
+
   "transfer_in": "Transfer In",
   "transfer_out": "Transfer Out",
   "adjustment": "Adjustment",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "no_data" : "No data available",
+    "product": "Item (raw\\packaging)",
+  "current_balance": "Current Balance",
+  "balance": "Balance",
+  "in": "In",
+  "out": "Out",
+    "newest_first": "Newest First",
+  "oldest_first": "Oldest First",
+  "from": "From",
+  "to": "To",
  
 
 
+  "manufacturing": {
+    "add_finished_product": "Add Finished Product",
+    "product_name": "Product Name",
+    "enter_product_name": "Please enter the product name",
+    "quantity_produced": "Quantity Produced",
+    "enter_quantity": "Please enter the quantity",
+    "shelf_life": "Shelf Life (Days)",
+    "enter_shelf_life": "Please enter the shelf life",
+    "raw_materials": "Required Raw Materials",
+    "material_name": "Raw Material Name",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "add_raw_material": "Add Raw Material",
+    "save_product": "Save Finished Product",
+    "product_added_success": "Finished product added successfully",
+    "add_error": "Error in adding",
 
+    "composition": "Composition of {product}",
+    "batch_number": "Batch Number",
+    "manufacturing_date": "Manufacturing Date",
+    "expiry_date": "Expiry Date",
+    "status": "Status",
+    "required_materials": "Required Raw Materials",
+    "per_unit": "Per {quantity} Unit(s)",
 
+    "orders": "Manufacturing Orders",
+    "start_manufacturing": "Start Manufacturing",
+    "complete_manufacturing": "Complete Manufacturing",
+    "manufacturing_started": "Manufacturing started and raw materials deducted",
+    "manufacturing_completed": "Manufacturing completed and finished product added",
+
+    "status_pending": "Pending",
+    "status_inProgress": "In Progress",
+    "status_completed": "Completed",
+    "status_cancelled": "Cancelled",
+
+    "alerts": {
+      "expiry_alert": "Expiry Alert",
+      "expiry_message": "The product {product} (Batch No: {batch}) will expire on {date}",
+      "low_stock": "Low Stock Alert",
+      "low_stock_message": "Raw material {material} has reached the minimum stock level"
+    },
+
+    "reports": {
+      "production": "Production Reports",
+      "materials_consumed": "Materials Consumed",
+      "products_produced": "Products Produced"
+    },
+
+    "quality": {
+      "quality_check": "Quality Check",
+      "test_results": "Test Results",
+      "pass": "Pass",
+      "fail": "Fail"
+    }
+  }
 }
+
 
 
 

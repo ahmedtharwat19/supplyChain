@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:puresip_purchasing/models/purchase_order.dart';
 import 'package:puresip_purchasing/pages/companies/company_added_page.dart';
 import 'package:puresip_purchasing/pages/inventory/inventory_query_page.dart';
+import 'package:puresip_purchasing/pages/manufacturing/manufacturing_orders_screen.dart';
 import 'package:puresip_purchasing/pages/stock_movements/stock_movements_page.dart';
 import 'package:puresip_purchasing/pages/items/add_item_page.dart';
 import 'package:puresip_purchasing/pages/items/edit_item_page.dart';
@@ -16,7 +17,6 @@ import 'package:puresip_purchasing/services/order_service.dart';
 import 'package:puresip_purchasing/services/license_service.dart';
 import 'package:puresip_purchasing/widgets/auth/admin_license_management.dart';
 import 'package:puresip_purchasing/widgets/auth/user_license_request.dart';
-
 
 // الصفحات
 import 'pages/dashboard/splash_screen.dart';
@@ -102,7 +102,14 @@ final GoRouter appRouter = GoRouter(
         name: 'stock_movements',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: const StockMovementsTable(),
+          child: const StockMovementsPage(),
+
+          //    title: 'stock_movements'.tr(),
+          //     body: const StockMovementsPage(
+          //   userId: FirebaseAuth.instance.currentUser?.uid ?? '',
+          //  movements: [],
+          //      ),
+          //    ),
         ),
       ),
       GoRoute(
@@ -111,6 +118,14 @@ final GoRouter appRouter = GoRouter(
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
           child: const InventoryQueryPage(),
+        ),
+      ),
+            GoRoute(
+        path: '/manufacturing_orders',
+        name: 'manufacturing_orders',
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: const ManufacturingOrdersScreen(),
         ),
       ),
       GoRoute(

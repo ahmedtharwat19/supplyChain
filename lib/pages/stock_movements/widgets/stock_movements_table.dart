@@ -55,7 +55,7 @@ class _StockMovementsTableState extends State<StockMovementsTable> {
                   scrollDirection: Axis.horizontal,
                   child: SingleChildScrollView(
                     child: DataTable(
-                      headingRowColor: MaterialStateProperty.all(Colors.grey[200]),
+                      headingRowColor: WidgetStateProperty.all(Colors.grey[200]),
                       border: TableBorder.all(color: Colors.grey),
                       columns: const [
                         DataColumn(label: Text("التاريخ")),
@@ -154,7 +154,7 @@ class _StockMovementsTableState extends State<StockMovementsTable> {
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        value: value,
+        initialValue: value,
         onChanged: onChanged,
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))

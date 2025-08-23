@@ -1,72 +1,4 @@
-/* import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// خدمة التعامل مع Firestore
-/// مسؤولة فقط عن العمليات العامة (CRUD)
-class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  /// إضافة وثيقة جديدة
-  Future<String> addDocument({
-    required String collectionPath,
-    required Map<String, dynamic> data,
-    String? docId,
-  }) async {
-    if (docId != null) {
-      await _db.collection(collectionPath).doc(docId).set(data);
-      return docId;
-    } else {
-      final docRef = await _db.collection(collectionPath).add(data);
-      return docRef.id;
-    }
-  }
-
-  /// جلب وثيقة واحدة
-  Future<DocumentSnapshot<Map<String, dynamic>>> getDocument({
-    required String collectionPath,
-    required String docId,
-  }) async {
-    return await _db.collection(collectionPath).doc(docId).get();
-  }
-
-  /// جلب كل الوثائق من مجموعة
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getCollection({
-    required String collectionPath,
-  }) async {
-    final snapshot = await _db.collection(collectionPath).get();
-    return snapshot.docs;
-  }
-
-  /// تحديث وثيقة
-  Future<void> updateDocument({
-    required String collectionPath,
-    required String docId,
-    required Map<String, dynamic> data,
-  }) async {
-    await _db.collection(collectionPath).doc(docId).update(data);
-  }
-
-  /// حذف وثيقة
-  Future<void> deleteDocument({
-    required String collectionPath,
-    required String docId,
-  }) async {
-    await _db.collection(collectionPath).doc(docId).delete();
-  }
-
-  /// Stream لمجموعة
-  Stream<QuerySnapshot<Map<String, dynamic>>> streamCollection({
-    required String collectionPath,
-    Query Function(Query query)? queryBuilder,
-  }) {
-    Query query = _db.collection(collectionPath);
-    if (queryBuilder != null) {
-      query = queryBuilder(query);
-    }
-    return query.snapshots() as Stream<QuerySnapshot<Map<String, dynamic>>>;
-  }
-}
- */
-/* //
+/* /* //
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/company.dart';
@@ -311,13 +243,15 @@ Future<List<QueryDocumentSnapshot>> getDocumentsWithWhereInChunked({
 }
  */
 
+
+/* 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import '../models/company.dart';
 import '../models/factory.dart';
 import '../models/finished_product.dart';
 import '../models/item.dart';
+import '../models/manufacturing_order.dart';
 import '../models/purchase_order.dart';
 import '../models/stock_movement.dart';
 import '../models/supplier.dart';
@@ -520,7 +454,7 @@ class FirestoreService {
         .orderBy('start_date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => ManufacturingOrder.fromMap(doc.data()))
+            .map((doc) => ManufacturingOrder.fromMap(doc.data(), doc.id))
             .toList());
   }
 
@@ -663,7 +597,7 @@ class FirestoreService {
     }
   }
 
-/*   Future<void> processStockDelivery({
+   Future<void> processStockDelivery({
   required String companyId,
   required String factoryId,
   required String orderId,
@@ -762,4 +696,72 @@ class FirestoreService {
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
   }
-}
+
+  Future<List<Map<String, dynamic>>> getCompanies(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final snapshot = await _firestore.collection('companies')
+        .where(FieldPath.documentId, whereIn: ids)
+        .get();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'nameAr': data['nameAr'] ?? doc.id,
+        'nameEn': data['nameEn'] ?? doc.id,
+      };
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getFactories(String companyId) async {
+    final snapshot = await _firestore.collection('factories')
+        .where('companyIds', arrayContains: companyId)
+        .get();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'nameAr': data['nameAr'] ?? doc.id,
+        'nameEn': data['nameEn'] ?? doc.id,
+      };
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getProducts() async {
+    final snapshot = await _firestore.collection('items').get();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'nameAr': data['nameAr'] ?? doc.id,
+        'nameEn': data['nameEn'] ?? doc.id,
+      };
+    }).toList();
+  }
+
+  Stream<List<StockMovement>> getStockMovementsStream({
+    required String companyId,
+    required String factoryId,
+    String? productId,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool desc = true,
+  }) {
+    Query query = _firestore.collection('companies')
+        .doc(companyId)
+        .collection('stock_movements')
+        .where('factoryId', isEqualTo: factoryId);
+
+    if (productId != null) query = query.where('productId', isEqualTo: productId);
+    if (startDate != null) query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    if (endDate != null) {
+      final endOfDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+      query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay));
+    }
+
+    query = query.orderBy('date', descending: desc);
+
+    return query.snapshots().map((snap) =>
+        snap.docs.map((doc) => StockMovement.fromFirestore(doc)).toList());
+  }
+
+} */

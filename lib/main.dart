@@ -1,13 +1,180 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart'; //show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'firebase_options.dart';
 import 'router.dart';
 import 'services/license_service.dart';
 import 'notifications/license_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:provider/provider.dart';
+
+// دالة خلفية لمعالجة رسائل FCM
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LicenseNotifications.showFcmNotification(message);
+}
+
+Future<void> _initializeFirebase() async {
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
+      // تهيئة FCM للمعالجة الخلفية
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // تهيئة خدمات التراخيص والإشعارات
+      final licenseService = LicenseService();
+      await licenseService.initialize();
+      await LicenseNotifications.initialize();
+
+      debugPrint('Firebase initialization completed');
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+    rethrow;
+  }
+}
+
+Future<void> _requestPermissions() async {
+  if (!kIsWeb) {
+    try {
+      final status = await Permission.notification.status;
+      if (!status.isGranted) {
+        await Permission.notification.request();
+      }
+
+      // طلب أذونات إضافية للأندرويد
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await Permission.storage.request();
+        await Permission.manageExternalStorage.request();
+      }
+    } catch (e) {
+      debugPrint('Permission request error: $e');
+    }
+  }
+}
+
+Future<void> _loadAppResources() async {
+  try {
+    await Future.delayed(const Duration(milliseconds: 200));
+    debugPrint('App resources loaded successfully');
+  } catch (e) {
+    debugPrint('Resource loading error: $e');
+  }
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await EasyLocalization.ensureInitialized(); // يجب أن يتم أولًا
+
+  try {
+    // تهيئة Firebase أولًا لأنها قد تستخدم في ما يلي
+    await _initializeFirebase();
+
+    // ثم طلب الأذونات
+    await _requestPermissions();
+
+    // ثم تحميل الموارد الأخرى
+    await _loadAppResources();
+  } catch (e) {
+    debugPrint('Initialization failed: $e');
+  }
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      path: 'assets/lang',
+      fallbackLocale: const Locale('ar'),
+      child: MultiProvider(
+        providers: [
+          Provider<ManufacturingService>(
+            create: (_) => ManufacturingService(),
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // اختبار الترجمة هنا للتأكد من عملها
+    //debugPrint('Translation test - manufacturing.shelf_life: ${'manufacturing.shelf_life'.tr()}');
+    
+    
+    return MaterialApp.router(
+      key: ValueKey(context.locale.languageCode),
+      title: 'PureSip',
+      debugShowCheckedModeBanner: false,
+      theme: _buildAppTheme(),
+      darkTheme: _buildDarkTheme(),
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
+      routerConfig: appRouter,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: child!,
+        );
+      },
+    );
+  }
+
+  ThemeData _buildAppTheme() {
+    return ThemeData(
+      primarySwatch: Colors.green,
+      fontFamily: 'Cairo-Regular',
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+        elevation: 2,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData.dark().copyWith(
+      primaryColor: Colors.green[800],
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+        elevation: 2,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+/* import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart'; //show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
+import 'firebase_options.dart';
+import 'router.dart';
+import 'services/license_service.dart';
+import 'notifications/license_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:provider/provider.dart';
 
 /* Future<void> _initializeFirebase() async {
   try {
@@ -78,7 +245,6 @@ Future<void> _requestPermissions() async {
   }
 }
 
-
 Future<void> _loadAppResources() async {
   try {
     // تحميل الخطوط والموارد الأخرى
@@ -118,7 +284,15 @@ Future<void> main() async {
       supportedLocales: const [Locale('en'), Locale('ar')],
       path: 'assets/lang',
       fallbackLocale: const Locale('ar'),
-      child: const MyApp(),
+      child: MultiProvider(
+        providers: [
+          Provider<ManufacturingService>(
+            create: (_) => ManufacturingService(),
+          ),
+          // مزودات أخرى
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -363,4 +537,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
- */
+ */ */

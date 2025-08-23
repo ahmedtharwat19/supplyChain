@@ -1905,7 +1905,6 @@ class LicenseException implements Exception {
  */
 
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -2069,50 +2068,6 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     });
   }
 
-/*   Future<void> _submitLicenseRequest() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('not_authenticated'.tr())),
-      );
-      return;
-    }
-
-    if (_selectedDevices < _currentDevicesCount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('reduce_devices_warning'.tr())),
-      );
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
-    try {
-      await _licenseService.requestLicense(
-        userId: user.uid,
-        durationMonths: _selectedDuration,
-        allowedDevices: _selectedDevices,
-        currentDeviceId: _currentDeviceId,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('request_submitted'.tr())),
-      );
-
-      // فعل هذا فقط بعد نجاح الطلب
-      setState(() {
-        _hasSubmittedRequest = true;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('request_failed'.tr(args: [e.toString()]))),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
-  } */
 
   Future<void> _loadDeviceData() async {
     await _loadCurrentDeviceCount();
@@ -2185,102 +2140,10 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
   }
 }
 
- /*  Future<void> _loadCurrentDeviceId() async {
-    try {
-      String deviceId;
-      if (Platform.isAndroid) {
-        final androidInfo = await _deviceInfo.androidInfo;
-        deviceId = 'android_${androidInfo.id}';
-      } else if (Platform.isIOS) {
-        final iosInfo = await _deviceInfo.iosInfo;
-        deviceId = 'ios_${iosInfo.identifierForVendor ?? _uuid.v4()}';
-      } else {
-        // للويب نستخدم localStorage كمصدر ثابت
-        final storage = const FlutterSecureStorage();
-        deviceId = await storage.read(key: 'deviceId') ?? 'web_${_uuid.v4()}';
-        debugPrint('_currentDeviceId: $_currentDeviceId');
-
-        await storage.write(key: 'deviceId', value: deviceId);
-      }
-
-      if (mounted) {
-        setState(() => _currentDeviceId = deviceId);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _currentDeviceId = 'web_${_uuid.v4()}');
-      }
-    }
-  }
- */
   @override
   Widget build(BuildContext context) {
     // تحقق من حالة الترخيص عند بناء الصفحة
-/*   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    final licenseStatus = await _licenseService.checkLicenseStatus();
-    if (licenseStatus.isValid && mounted) {
-      if (!context.mounted)return;
-      context.go('/dashboard');
-    }
-  }); */
-/*     if (_licenseActivated) {
-      debugPrint(_licenseActivated.toString());
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, size: 80, color: Colors.green),
-                const SizedBox(height: 20),
-                Text(
-                  'license_approved'.tr(), // "تمت الموافقة على الترخيص"
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.dashboard),
-                  label: Text('go_to_dashboard'.tr()), // "اذهب إلى لوحة التحكم"
-                  onPressed: () => context.go('/dashboard'),
-                )
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (_licenseActivated) {
-      debugPrint(_licenseActivated.toString());
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, size: 80, color: Colors.green),
-                const SizedBox(height: 20),
-                Text(
-                  'license_approved'.tr(), // "تمت الموافقة على الترخيص"
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.dashboard),
-                  label: Text('go_to_dashboard'.tr()), // "اذهب إلى لوحة التحكم"
-                  onPressed: () => context.go('/dashboard'),
-                )
-              ],
-            ),
-          ),
-        ),
-      );
-    }
- */
-    return Scaffold(
+  return Scaffold(
       appBar: AppBar(
         title: Text('license_request.title'.tr()),
         centerTitle: true,
@@ -2450,34 +2313,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     );
   }
 
-/*   Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        onPressed: _isSubmitting ? null : _submitRequest,
-        child: _isSubmitting
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                'submit_request'.tr(),
-                style: const TextStyle(fontSize: 16),
-              ),
-      ),
-    );
-  } */
-  Widget _buildSubmitButton() {
+Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -2573,80 +2409,6 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     }
   }
 
-/*   Future<void> _submitRequest() async {
-    if (!mounted) return;
-    setState(() => _isSubmitting = true);
-
-    try {
-      final user = _auth.currentUser;
-      if (user == null || user.email == null) {
-        throw LicenseException('user_not_logged_in'.tr());
-      }
-
-      // التحقق من وجود طلب معلق
-      final requestQuery = await _firestore
-          .collection('license_requests')
-          .where('userId', isEqualTo: user.uid)
-          .where('status', isEqualTo: 'pending')
-          .limit(1)
-          .get();
-
-      if (requestQuery.docs.isNotEmpty) {
-        throw LicenseException('existing_request_pending'.tr());
-      }
-
-      // التحقق من وجود ترخيص نشط
-      final licenseQuery = await _firestore
-          .collection('licenses')
-          .where('userId', isEqualTo: user.uid)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
-
-      if (licenseQuery.docs.isNotEmpty) {
-        final expiryDate =
-            licenseQuery.docs.first.get('expiryDate') as Timestamp?;
-        if (expiryDate?.toDate().isAfter(DateTime.now()) ?? false) {
-          throw LicenseException('active_license_exists'.tr());
-        }
-        // إذا كان الترخيص منتهيًا، نستمر في إنشاء الطلب الجديد
-      }
-
-      // إنشاء طلب جديد
-      final requestId =
-          _licenseService.generateStandardizedId(isLicense: false);
-      final batch = _firestore.batch();
-
-      final requestRef =
-          _firestore.collection('license_requests').doc(requestId);
-      batch.set(requestRef, {
-        'id': requestId,
-        'userId': user.uid,
-        'userEmail': user.email,
-        'durationMonths': _selectedDuration,
-        'maxDevices': _selectedDevices,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      await _notifyAdmins(user.email!, requestId, batch);
-      await batch.commit();
-
-      if (!mounted) return;
-
-      _showSuccessMessage();
-      await _loadCurrentDeviceCount();
-
-      // لا نوجه إلى dashboard هنا، بل ننتظر الموافقة من الأدمن
-      // يمكن إضافة listener لتغييرات حالة الطلب إذا لزم الأمر
-    } catch (e) {
-      _handleError(e is LicenseException ? e.message : e.toString());
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
- */
   void _handleError(String message) {
     if (!mounted) return;
 
@@ -2665,36 +2427,7 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
       );
   }
 
-  /*  Future<void> _notifyAdmins(
-      String userEmail, String requestId, WriteBatch batch) async {
-    final admins = await _firestore
-        .collection('users')
-        .where('isAdmin', isEqualTo: true)
-        .get();
-
-    final notificationId = _uuid.v4();
-    final now = FieldValue.serverTimestamp();
-
-    for (final admin in admins.docs) {
-      final notificationRef = _firestore
-          .collection('users')
-          .doc(admin.id)
-          .collection('notifications')
-          .doc(notificationId);
-
-      batch.set(notificationRef, {
-        'id': notificationId,
-        'title': 'new_license_request'.tr(),
-        'body': 'new_request_from'.tr(args: [userEmail]),
-        'requestId': requestId,
-        'isRead': false,
-        'createdAt': now,
-        'type': 'license_request',
-      });
-    }
-  }
- */
-  void _showSuccessMessage() {
+   void _showSuccessMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('request_submitted_successfully'.tr()),
@@ -2708,14 +2441,4 @@ class _UserLicenseRequestPageState extends State<UserLicenseRequestPage> {
     );
   }
 
-/*   void _showError(String error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('submit_error'.tr(args: [error])),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 5),
-      ),
-    );
-  } */
 }

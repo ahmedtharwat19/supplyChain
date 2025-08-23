@@ -1,4 +1,5 @@
 // lib/utils/movement_utils.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -48,6 +49,7 @@ class MovementUtils {
     return DateFormat('yyyy/MM/dd').format(date);
   }
 
+
   static String getMovementTypeDisplay(String type) {
     switch (type) {
       case 'purchase':
@@ -64,23 +66,61 @@ class MovementUtils {
         return 'unknown'.tr();
     }
   }
-    static Future<List<Map<String, dynamic>>> fetchMovements({
+
+ static Future<List<Map<String, dynamic>>> fetchMovements({
     Map<String, dynamic>? filters,
   }) async {
-    //  اربط هنا الـ API أو DB
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+          .collection('stock_movements')
+          .withConverter<Map<String, dynamic>>(
+            fromFirestore: (s, _) => s.data() ?? {},
+            toFirestore: (m, _) => m,
+          );
 
-    return [
-      {
-        "date": DateTime.now().toString(),
-        "item": "صنف تجريبي",
-        "movementType": "إضافة",
-        "quantity": 10,
-        "user": "Admin",
-      },
-    ];
+      // تطبيق الفلاتر
+      if (filters != null) {
+        if (filters['companyId'] != null) {
+          query = query.where('companyId', isEqualTo: filters['companyId']);
+        }
+        if (filters['factoryId'] != null) {
+          query = query.where('factoryId', isEqualTo: filters['factoryId']);
+        }
+        if (filters['itemId'] != null) {
+          query = query.where('itemId', isEqualTo: filters['itemId']);
+        }
+        if (filters['fromDate'] != null && filters['toDate'] != null) {
+          query = query
+              .where('date', isGreaterThanOrEqualTo: filters['fromDate'])
+              .where('date', isLessThanOrEqualTo: filters['toDate']);
+        }
+        if (filters['movementType'] != null) {
+          query = query.where('type', isEqualTo: filters['movementType']);
+        }
+      }
+
+      final querySnapshot = await query.get();
+      final movements = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'date': data['date']?.toString(),
+          'company': data['nameAr'] ?? data['companyId'],
+          'factory': data['nameAr'] ?? data['factoryId'],
+          'item': data['nameAr'] ?? data['itemId'],
+          'quantity': data['quantity']?.toString(),
+          'movementType': getMovementTypeDisplay(data['type'] ?? ''),
+          'user': data['displayName'] ?? data['userId'],
+        };
+      }).toList();
+
+      return movements;
+    } catch (e) {
+      debugPrint('Error fetching movements: $e');
+      rethrow;
+    }
   }
-
+  
   static Future<void> exportExcel(List<Map<String, dynamic>> data) async {
     //  نفّذ تصدير Excel هنا
     debugPrint("Exporting Excel with ${data.length} records...");

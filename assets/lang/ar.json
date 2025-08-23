@@ -758,12 +758,74 @@
   "date_range": "نطاق التاريخ",
   
     "purchase": "شراء",
-  "manufacturing": "تصنيع",
   "transfer_in": "تحويل داخلي",
   "transfer_out": "تحويل خارجي",
   "adjustment": "تعديل",
-  "unknown": "غير معروف"
+  "unknown": "غير معروف",
+  "no_data": "لا توجد بيانات متاحه",
+    "product": "الصنف(خامه/مواد تعبئة وتغليف)",
+  "current_balance": "الرصيد الحالي",
+  "balance": "الرصيد",
+  "in": "وارد",
+  "out": "صادر",
 
 
 
+
+  "manufacturing": {
+    "add_finished_product": "إضافة منتج تام",
+    "product_name": "اسم المنتج",
+    "enter_product_name": "يرجى إدخال اسم المنتج",
+    "quantity_produced": "الكمية المنتجة",
+    "enter_quantity": "يرجى إدخال الكمية",
+    "shelf_life": "مدة الصلاحية (أيام)",
+    "enter_shelf_life": "يرجى إدخال مدة الصلاحية",
+    "raw_materials": "المواد الخام المطلوبة",
+    "material_name": "اسم المادة الخام",
+    "quantity": "الكمية",
+    "unit": "الوحدة",
+    "add_raw_material": "إضافة مادة خام",
+    "save_product": "حفظ المنتج التام",
+    "product_added_success": "تم إضافة المنتج التام بنجاح",
+    "add_error": "خطأ في الإضافة",
+    
+    "composition": "بيان تركيب {product}",
+    "batch_number": "رقم التشغيلة",
+    "manufacturing_date": "تاريخ التصنيع",
+    "expiry_date": "تاريخ الانتهاء",
+    "status": "الحالة",
+    "required_materials": "المواد الخام المطلوبة",
+    "per_unit": "لكل {quantity} وحدة",
+    
+    "orders": "أوامر التصنيع",
+    "start_manufacturing": "بدء التصنيع",
+    "complete_manufacturing": "إكمال التصنيع",
+    "manufacturing_started": "تم بدء التصنيع وخصم المواد الخام",
+    "manufacturing_completed": "تم الانتهاء من التصنيع وإضافة المنتج التام",
+    
+    "status_pending": "قيد الانتظار",
+    "status_inProgress": "قيد التصنيع",
+    "status_completed": "مكتمل",
+    "status_cancelled": "ملغى",
+    
+    "alerts": {
+      "expiry_alert": "تنبيه انتهاء الصلاحية",
+      "expiry_message": "المنتج {product} (رقم التشغيلة: {batch}) سينتهي صلاحيته في {date}",
+      "low_stock": "تنبيه مخزون منخفض",
+      "low_stock_message": "المادة الخام {material} وصلت إلى الحد الأدنى للمخزون"
+    },
+    
+    "reports": {
+      "production": "تقارير الإنتاج",
+      "materials_consumed": "المواد المستهلكة",
+      "products_produced": "المنتجات المنتجة"
+    },
+    
+    "quality": {
+      "quality_check": "فحص الجودة",
+      "test_results": "نتائج الاختبار",
+      "pass": "نجح",
+      "fail": "فشل"
+    }
+  }
 }

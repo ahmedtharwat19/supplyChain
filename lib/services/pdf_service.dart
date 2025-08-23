@@ -1,3 +1,38 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
+import 'package:universal_html/html.dart' as html;
+
+class PdfService {
+  Future<void> saveAndSharePdf(pw.Document pdf, String fileName) async {
+    final bytes = await pdf.save();
+
+    if (kIsWeb) {
+      final blob = html.Blob([bytes], 'application/pdf');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: url)
+        ..download = fileName
+        ..style.display = 'none';
+      html.document.body?.append(anchor);
+      anchor.click();
+      html.document.body?.children.remove(anchor);
+      html.Url.revokeObjectUrl(url);
+    } else {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+      // ignore: deprecated_member_use
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'PDF File',
+        text: 'Please find the attached PDF file.',
+      );
+    }
+  }
+}
+
 /* import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';

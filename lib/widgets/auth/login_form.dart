@@ -56,6 +56,16 @@ class _LoginFormState extends State<LoginForm> {
             .collection('users')
             .doc(user.uid)
             .get();
+
+        if (!userDoc.exists) {
+          debugPrint(
+              'User not found in Firestore after Google sign-in. Redirecting to signup...');
+          if (mounted) {
+             _showErrorSnackBar('user_not_found_in_db'.tr());
+            context.go('/signup'); // أو '/register'
+          }
+          return;
+        }
         final userData = userDoc.data();
         debugPrint('userData: $userData');
         debugPrint('userData: ${userData?['isActive']}');
@@ -90,7 +100,7 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
-/*   Future<void> _loginWithEmailPassword() async {
+  Future<void> _loginWithEmailPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       try {
@@ -110,17 +120,22 @@ class _LoginFormState extends State<LoginForm> {
           debugPrint('User document exists: ${userDoc.exists}');
 
           if (!userDoc.exists) {
-            if (mounted) _showErrorSnackBar('user_not_found_in_db'.tr());
+            if (mounted) {
+              _showErrorSnackBar('user_not_found_in_db'.tr());
+              context.go('/signup');
+            }
             return;
           }
 
           final userData = userDoc.data()!;
           debugPrint('User Data: $userData');
 
-          // التحقق الأساسي فقط من isActive (تعليق التحقق من الترخيص مؤقتاً)
           final isActive = userData['isActive'] as bool? ?? false;
           if (!isActive) {
-            if (mounted) _showErrorSnackBar('account_deactivated'.tr());
+            if (mounted) {
+              setState(() => _isLoading = false);
+              await _showInactiveAccountDialog(context);
+            }
             return;
           }
 
@@ -148,93 +163,31 @@ class _LoginFormState extends State<LoginForm> {
       }
     }
   }
- */
 
-Future<void> _loginWithEmailPassword() async {
-  if (_formKey.currentState?.validate() ?? false) {
-    setState(() => _isLoading = true);
-    try {
-      final credential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+  Future<void> _showInactiveAccountDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('account_inactive_title'.tr()),
+        content: Text('account_inactive_message'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('try_again'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('go_to_license'.tr()),
+          ),
+        ],
+      ),
+    );
 
-      final user = credential.user;
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        debugPrint('User document exists: ${userDoc.exists}');
-
-        if (!userDoc.exists) {
-          if (mounted) _showErrorSnackBar('user_not_found_in_db'.tr());
-          return;
-        }
-
-        final userData = userDoc.data()!;
-        debugPrint('User Data: $userData');
-
-        final isActive = userData['isActive'] as bool? ?? false;
-        if (!isActive) {
-          if (mounted) {
-            setState(() => _isLoading = false);
-            await _showInactiveAccountDialog(context);
-          }
-          return;
-        }
-
-        await UserLocalStorage.setUser(userData);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('login_success'.tr())),
-          );
-          debugPrint('Attempting to navigate to /dashboard');
-          context.go('/dashboard');
-        }
-      }
-    } catch (e) {
-      debugPrint('Login error: ${e.toString()}');
-      if (mounted) {
-        if (e is FirebaseAuthException) {
-          _showErrorSnackBar(_getAuthErrorMessage(e));
-        } else {
-          _showErrorSnackBar('login_error'.tr());
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (result == true && mounted) {
+      if (!context.mounted) return;
+      context.go('/license/request');
     }
   }
-}
-
-Future<void> _showInactiveAccountDialog(BuildContext context) async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('account_inactive_title'.tr()),
-      content: Text('account_inactive_message'.tr()),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text('try_again'.tr()),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text('go_to_license'.tr()),
-        ),
-      ],
-    ),
-  );
-
-  if (result == true && mounted) {
-    if (!context.mounted) return;
-    context.go('/license/request');
-  }
-}
 
 // دالة مساعدة لعرض رسائل الخطأ
   void _showErrorSnackBar(String message) {
@@ -245,6 +198,7 @@ Future<void> _showInactiveAccountDialog(BuildContext context) async {
       ),
     );
   }
+
 
 // دالة مساعدة لترجمة أخطاء Firebase
   String _getAuthErrorMessage(FirebaseAuthException e) {
@@ -397,377 +351,3 @@ Future<void> _showInactiveAccountDialog(BuildContext context) async {
     );
   }
 }
-
-
-
-
-/*   Future<void> _loginWithEmailPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-      try {
-        final credential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-
-        final user = credential.user;
-        if (user != null) {
-          // جلب بيانات المستخدم من Firestore
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-               debugPrint('userDoc: $userDoc');
-          final userData = userDoc.data();
-          debugPrint('userData: $userData');
-          if (userData != null) {
-            final isActive = userData['isActive'];
-
-            if (isActive == false) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('no_access_rights'.tr())),
-                );
-              }
-              return; // لا تسمح له بالاستمرار
-            }
-            await UserLocalStorage.setUser(userData);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('login_success'.tr())),
-              );
-              context.go('/dashboard');
-            }
-          }
-
-    /*           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('login_success'.tr())),
-            );
-            context.go('/dashboard');
-          } */
-        }
-      } on FirebaseAuthException catch (e) {
-        String message = 'login_error'.tr();
-        if (e.code == 'user-not-found') {
-          message = 'user_not_found'.tr();
-        } else if (e.code == 'wrong-password') {
-          message = 'wrong_password'.tr();
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  } */
-
-/*   Future<void> _loginWithEmailPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-          debugPrint('النموذج صالح - بدء تسجيل الدخول'); // ✅
-
-      setState(() => _isLoading = true);
-      try {
-        final credential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-      debugPrint('تم تسجيل الدخول بنجاح إلى Firebase'); // ✅
-
-        final user = credential.user;
-        if (user != null) {
-                  debugPrint('المستخدم موجود: ${user.uid}'); // ✅
-
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-                      debugPrint('تم جلب مستند المستخدم: ${userDoc.exists}'); // ✅
-
-     
-          if (!userDoc.exists) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('user_not_found_in_db'.tr())),
-              );
-            }
-            return;
-          }
-
-          final userData = userDoc.data();
-          debugPrint('User Data: $userData'); // تسجيل بيانات المستخدم للتحقق
-
-          final isActive = userData?['isActive'] ?? false;
-          final licenseExpiry = userData?['license_expiry']?.toDate();
-          debugPrint(
-              'isActive: $isActive, license_expiry: $licenseExpiry'); // تسجيل حالة الترخيص
-
-          // التحقق من الترخيص
-          if (!isActive ||
-              licenseExpiry == null ||
-              DateTime.now().isAfter(licenseExpiry)) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('no_valid_license'.tr())),
-              );
-            }
-            return;
-          }
-
-          await UserLocalStorage.setUser(userData!);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('login_success'.tr())),
-            );
-            context.go('/dashboard');
-          }
-        }
-      } on FirebaseAuthException catch (e) {
-        debugPrint('Login error: ${e.message}');
-        // معالجة الأخطاء...
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
- */
-
-/*   Future<void> _loginWithEmailPassword() async {
-  if (_formKey.currentState?.validate() ?? false) {
-    debugPrint('Form is valid - starting login process'); // ✅
-    
-    setState(() => _isLoading = true);
-    try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      debugPrint('Successfully logged in to Firebase'); // ✅
-
-      final user = credential.user;
-      if (user != null) {
-        debugPrint('User exists: ${user.uid}'); // ✅
-
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        debugPrint('Fetched user document: ${userDoc.exists}'); // ✅
-
-        if (!userDoc.exists) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('user_not_found_in_db'.tr())),
-            );
-          }
-          return;
-        }
-
-        final userData = userDoc.data();
-        debugPrint('User Data: $userData'); // Log user data for verification
-
-        final isActive = userData?['isActive'] ?? false;
-        final licenseExpiry = userData?['license_expiry']?.toDate();
-        debugPrint('isActive: $isActive, license_expiry: $licenseExpiry'); // Log license status
-
-        // License validation
-        if (!isActive || licenseExpiry == null || DateTime.now().isAfter(licenseExpiry)) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('no_valid_license'.tr())),
-            );
-          }
-          return;
-        }
-
-        await UserLocalStorage.setUser(userData!);
-        debugPrint('User data saved locally'); // ✅
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('login_success'.tr())),
-          );
-          context.go('/dashboard');
-          debugPrint('Navigated to /dashboard'); // ✅
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Login error: ${e.message}');
-      // Error handling...
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  } else {
-    debugPrint('Form is invalid'); // ✅
-  }
-}
- */
-
-  /*  Future<void> _loginWithEmailPassword() async {
-  if (_formKey.currentState?.validate() ?? false) {
-    setState(() => _isLoading = true);
-    try {
-      // 1. Authenticate with Firebase Auth
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      final user = credential.user;
-      if (user != null) {
-        // 2. Get user document from 'users' collection
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (!userDoc.exists) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('user_not_found_in_db'.tr())),
-            );
-          }
-          return;
-        }
-
-        final userData = userDoc.data();
-        debugPrint('User Data: $userData');
-
-        // 3. Get license data from separate collection
-        final licenseDoc = await FirebaseFirestore.instance
-            .collection('licenses')  // Or whatever your license collection is called
-            .doc(user.uid)          // Assuming license doc ID matches user ID
-            .get();
-
-        if (!licenseDoc.exists) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('no_license_found'.tr())),
-            );
-          }
-          return;
-        }
-
-        final licenseData = licenseDoc.data();
-        final isActive = licenseData?['isActive'] ?? false;
-        final licenseExpiry = licenseData?['expiry_date']?.toDate();  // Field name might differ
-
-        debugPrint('License Data - isActive: $isActive, expiry_date: $licenseExpiry');
-
-        // License validation
-        if (!isActive || licenseExpiry == null || DateTime.now().isAfter(licenseExpiry)) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('no_valid_license'.tr())),
-            );
-          }
-          return;
-        }
-
-        // Combine user data with license data if needed
-        final combinedData = {
-          ...?userData,
-          'license_status': isActive,
-          'license_expiry': licenseExpiry,
-        };
-
-        await UserLocalStorage.setUser(combinedData);
-        if (mounted) {
-          context.go('/dashboard');
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Login error: ${e.message}');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('login_error'.tr())),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-}
- */
-
-/*   Future<void> _loginWithEmailPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-      try {
-        // 1. المصادقة باستخدام البريد وكلمة المرور
-        final credential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-
-        final user = credential.user;
-        if (user != null) {
-          // 2. جلب بيانات المستخدم من Firestore
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-          if (!userDoc.exists) {
-            if (mounted) _showErrorSnackBar('user_not_found_in_db'.tr());
-            return;
-          }
-
-          final userData = userDoc.data()!;
-          debugPrint('User Data: $userData');
-
-          // 3. التحقق من أن الحساب مفعل
-          final isActive = userData['isActive'] as bool? ?? false;
-          if (!isActive) {
-            if (mounted) _showErrorSnackBar('account_deactivated'.tr());
-            return;
-          }
-
-          // 4. التحقق من تاريخ انتهاء الترخيص
-          final createdAt = userData['createdAt'] as Timestamp?;
-          final subscriptionDays =
-              userData['subscriptionDurationInDays'] as int? ?? 0;
-
-          if (createdAt == null || subscriptionDays <= 0) {
-            if (mounted) _showErrorSnackBar('invalid_subscription'.tr());
-            return;
-          }
-
-          final expiryDate =
-              createdAt.toDate().add(Duration(days: subscriptionDays));
-          if (DateTime.now().isAfter(expiryDate)) {
-            if (mounted) _showErrorSnackBar('subscription_expired'.tr());
-            return;
-          }
-
-          // 5. حفظ بيانات المستخدم والتوجيه للوحة التحكم
-          await UserLocalStorage.setUser({
-            ...userData,
-            'license_expiry': expiryDate,
-          });
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('login_success'.tr())),
-            );
-            context.go('/dashboard');
-          }
-        }
-      } on FirebaseAuthException catch (e) {
-        debugPrint('Login error: ${e.message}');
-        if (mounted) _showErrorSnackBar(_getAuthErrorMessage(e));
-      } catch (e) {
-        debugPrint('Error: $e');
-        if (mounted) _showErrorSnackBar('unknown_error'.tr());
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
- */
