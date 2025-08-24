@@ -245,7 +245,7 @@
   "supplier_deleted_successfully": "Supplier deleted successfully",
   "item_nameArabic": "Item Name (Arabic)", 
   "item_nameEnglish": "Item Name (English)",
-  "company_id": "🆔 Company ID",
+  "companyId": "🆔 Company ID",
   "back_to_home": "Back to Home",
   "totalStockMovements": "Stocks",
   "totalManufacturingOrders": "Manufacturing",
@@ -681,8 +681,11 @@
   "oldest_first": "Oldest First",
   "from": "From",
   "to": "To",
- 
 
+  "insufficient_stock": "Insufficient Stock",
+  "insufficient_stock_error": "Error: Insufficient stock to start manufacturing",
+  "manufacturing_deduction": "Manufacturing Deduction",
+ "all": "All",
 
   "manufacturing": {
     "add_finished_product": "Add Finished Product",
@@ -700,7 +703,11 @@
     "save_product": "Save Finished Product",
     "product_added_success": "Finished product added successfully",
     "add_error": "Error in adding",
-
+    "add_order": "Add Manufacturing Order",
+    "finished_products": "Finished Products",
+    "expired": "Expired",
+    "expiring_soon": "Expiring Soon",
+    "good": "Good",
     "composition": "Composition of {product}",
     "batch_number": "Batch Number",
     "manufacturing_date": "Manufacturing Date",

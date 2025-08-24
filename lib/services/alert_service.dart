@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 
@@ -31,12 +31,18 @@ class AlertService {
       }
     });
 
-    // مراقبة المخزون المنخفض
-    _manufacturingService.getLowStockMaterials().listen((materials) {
-      for (final material in materials) {
-        _showLowStockAlert(material);
-      }
-    });
+    // مراقبة المخزون المنخفض - مع معالجة الخطأ
+    try {
+      _manufacturingService.getLowStockMaterials().listen((materials) {
+        for (final material in materials) {
+          _showLowStockAlert(material);
+        }
+      }, onError: (error) {
+        debugPrint('Error monitoring low stock: $error');
+      });
+    } catch (e) {
+      debugPrint('Failed to start low stock monitoring: $e');
+    }
   }
 
   void _showExpiryAlert(ManufacturingOrder order) async {
@@ -85,7 +91,6 @@ class AlertService {
     );
   }
 
-  // إشعارات مخصصة
   Future<void> showCustomNotification(String title, String body) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
@@ -105,4 +110,5 @@ class AlertService {
       platformChannelSpecifics,
     );
   }
+  
 }

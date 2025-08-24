@@ -20,6 +20,7 @@ class ManufacturingOrder {
   final String productId;
   final String productName;
   final int quantity;
+  final String productUnit;
   final DateTime manufacturingDate;
   final DateTime expiryDate;
   final ManufacturingStatus status;
@@ -37,6 +38,7 @@ class ManufacturingOrder {
     required this.productId,
     required this.productName,
     required this.quantity,
+    required this.productUnit,
     required this.manufacturingDate,
     required this.expiryDate,
     required this.status,
@@ -49,13 +51,11 @@ class ManufacturingOrder {
     this.barcodeUrl,
   });
 
-  // إضافة دالة للتحقق من انتهاء الصلاحية
   bool get isExpiringSoon {
     final daysUntilExpiry = expiryDate.difference(DateTime.now()).inDays;
-    return daysUntilExpiry <= 7; // تنبيه قبل 7 أيام من الانتهاء
+    return daysUntilExpiry <= 7;
   }
 
-  // إضافة دالة للحصول على نص الحالة مترجم
   String get statusText {
     switch (status) {
       case ManufacturingStatus.pending:
@@ -76,57 +76,65 @@ class ManufacturingOrder {
       'productId': productId,
       'productName': productName,
       'quantity': quantity,
-      'manufacturingDate': manufacturingDate,
-      'expiryDate': expiryDate,
+      'productUnit': productUnit,
+      'manufacturingDate': Timestamp.fromDate(manufacturingDate),
+      'expiryDate': Timestamp.fromDate(expiryDate),
       'status': status.toString(),
       'isFinished': isFinished,
       'rawMaterials': rawMaterials.map((rm) => rm.toMap()).toList(),
-      'createdAt': createdAt,
-      'completedAt': completedAt,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
       'qualityStatus': qualityStatus.toString(),
       'qualityNotes': qualityNotes,
       'barcodeUrl': barcodeUrl,
     };
   }
 
-  static ManufacturingOrder fromMap(Map<String, dynamic> map) {
+  factory ManufacturingOrder.fromMap(Map<String, dynamic> map) {
     return ManufacturingOrder(
-      id: map['id'],
-      batchNumber: map['batchNumber'],
-      productId: map['productId'],
-      productName: map['productName'],
-      quantity: map['quantity'],
-      manufacturingDate: (map['manufacturingDate'] as Timestamp).toDate(),
-      expiryDate: (map['expiryDate'] as Timestamp).toDate(),
+      id: map['id'] ?? '',
+      batchNumber: map['batchNumber'] ?? '',
+      productId: map['productId'] ?? '',
+      productName: map['productName'] ?? '',
+      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      productUnit: map['productUnit'] ?? '',
+      manufacturingDate: (map['manufacturingDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      expiryDate: (map['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       status: _parseStatus(map['status']),
-      isFinished: map['isFinished'],
+      isFinished: map['isFinished'] ?? false,
       rawMaterials: List<RawMaterial>.from(
-          map['rawMaterials'].map((rm) => RawMaterial.fromMap(rm))),
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      completedAt: map['completedAt'] != null 
-          ? (map['completedAt'] as Timestamp).toDate() 
-          : null,
+          (map['rawMaterials'] as List<dynamic>?)?.map((rm) => RawMaterial.fromMap(rm)) ?? []),
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      completedAt: (map['completedAt'] as Timestamp?)?.toDate(),
       qualityStatus: _parseQualityStatus(map['qualityStatus']),
       qualityNotes: map['qualityNotes'],
       barcodeUrl: map['barcodeUrl'],
     );
   }
 
-  static ManufacturingStatus _parseStatus(String status) {
+  static ManufacturingStatus _parseStatus(String? status) {
     switch (status) {
-      case 'ManufacturingStatus.pending': return ManufacturingStatus.pending;
-      case 'ManufacturingStatus.inProgress': return ManufacturingStatus.inProgress;
-      case 'ManufacturingStatus.completed': return ManufacturingStatus.completed;
-      case 'ManufacturingStatus.cancelled': return ManufacturingStatus.cancelled;
-      default: return ManufacturingStatus.pending;
+      case 'ManufacturingStatus.pending':
+        return ManufacturingStatus.pending;
+      case 'ManufacturingStatus.inProgress':
+        return ManufacturingStatus.inProgress;
+      case 'ManufacturingStatus.completed':
+        return ManufacturingStatus.completed;
+      case 'ManufacturingStatus.cancelled':
+        return ManufacturingStatus.cancelled;
+      default:
+        return ManufacturingStatus.pending;
     }
   }
 
   static QualityStatus _parseQualityStatus(String? status) {
     switch (status) {
-      case 'QualityStatus.passed': return QualityStatus.passed;
-      case 'QualityStatus.failed': return QualityStatus.failed;
-      default: return QualityStatus.pending;
+      case 'QualityStatus.passed':
+        return QualityStatus.passed;
+      case 'QualityStatus.failed':
+        return QualityStatus.failed;
+      default:
+        return QualityStatus.pending;
     }
   }
 
@@ -136,6 +144,7 @@ class ManufacturingOrder {
     String? productId,
     String? productName,
     int? quantity,
+    String? productUnit,
     DateTime? manufacturingDate,
     DateTime? expiryDate,
     ManufacturingStatus? status,
@@ -153,6 +162,7 @@ class ManufacturingOrder {
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       quantity: quantity ?? this.quantity,
+      productUnit: productUnit ?? this.productUnit,
       manufacturingDate: manufacturingDate ?? this.manufacturingDate,
       expiryDate: expiryDate ?? this.expiryDate,
       status: status ?? this.status,
@@ -172,7 +182,7 @@ class RawMaterial {
   final String materialName;
   final double quantityRequired;
   final String unit;
-  final double minStockLevel; // الحد الأدنى للمخزون
+  final double minStockLevel;
 
   RawMaterial({
     required this.materialId,
@@ -192,13 +202,13 @@ class RawMaterial {
     };
   }
 
-  static RawMaterial fromMap(Map<String, dynamic> map) {
+  factory RawMaterial.fromMap(Map<String, dynamic> map) {
     return RawMaterial(
-      materialId: map['materialId'],
-      materialName: map['materialName'],
-      quantityRequired: map['quantityRequired'].toDouble(),
-      unit: map['unit'],
-      minStockLevel: map['minStockLevel']?.toDouble() ?? 0,
+      materialId: map['materialId'] ?? '',
+      materialName: map['materialName'] ?? '',
+      quantityRequired: (map['quantityRequired'] as num?)?.toDouble() ?? 0.0,
+      unit: map['unit'] ?? '',
+      minStockLevel: (map['minStockLevel'] as num?)?.toDouble() ?? 0,
     );
   }
 }

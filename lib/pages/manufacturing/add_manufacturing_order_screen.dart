@@ -4,15 +4,14 @@ import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-class AddFinishedProductScreen extends StatefulWidget {
-  const AddFinishedProductScreen({super.key});
+class AddManufacturingOrderScreen extends StatefulWidget {
+  const AddManufacturingOrderScreen({super.key});
 
   @override
-  State<AddFinishedProductScreen> createState() =>
-      _AddFinishedProductScreenState();
+  State<AddManufacturingOrderScreen> createState() => _AddManufacturingOrderScreenState();
 }
 
-class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
+class _AddManufacturingOrderScreenState extends State<AddManufacturingOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
@@ -20,8 +19,7 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
 
   final List<RawMaterial> _rawMaterials = [];
   final TextEditingController _materialNameController = TextEditingController();
-  final TextEditingController _materialQuantityController =
-      TextEditingController();
+  final TextEditingController _materialQuantityController = TextEditingController();
   final TextEditingController _materialUnitController = TextEditingController();
   final TextEditingController _minStockController = TextEditingController();
   final TextEditingController _batchNumberController = TextEditingController();
@@ -31,7 +29,7 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('manufacturing.add_finished_product'.tr()),
+        title: Text('manufacturing.add_manufacturing_order'.tr()),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -119,13 +117,11 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
               const SizedBox(height: 24),
               Text(
                 'manufacturing.raw_materials'.tr(),
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               ..._rawMaterials.map((material) => ListTile(
                     title: Text(material.materialName),
-                    subtitle:
-                        Text('${material.quantityRequired} ${material.unit}'),
+                    subtitle: Text('${material.quantityRequired} ${material.unit}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () => _removeMaterial(material),
@@ -184,7 +180,7 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text('manufacturing.save_product'.tr()),
+                child: Text('manufacturing.save_order'.tr()),
               ),
             ],
           ),
@@ -222,11 +218,9 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
   void _submitForm() async {
     if (_formKey.currentState!.validate() && _rawMaterials.isNotEmpty) {
       try {
-        final manufacturingService =
-            Provider.of<ManufacturingService>(context, listen: false);
+        final manufacturingService = Provider.of<ManufacturingService>(context, listen: false);
 
-        final expiryDate = DateTime.now()
-            .add(Duration(days: int.parse(_shelfLifeController.text)));
+        final expiryDate = DateTime.now().add(Duration(days: int.parse(_shelfLifeController.text)));
 
         final order = ManufacturingOrder(
           id: '',
@@ -248,7 +242,7 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
         
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('manufacturing.product_added_success'.tr())));
+            content: Text('manufacturing.order_added_success'.tr())));
 
         // تنظيف الحقول
         _nameController.clear();

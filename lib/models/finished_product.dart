@@ -11,8 +11,8 @@ class FinishedProduct {
   static const fieldFactoryId = 'factoryId';
   static const fieldUserId = 'userId';
   static const fieldCreatedAt = 'createdAt';
-  static const fieldBatchNumber = 'batchNumber'; // ➤ إضافة حقل رقم التشغيلة
-  static const fieldExpiryDate = 'expiryDate'; // ➤ إضافة حقل تاريخ الانتهاء
+  static const fieldBatchNumber = 'batchNumber';
+  static const fieldExpiryDate = 'expiryDate';
 
   // ➤ الخصائص
   final String? id;
@@ -25,8 +25,8 @@ class FinishedProduct {
   final String factoryId;
   final String userId;
   final Timestamp createdAt;
-  final String batchNumber; // ➤ إضافة خاصية رقم التشغيلة
-  final Timestamp expiryDate; // ➤ إضافة خاصية تاريخ الانتهاء
+  final String batchNumber;
+  final Timestamp expiryDate;
 
   FinishedProduct({
     this.id,
@@ -39,8 +39,8 @@ class FinishedProduct {
     required this.factoryId,
     required this.userId,
     required this.createdAt,
-    required this.batchNumber, // ➤ إضافة معامل مطلوب
-    required this.expiryDate, // ➤ إضافة معامل مطلوب
+    required this.batchNumber,
+    required this.expiryDate,
   });
 
   // ➤ من Firestore
@@ -56,8 +56,8 @@ class FinishedProduct {
       factoryId: data[fieldFactoryId] ?? '',
       userId: data[fieldUserId] ?? '',
       createdAt: data[fieldCreatedAt] ?? Timestamp.now(),
-      batchNumber: data[fieldBatchNumber] ?? '', // ➤ معالجة حقل رقم التشغيلة
-      expiryDate: data[fieldExpiryDate] ?? Timestamp.now(), // ➤ معالجة حقل تاريخ الانتهاء
+      batchNumber: data[fieldBatchNumber] ?? '',
+      expiryDate: data[fieldExpiryDate] ?? Timestamp.now(),
     );
   }
 
@@ -73,12 +73,12 @@ class FinishedProduct {
       fieldFactoryId: factoryId,
       fieldUserId: userId,
       fieldCreatedAt: createdAt,
-      fieldBatchNumber: batchNumber, // ➤ إضافة حقل رقم التشغيلة
-      fieldExpiryDate: expiryDate, // ➤ إضافة حقل تاريخ الانتهاء
+      fieldBatchNumber: batchNumber,
+      fieldExpiryDate: expiryDate,
     };
   }
 
-  // ➤ دالة نسخ مع إمكانية تحديث الحقول
+  // ➤ دالة نسخ
   FinishedProduct copyWith({
     String? id,
     String? name,
@@ -118,6 +118,6 @@ class FinishedProduct {
   bool get isExpired => DateTime.now().isAfter(expiryDateTime);
   bool get isExpiringSoon {
     final daysUntilExpiry = expiryDateTime.difference(DateTime.now()).inDays;
-    return daysUntilExpiry <= 7; // ➤ تنبيه قبل 7 أيام من الانتهاء
+    return daysUntilExpiry <= 7;
   }
 }

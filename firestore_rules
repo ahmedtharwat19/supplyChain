@@ -126,20 +126,20 @@ service cloud.firestore {
 
     // ======= المنتجات التامة =======
     match /finished_products/{prodId} {
-      allow create: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.company_id);
-      allow read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(resource.data.company_id);
+      allow create: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.companyId);
+      allow read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(resource.data.companyId);
     }
 
 
     // ======= أوامر التصنيع =======
     match /manufacturing_orders/{orderId} {
-      allow create, read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.company_id);
+      allow create, read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.companyId);
     }
 
     // ======= الحركات المخزنية =======
     match /stock_movements/{moveId} {
-      allow create: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.company_id);
-      allow read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(resource.data.company_id);
+      allow create: if isSignedIn() && isUserActive() && userHasCompany(request.resource.data.companyId);
+      allow read, update, delete: if isSignedIn() && isUserActive() && userHasCompany(resource.data.companyId);
     }
 
 

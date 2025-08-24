@@ -45,7 +45,7 @@ class CompanyAddedPage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '🆔 ${tr('company_id')}: $docId',
+                '🆔 ${tr('companyId')}: $docId',
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 40),

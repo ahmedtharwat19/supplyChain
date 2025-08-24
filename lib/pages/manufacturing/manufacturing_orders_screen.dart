@@ -5,8 +5,8 @@ import 'package:puresip_purchasing/models/finished_product.dart';
 import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:puresip_purchasing/pages/finished_products/add_finished_product_screen.dart';
 import 'package:puresip_purchasing/pages/finished_products/product_composition_screen.dart';
+import 'package:puresip_purchasing/pages/manufacturing/add_manufacturing_order_screen.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
 
@@ -35,7 +35,7 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const AddFinishedProductScreen(),
+                builder: (context) => const AddManufacturingOrderScreen(),
               ),
             );
           },
@@ -80,7 +80,7 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('${'manufacturing.batch_number'.tr()}: ${order.batchNumber}'),
-            Text('${'manufacturing.quantity'.tr()}: ${order.quantity}'),
+            Text('${'manufacturing.quantity'.tr()}: ${order.quantity} ${order.productUnit}'),
             Text('${'manufacturing.status'.tr()}: ${order.statusText}'),
             Text(
                 '${'manufacturing.expiry_date'.tr()}: ${_formatDate(order.expiryDate)}'),
@@ -93,11 +93,13 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
               IconButton(
                 icon: const Icon(Icons.play_arrow, color: Colors.green),
                 onPressed: () => _startManufacturing(order, service),
+                tooltip: 'manufacturing.start_manufacturing'.tr(),
               ),
             if (order.status == ManufacturingStatus.inProgress)
               IconButton(
                 icon: const Icon(Icons.check, color: Colors.blue),
                 onPressed: () => _completeManufacturing(order, service),
+                tooltip: 'manufacturing.complete_manufacturing'.tr(),
               ),
             IconButton(
               icon: const Icon(Icons.visibility),
@@ -110,6 +112,7 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
                   ),
                 );
               },
+              tooltip: 'manufacturing.view_composition'.tr(),
             ),
           ],
         ),
@@ -118,16 +121,13 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.year}/${date.month}/${date.day}';
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 
   void _startManufacturing(
       ManufacturingOrder order, ManufacturingService service) async {
     try {
-      // خصم المواد الخام
-      await service.deductRawMaterials(order.rawMaterials, order.batchNumber);
-
-      // تحديث حالة الأمر
+      await service.deductRawMaterials(order.rawMaterials, order.quantity, order.batchNumber);
       await service.updateOrderStatus(order.id, ManufacturingStatus.inProgress);
 
       if (mounted) {
@@ -145,35 +145,28 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
   void _completeManufacturing(
       ManufacturingOrder order, ManufacturingService service) async {
     try {
-      // الحصول على المستخدم الحالي
       final user = _auth.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      // الحصول على معرف الشركة والمصنع
       final companyId = await _getUserCompanyId(user.uid);
       final factoryId = await _getUserFactoryId(user.uid);
 
-      // إنشاء كائن FinishedProduct
       final finishedProduct = FinishedProduct(
+        id: null,
         name: order.productName,
         quantity: order.quantity.toDouble(),
-        unit: 'وحدة',
+        unit: order.productUnit,
         manufacturingOrderId: order.id,
         date: Timestamp.now(),
         companyId: companyId,
-        factoryId: factoryId, // استخدام factoryId الذي تم الحصول عليه
+        factoryId: factoryId,
         userId: user.uid,
         createdAt: Timestamp.now(),
         batchNumber: order.batchNumber,
         expiryDate: Timestamp.fromDate(order.expiryDate),
       );
 
-      // إضافة إلى مجموعة finished_products
-      await _firestore
-          .collection('finished_products')
-          .add(finishedProduct.toMap());
-
-      // تحديث حالة الأمر
+      await service.addFinishedProductToInventory(finishedProduct);
       await service.updateOrderStatus(order.id, ManufacturingStatus.completed);
 
       if (mounted) {
@@ -188,7 +181,6 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
     }
   }
 
-  // دالة مساعدة للحصول على معرف الشركة
   Future<String> _getUserCompanyId(String userId) async {
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();
@@ -199,13 +191,12 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
           return companyIds.first.toString();
         }
       }
-      return 'default_company_id';
+      return 'default_companyId';
     } catch (e) {
-      return 'default_company_id';
+      return 'default_companyId';
     }
   }
 
-  // دالة مساعدة للحصول على معرف المصنع
   Future<String> _getUserFactoryId(String userId) async {
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();
@@ -216,9 +207,9 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
           return factoryIds.first.toString();
         }
       }
-      return 'default_factory_id';
+      return 'default_factoryId';
     } catch (e) {
-      return 'default_factory_id';
+      return 'default_factoryId';
     }
   }
 }

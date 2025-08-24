@@ -762,4 +762,93 @@ class FirestoreService {
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
   }
+
+  // دالة جديدة لمعالجة خصم التصنيع
+  Future<void> processManufacturingDeduction({
+    required String companyId,
+    required String factoryId,
+    required String batchNumber,
+    required String userId,
+    required List<Map<String, dynamic>> materials,
+  }) async {
+    final batch = _firestore.batch();
+    final stockMovementsRef = _firestore
+        .collection('companies/$companyId/stock_movements');
+    final inventoryRef = _firestore.collection('factories/$factoryId/inventory');
+
+    for (final material in materials) {
+      final productId = material['itemId']?.toString();
+      final quantity = _parseQuantity(material['quantity']);
+      final itemName = material['itemName']?.toString() ?? productId ?? '';
+
+      if (productId == null || productId.isEmpty || quantity <= 0) continue;
+
+      final newMovementRef = stockMovementsRef.doc();
+
+      batch.set(newMovementRef, {
+        'type': 'manufacturing_deduction',
+        'productId': productId,
+        'itemName': itemName,
+        'quantity': -quantity, // سالب للخصم
+        'date': FieldValue.serverTimestamp(),
+        'referenceId': batchNumber,
+        'userId': userId,
+        'factoryId': factoryId,
+        'batchNumber': batchNumber,
+      });
+
+      final stockDoc = inventoryRef.doc(productId);
+      batch.set(
+          stockDoc,
+          {
+            'quantity': FieldValue.increment(-quantity), // سالب للخصم
+            'lastUpdated': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+    }
+
+    await batch.commit();
+  }
+
+  // دالة جديدة لإضافة المنتج التام
+  Future<void> processManufacturingAddition({
+    required String companyId,
+    required String factoryId,
+    required FinishedProduct product,
+    required String userId,
+  }) async {
+    final batch = _firestore.batch();
+    final stockMovementsRef = _firestore
+        .collection('companies/$companyId/stock_movements');
+    final inventoryRef = _firestore.collection('factories/$factoryId/inventory');
+
+    // إضافة حركة المخزون للإضافة
+    final newMovementRef = stockMovementsRef.doc();
+    batch.set(newMovementRef, {
+      'type': 'manufacturing_addition',
+      'productId': product.id,
+      'itemName': product.name,
+      'quantity': product.quantity,
+      'date': FieldValue.serverTimestamp(),
+      'referenceId': product.manufacturingOrderId,
+      'userId': userId,
+      'factoryId': factoryId,
+      'batchNumber': product.batchNumber,
+    });
+
+    // تحديث المخزون
+    final stockDoc = inventoryRef.doc(product.id);
+    batch.set(
+        stockDoc,
+        {
+          'quantity': FieldValue.increment(product.quantity),
+          'lastUpdated': FieldValue.serverTimestamp(),
+          'name': product.name,
+          'unit': product.unit,
+        },
+        SetOptions(merge: true));
+
+    await batch.commit();
+  }
+  
 }

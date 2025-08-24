@@ -275,7 +275,7 @@
   "please_select_logo": "يرجى اختيار شعار",
   "company_already_exists": "الشركة موجودة بالفعل.",
   "supplier_already_exists": "المورد موجود بالفعل.",
-  "company_id": "🆔 معرف الشركة",
+  "companyId": "🆔 معرف الشركة",
   "back_to_home": "العودة إلى الرئيسية",
   "totalOrders": "الطلبات",
   "totalStockMovements": "المخزون",
@@ -352,7 +352,7 @@
   "please_select_logo_message": "يرجى اختيار شعار", 
   "company_already_exists_message": "الشركة موجودة بالفعل.",
   "supplier_already_exists_message": "المورد موجود بالفعل.",
-  "company_id_message": "🆔 معرف الشركة",
+  "companyId_message": "🆔 معرف الشركة",
   "back_to_home_message": "العودة إلى الرئيسية",
   "total_orders_message": "الطلبات",  
   "total_stock_movements_message": "المخزون",
@@ -770,6 +770,11 @@
   "out": "صادر",
 
 
+  "insufficient_stock": "المخزون غير كافي",
+  "insufficient_stock_error": "خطأ: المخزون غير كافي لبدء التصنيع",
+  "manufacturing_deduction": "خصم تصنيع",
+
+"all": "الكل",
 
 
   "manufacturing": {
@@ -788,7 +793,12 @@
     "save_product": "حفظ المنتج التام",
     "product_added_success": "تم إضافة المنتج التام بنجاح",
     "add_error": "خطأ في الإضافة",
-    
+
+    "add_order": "إضافة أمر تصنيع",
+    "finished_products": "المنتجات التامة",
+    "expired": "منتهية الصلاحية",
+    "expiring_soon": "ستنتهي قريباً",
+    "good": "جيدة",
     "composition": "بيان تركيب {product}",
     "batch_number": "رقم التشغيلة",
     "manufacturing_date": "تاريخ التصنيع",

@@ -40,7 +40,7 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
       'name': nameController.text.trim(),
       'address': addressController.text.trim(),
       'phone': phoneController.text.trim(),
-      'company_id': companyId,
+      'companyId': companyId,
       'userId': user['userId'],
       'createdAt': Timestamp.now(),
     });
@@ -132,7 +132,7 @@ class _AddFactoryPageState extends State<AddFactoryPage> {
       'location': _locationController.text.trim(),
       'managerName': _managerController.text.trim(),
       'managerPhone': _phoneController.text.trim(),
-      //'company_id': user.uid, // أو أي منطق للمفتاح
+      //'companyId': user.uid, // أو أي منطق للمفتاح
       'createdAt': FieldValue.serverTimestamp(),
       'userId': user.uid,
     };
