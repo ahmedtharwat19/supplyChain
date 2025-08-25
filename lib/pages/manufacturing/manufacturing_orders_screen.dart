@@ -5,7 +5,6 @@ import 'package:puresip_purchasing/models/finished_product.dart';
 import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:puresip_purchasing/pages/finished_products/product_composition_screen.dart';
 import 'package:puresip_purchasing/pages/manufacturing/add_manufacturing_order_screen.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
@@ -101,20 +100,20 @@ class _ManufacturingOrdersScreenState extends State<ManufacturingOrdersScreen> {
                 onPressed: () => _completeManufacturing(order, service),
                 tooltip: 'manufacturing.complete_manufacturing'.tr(),
               ),
-            IconButton(
+     /*        IconButton(
               icon: const Icon(Icons.visibility),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        ProductCompositionScreen(order: order),
+                        ProductCompositionScreen(productId: productId,),
                   ),
                 );
               },
               tooltip: 'manufacturing.view_composition'.tr(),
             ),
-          ],
+          */ ],
         ),
       ),
     );

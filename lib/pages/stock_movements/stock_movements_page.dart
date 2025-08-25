@@ -1,3 +1,4 @@
+// lib/pages/stock_movements/stock_movements_page.dart
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -109,7 +110,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         await prefs.setStringList('userCompanyIds', companies);
 
         if (companies.isNotEmpty) {
-          await _loadCompanies();
+          await _loadCompaniesWithMovements();
         }
       }
     } catch (e) {
@@ -127,7 +128,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       setState(() {
         userCompanyIds = cachedIds;
       });
-      await _loadCompanies();
+      await _loadCompaniesWithMovements();
     }
 
     await _loadProductNames();
@@ -137,54 +138,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   String _formatDate(DateTime date) {
     return DateFormat('yyyy/MM/dd').format(date);
   }
-
-/*   Map<String, dynamic> getMovementTypeInfo(String type, int quantity) {
-    switch (type) {
-      case 'purchase':
-        return {
-          'in': quantity,
-          'out': 0,
-          'type_ar': 'شراء'.tr(),
-          'type_en': 'Purchase'.tr()
-        };
-      case 'manufacturing':
-        return {
-          'in': 0,
-          'out': quantity,
-          'type_ar': 'تصنيع'.tr(),
-          'type_en': 'Manufacturing'.tr()
-        };
-      case 'transfer_in':
-        return {
-          'in': quantity,
-          'out': 0,
-          'type_ar': 'تحويل داخلي'.tr(),
-          'type_en': 'Transfer In'.tr()
-        };
-      case 'transfer_out':
-        return {
-          'in': 0,
-          'out': quantity,
-          'type_ar': 'تحويل خارجي'.tr(),
-          'type_en': 'Transfer Out'.tr()
-        };
-      case 'adjustment':
-        return {
-          'in': quantity > 0 ? quantity : 0,
-          'out': quantity < 0 ? -quantity : 0,
-          'type_ar': 'تعديل'.tr(),
-          'type_en': 'Adjustment'.tr()
-        };
-      default:
-        return {
-          'in': 0,
-          'out': 0,
-          'type_ar': 'غير معروف'.tr(),
-          'type_en': 'Unknown'.tr()
-        };
-    }
-  }
- */
 
   Future<void> _loadUserCompanyIds() async {
     try {
@@ -234,9 +187,10 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     setState(() => isLoading = false);
   }
 
-  Future<void> _loadCompanies() async {
+  // دالة جديدة: تحميل الشركات التي تحتوي على حركات للمستخدم
+  Future<void> _loadCompaniesWithMovements() async {
     debugPrint(
-        '[DEBUG] Starting _loadCompanies with userCompanyIds: $userCompanyIds');
+        '[DEBUG] Starting _loadCompaniesWithMovements with userCompanyIds: $userCompanyIds');
 
     if (userCompanyIds.isEmpty) {
       debugPrint('[DEBUG] No company IDs available');
@@ -248,95 +202,151 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       }
     }
 
-    debugPrint('[DEBUG] Starting _loadCompanies');
-    if (userCompanyIds.isEmpty) {
-      debugPrint('[DEBUG] userCompanyIds is empty');
-      setState(() {
-        companies = [];
-        selectedCompanyId = null;
-        factories = [];
-        products = [];
-      });
-      return;
-    }
-
     try {
-      final compSnaps = await FirebaseFirestore.instance
-          .collection('companies')
-          .where(FieldPath.documentId, whereIn: userCompanyIds)
-          .get();
+      // جلب الشركات التي تحتوي على حركات مخزون
+      final companiesWithMovements = <Map<String, dynamic>>[];
 
-      final comps = compSnaps.docs.map((doc) {
-        final d = doc.data();
-        return {
-          'id': doc.id,
-          'nameAr': d['nameAr'] ?? doc.id,
-          'nameEn': d['nameEn'] ?? doc.id,
-        };
-      }).toList();
+      for (final companyId in userCompanyIds) {
+        final movementsSnapshot = await FirebaseFirestore.instance
+            .collection('companies')
+            .doc(companyId)
+            .collection('stock_movements')
+            .limit(1)
+            .get();
+
+        if (movementsSnapshot.docs.isNotEmpty) {
+          final companyDoc = await FirebaseFirestore.instance
+              .collection('companies')
+              .doc(companyId)
+              .get();
+
+          if (companyDoc.exists) {
+            final companyData = companyDoc.data()!;
+            companiesWithMovements.add({
+              'id': companyId,
+              'nameAr': companyData['nameAr'] ?? companyId,
+              'nameEn': companyData['nameEn'] ?? companyId,
+            });
+          }
+        }
+      }
 
       setState(() {
-        companies = comps;
+        companies = companiesWithMovements;
         selectedCompanyId = companies.isNotEmpty ? companies[0]['id'] : null;
       });
 
       if (selectedCompanyId != null) {
-        await _loadFactories();
+        await _loadFactoriesWithMovements();
       }
     } catch (e, stack) {
-      debugPrint('[ERROR] Failed to load companies: $e');
+      debugPrint('[ERROR] Failed to load companies with movements: $e');
       debugPrint(stack.toString());
     }
   }
 
-  Future<void> _loadFactories() async {
+  // دالة جديدة: تحميل المصانع التي تحتوي على حركات للشركة المحددة
+  Future<void> _loadFactoriesWithMovements() async {
     if (selectedCompanyId == null) return;
 
-    final facSnaps = await FirebaseFirestore.instance
-        .collection('factories')
-        .where('companyIds', arrayContains: selectedCompanyId)
-        .get();
+    try {
+      final factoriesWithMovements = <Map<String, dynamic>>[];
 
-    final facs = facSnaps.docs.map((doc) {
-      final d = doc.data();
-      return {
-        'id': doc.id,
-        'nameAr': d['nameAr'] ?? doc.id,
-        'nameEn': d['nameEn'] ?? doc.id,
-      };
-    }).toList();
+      // جلب جميع المصانع المرتبطة بالشركة
+      final facSnaps = await FirebaseFirestore.instance
+          .collection('factories')
+          .where('companyIds', arrayContains: selectedCompanyId)
+          .get();
 
-    setState(() {
-      factories = facs;
-      selectedFactoryId = factories.isNotEmpty ? factories[0]['id'] : null;
-    });
+      for (final factoryDoc in facSnaps.docs) {
+        final factoryId = factoryDoc.id;
+        
+        // التحقق من وجود حركات لهذا المصنع في الشركة المحددة
+        final movementsSnapshot = await FirebaseFirestore.instance
+            .collection('companies')
+            .doc(selectedCompanyId)
+            .collection('stock_movements')
+            .where('factoryId', isEqualTo: factoryId)
+            .limit(1)
+            .get();
 
-    if (selectedFactoryId != null) {
-      await _loadProducts();
+        if (movementsSnapshot.docs.isNotEmpty) {
+          final factoryData = factoryDoc.data();
+          factoriesWithMovements.add({
+            'id': factoryId,
+            'nameAr': factoryData['nameAr'] ?? factoryId,
+            'nameEn': factoryData['nameEn'] ?? factoryId,
+          });
+        }
+      }
+
+      setState(() {
+        factories = factoriesWithMovements;
+        selectedFactoryId = factories.isNotEmpty ? factories[0]['id'] : null;
+      });
+
+      if (selectedFactoryId != null) {
+        await _loadProductsWithMovements();
+      }
+    } catch (e) {
+      debugPrint('[ERROR] Failed to load factories with movements: $e');
     }
   }
 
-  Future<void> _loadProducts() async {
-    if (selectedFactoryId == null) return;
+  // دالة جديدة: تحميل المنتجات التي تحتوي على حركات للمصنع المحدد
+  Future<void> _loadProductsWithMovements() async {
+    if (selectedCompanyId == null || selectedFactoryId == null) return;
 
-    final itemsSnap =
-        await FirebaseFirestore.instance.collection('items').get();
+    try {
+      final productsWithMovements = <Map<String, dynamic>>[];
 
-    final prods = itemsSnap.docs.map((doc) {
-      final d = doc.data();
-      return {
-        'id': doc.id,
-        'nameAr': d['nameAr'] ?? doc.id,
-        'nameEn': d['nameEn'] ?? doc.id,
-      };
-    }).toList();
+      // جلب جميع المنتجات التي لها حركات في المصنع المحدد
+      final movementsSnapshot = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(selectedCompanyId)
+          .collection('stock_movements')
+          .where('factoryId', isEqualTo: selectedFactoryId)
+          .get();
 
-    setState(() {
-      products = prods;
-      selectedProductId = products.isNotEmpty ? products[0]['id'] : null;
-    });
+      // تجميع معرفات المنتجات الفريدة
+      final productIds = <String>{};
+      for (final movement in movementsSnapshot.docs) {
+        final productId = movement.data()['productId']?.toString();
+        if (productId != null) {
+          productIds.add(productId);
+        }
+      }
 
-    await _loadInventory();
+      // جلب تفاصيل المنتجات
+      for (final productId in productIds) {
+        try {
+          final productDoc = await FirebaseFirestore.instance
+              .collection('items')
+              .doc(productId)
+              .get();
+
+          if (productDoc.exists) {
+            final productData = productDoc.data()!;
+            productsWithMovements.add({
+              'id': productId,
+              'nameAr': productData['nameAr'] ?? productId,
+              'nameEn': productData['nameEn'] ?? productId,
+            });
+          }
+        } catch (e) {
+          debugPrint('[ERROR] Loading product $productId: $e');
+        }
+      }
+
+      setState(() {
+        products = productsWithMovements;
+        selectedProductId = products.isNotEmpty ? products[0]['id'] : null;
+      });
+
+      await _loadInventory();
+    } catch (e) {
+      debugPrint('[ERROR] Failed to load products with movements: $e');
+    }
   }
 
   Future<void> _loadInventory() async {
@@ -568,7 +578,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     );
   }
 
-  Future<void> _retryLoading() async {
+/*   Future<void> _retryLoading() async {
     setState(() {
       isLoading = true;
     });
@@ -576,7 +586,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     try {
       await _loadUserCompaniesFromFirestore();
       if (userCompanyIds.isNotEmpty) {
-        await _loadCompanies();
+        await _loadCompaniesWithMovements();
         await _loadInventory();
       }
     } catch (e) {
@@ -585,10 +595,10 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       setState(() => isLoading = false);
     }
   }
-
+ */
   Query<Map<String, dynamic>> _buildMovementsQuery() {
     if (selectedCompanyId == null || selectedFactoryId == null) {
-      return FirebaseFirestore.instance.collection('dummy').limit(0);
+      return FirebaseFirestore.instance.collection('dummy').limit(1);
     }
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance
@@ -1011,7 +1021,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                         factories = [];
                         products = [];
                       });
-                      if (val != null) await _loadFactories();
+                      if (val != null) await _loadFactoriesWithMovements();
                     },
                   ),
                 ),
@@ -1027,7 +1037,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                         selectedProductId = null;
                         products = [];
                       });
-                      if (val != null) await _loadProducts();
+                      if (val != null) await _loadProductsWithMovements();
                     },
                   ),
                 ),
@@ -1117,46 +1127,41 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                 label: Text(isExporting ? 'exporting'.tr() : 'export_pdf'.tr()),
               ),
             const SizedBox(height: 12),
-            if (selectedCompanyId == null || selectedFactoryId == null)
-              Center(child: Text('select_filters_first'.tr()))
-            else
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _buildMovementsQuery().snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _buildMovementsQuery().snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('error_loading_data'.tr()));
+                  }
 
-                    if (snapshot.hasError) {
-                      debugPrint('[ERROR] Stream error: ${snapshot.error}');
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error,
-                                size: 48, color: Colors.red),
-                            const SizedBox(height: 16),
-                            Text('error_loading_data'.tr()),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _retryLoading,
-                              child: Text('retry'.tr()),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(child: Text('no_stock_movements'.tr()));
-                    }
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.inventory_2,
+                              size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text('no_movements_found'.tr(),
+                              style: Theme.of(context).textTheme.headlineSmall),
+                          const SizedBox(height: 8),
+                          Text('adjust_filters_or_try_again'.tr(),
+                              textAlign: TextAlign.center),
+                        ],
+                      ),
+                    );
+                  }
 
-                    final docs = snapshot.data!.docs;
-                    return _buildMovementsTable(docs);
-                  },
-                ),
+                  return _buildMovementsTable(docs);
+                },
               ),
+            ),
           ],
         ),
       ),
@@ -1169,18 +1174,25 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     required List<Map<String, dynamic>> items,
     required Function(String?) onChanged,
   }) {
-    return DropdownButton<String>(
+    return DropdownButtonFormField<String>(
       isExpanded: true,
-      hint: Text(label.tr()),
-      value: value,
-      items: items
-          .map((item) => DropdownMenuItem<String>(
-                value: item['id'],
-                child: Text(
-                  _isArabic ? item['nameAr'] : item['nameEn'],
-                ),
-              ))
-          .toList(),
+      initialValue: value,
+      decoration: InputDecoration(
+        labelText: label.tr(),
+        border: const OutlineInputBorder(),
+      ),
+      items: [
+        DropdownMenuItem<String>(
+          value: null,
+          child: Text('all'.tr()),
+        ),
+        ...items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item['id'],
+            child: Text(_isArabic ? item['nameAr'] : item['nameEn']),
+          );
+        }),
+      ],
       onChanged: onChanged,
     );
   }

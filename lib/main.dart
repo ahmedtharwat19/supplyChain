@@ -3,7 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:puresip_purchasing/pages/finished_products/services/composition_service.dart';
+import 'package:puresip_purchasing/pages/finished_products/services/finished_product_service.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
+import 'package:puresip_purchasing/services/company_service.dart';
+import 'package:puresip_purchasing/services/factory_service.dart';
 import 'firebase_options.dart';
 import 'router.dart';
 import 'services/license_service.dart';
@@ -24,9 +28,10 @@ Future<void> _initializeFirebase() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      
+
       // تهيئة FCM للمعالجة الخلفية
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
 
       // تهيئة خدمات التراخيص والإشعارات
       final licenseService = LicenseService();
@@ -94,6 +99,11 @@ Future<void> main() async {
       fallbackLocale: const Locale('ar'),
       child: MultiProvider(
         providers: [
+          Provider<FinishedProductService>(
+              create: (_) => FinishedProductService()),
+          ChangeNotifierProvider(create: (_) => CompanyService()),
+          ChangeNotifierProvider(create: (_) => FactoryService()),
+          ChangeNotifierProvider(create: (_) => CompositionService()),
           Provider<ManufacturingService>(
             create: (_) => ManufacturingService(),
           ),
@@ -111,8 +121,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // اختبار الترجمة هنا للتأكد من عملها
     //debugPrint('Translation test - manufacturing.shelf_life: ${'manufacturing.shelf_life'.tr()}');
-    
-    
+
     return MaterialApp.router(
       key: ValueKey(context.locale.languageCode),
       title: 'PureSip',
@@ -125,7 +134,8 @@ class MyApp extends StatelessWidget {
       routerConfig: appRouter,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          data:
+              MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         );
       },
