@@ -10,11 +10,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+
 class AddFinishedProductScreen extends StatefulWidget {
   const AddFinishedProductScreen({super.key});
 
   @override
-  State<AddFinishedProductScreen> createState() => _AddFinishedProductScreenState();
+  State<AddFinishedProductScreen> createState() =>
+      _AddFinishedProductScreenState();
 }
 
 class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
@@ -30,14 +32,14 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
   final bool _isArabic = false;
   bool _isLoading = false;
   bool _loadingFactories = false;
-
+  
   // قائمة المصانع للشركة المحددة
   List<Factory> _factories = [];
 
   @override
   Widget build(BuildContext context) {
     final companyService = Provider.of<CompanyService>(context);
-  //  final factoryService = Provider.of<FactoryService>(context);
+    //  final factoryService = Provider.of<FactoryService>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -125,13 +127,16 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
 
                     // اختيار الشركة
                     StreamBuilder<List<Company>>(
-                      stream: companyService.getUserCompanies(_currentUser!.uid),
+                      stream:
+                          companyService.getUserCompanies(_currentUser!.uid),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
-                          return Text('manufacturing.error_loading_companies'.tr());
+                          return Text(
+                              'manufacturing.error_loading_companies'.tr());
                         }
 
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const CircularProgressIndicator();
                         }
 
@@ -150,7 +155,9 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                               ...snapshot.data!.map((company) {
                                 return DropdownMenuItem(
                                   value: company.id,
-                                  child: Text(_isArabic ? company.nameAr : company.nameEn),
+                                  child: Text(_isArabic
+                                      ? company.nameAr
+                                      : company.nameEn),
                                 );
                               }),
                             ],
@@ -165,13 +172,16 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                               // تحميل المصانع عند اختيار الشركة
                               if (value != null) {
                                 try {
-                                  final factoriesSnapshot = await FirebaseFirestore.instance
-                                      .collection('factories')
-                                      .where('companyIds', arrayContains: value)
-                                      .get();
+                                  final factoriesSnapshot =
+                                      await FirebaseFirestore.instance
+                                          .collection('factories')
+                                          .where('companyIds',
+                                              arrayContains: value)
+                                          .get();
 
                                   final factories = factoriesSnapshot.docs
-                                      .map((doc) => Factory.fromMap(doc.data(), doc.id))
+                                      .map((doc) =>
+                                          Factory.fromMap(doc.data(), doc.id))
                                       .toList();
 
                                   setState(() {
@@ -182,9 +192,12 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                                   setState(() {
                                     _loadingFactories = false;
                                   });
-                                  if (!context.mounted)return;
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('manufacturing.error_loading_factories'.tr())),
+                                    SnackBar(
+                                        content: Text(
+                                            'manufacturing.error_loading_factories'
+                                                .tr())),
                                   );
                                 }
                               } else {
@@ -201,7 +214,8 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                             },
                           );
                         }
-                        return Text('manufacturing.no_companies_available'.tr());
+                        return Text(
+                            'manufacturing.no_companies_available'.tr());
                       },
                     ),
                     const SizedBox(height: 16),
@@ -225,7 +239,9 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                                     ..._factories.map((factory) {
                                       return DropdownMenuItem(
                                         value: factory.id,
-                                        child: Text(_isArabic ? factory.nameAr : factory.nameEn),
+                                        child: Text(_isArabic
+                                            ? factory.nameAr
+                                            : factory.nameEn),
                                       );
                                     }),
                                   ],
@@ -241,8 +257,10 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
                                     return null;
                                   },
                                 )
-                              : Text('manufacturing.no_factories_available'.tr()),
+                              : Text(
+                                  'manufacturing.no_factories_available'.tr()),
                     const SizedBox(height: 16),
+              
 
                     // زر الحفظ
                     ElevatedButton(
@@ -280,11 +298,13 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
       });
 
       try {
-        final finishedProductService = Provider.of<FinishedProductService>(context, listen: false);
+        final finishedProductService =
+            Provider.of<FinishedProductService>(context, listen: false);
 
         // حساب تاريخ انتهاء الصلاحية بناءً على عدد الأشهر
         final shelfLifeMonths = int.parse(_shelfLifeController.text);
-        final expiryDate = DateTime.now().add(Duration(days: shelfLifeMonths * 30));
+        final expiryDate =
+            DateTime.now().add(Duration(days: shelfLifeMonths * 30));
 
         final finishedProduct = FinishedProduct(
           id: null,
@@ -302,7 +322,7 @@ class _AddFinishedProductScreenState extends State<AddFinishedProductScreen> {
         );
 
         await finishedProductService.addFinishedProduct(finishedProduct);
-        
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('manufacturing.product_added_success'.tr())),

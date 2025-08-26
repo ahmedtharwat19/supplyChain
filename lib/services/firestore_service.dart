@@ -434,6 +434,28 @@ class FirestoreService {
     }
   }
 
+
+  Future<List<Item>> getUserTypeItems(String userId,String itemType) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('userId', isEqualTo: userId)
+          .where('category',isEqualTo: itemType)
+          .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
+          .get();
+
+      debugPrint('✅ getUserTypeItems: returned ${querySnapshot.docs.length} items');
+      return querySnapshot.docs
+          .map((doc) => Item.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e, st) {
+      debugPrint('❌ Error in getUserTypeItems: $e');
+      debugPrint(st.toString());
+      return [];
+    }
+  }
+
+
   /// ─────────────── أوامر الشراء ───────────────
   Future<void> addPurchaseOrder(PurchaseOrder order) async {
     await _firestore.collection('purchase_orders').add(order.toMap());

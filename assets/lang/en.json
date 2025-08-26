@@ -695,6 +695,7 @@
   "all_factories": "All Factories",
   "close": "Close",
   "no_factories_available": "No factories available",
+  "no_items_added_to_composition":  "No items have been added to the composition. Please add items before saving.",
   "manufacturing": {
     "production_date": "Production Date",
     "days_remaining": "Days Remaining",

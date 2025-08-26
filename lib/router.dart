@@ -216,7 +216,8 @@ final GoRouter appRouter = GoRouter(
 
       // 1. شاشة البداية
       if (currentPath == '/splash') {
-        return user != null ? '/dashboard' : '/login';
+       // return user != null ? '/dashboard' : '/login';
+         return null; 
       }
 
       // 2. المستخدم غير مسجل الدخول

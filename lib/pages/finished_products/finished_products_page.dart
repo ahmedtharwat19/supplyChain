@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:puresip_purchasing/models/finished_product.dart';
 import 'package:puresip_purchasing/pages/finished_products/add_finished_product_screen.dart';
-import 'package:puresip_purchasing/pages/finished_products/product_composition_screen.dart';
+import 'package:puresip_purchasing/pages/compositions/product_composition_screen.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
