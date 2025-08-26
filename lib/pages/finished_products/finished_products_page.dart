@@ -7,7 +7,6 @@ import 'package:puresip_purchasing/pages/compositions/product_composition_screen
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
-
 import '../../models/company.dart';
 import '../../models/factory.dart';
 import '../../services/company_service.dart';
@@ -21,12 +20,11 @@ class FinishedProductsPage extends StatefulWidget {
 }
 
 class _FinishedProductsPageState extends State<FinishedProductsPage> {
-//  String _filterStatus = 'all'; // all, expired, expiring_soon, good
   String? _selectedCompanyId;
   String? _selectedFactoryId;
   final TextEditingController _searchController = TextEditingController();
-   bool get _isArabic => context.locale.languageCode == 'ar';
-    final User? _currentUser = FirebaseAuth.instance.currentUser;
+  bool get _isArabic => context.locale.languageCode == 'ar';
+  final User? _currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -66,7 +64,6 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
       ],
       body: Column(
         children: [
-          // شريط البحث والتصفية
           _buildFilterBar(context, companyService, factoryService),
           Expanded(
             child: StreamBuilder<List<FinishedProduct>>(
@@ -107,7 +104,6 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
-          // شريط البحث
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -118,7 +114,6 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
           ),
           const SizedBox(height: 8),
           
-          // فلتر الشركة (إذا كان للمستخدم أكثر من شركة)
           StreamBuilder<List<Company>>(
             stream: companyService.getUserCompanies(_currentUser!.uid),
             builder: (context, snapshot) {
@@ -145,7 +140,7 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
                   onChanged: (value) {
                     setState(() {
                       _selectedCompanyId = value;
-                      _selectedFactoryId = null; // إعادة تعيين المصنع عند تغيير الشركة
+                      _selectedFactoryId = null;
                     });
                   },
                 );
@@ -156,7 +151,6 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
           
           const SizedBox(height: 8),
           
-          // فلتر المصنع (إذا تم اختيار شركة)
           if (_selectedCompanyId != null)
             StreamBuilder<List<Factory>>(
               stream: factoryService.getFactoriesByCompany(_selectedCompanyId!),
@@ -193,40 +187,12 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
                 return const SizedBox.shrink();
               },
             ),
-          
-          const SizedBox(height: 8),
-          
-          // فلتر حالة الصلاحية
-    /*       Row(
-            children: [
-              Text('filter'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _filterStatus,
-                  items: [
-                    DropdownMenuItem(value: 'all', child: Text('all'.tr())),
-                    DropdownMenuItem(value: 'expired', child: Text('manufacturing.expired'.tr())),
-                    DropdownMenuItem(value: 'expiring_soon', child: Text('manufacturing.expiring_soon'.tr())),
-                    DropdownMenuItem(value: 'good', child: Text('manufacturing.good'.tr())),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _filterStatus = value!;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-     */
         ],
       ),
     );
   }
 
   List<FinishedProduct> _filterProducts(List<FinishedProduct> products) {
-    // التصفية حسب البحث
     List<FinishedProduct> filtered = products;
     
     if (_searchController.text.isNotEmpty) {
@@ -236,28 +202,14 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
       }).toList();
     }
     
-    // التصفية حسب الشركة
     if (_selectedCompanyId != null) {
       filtered = filtered.where((product) => product.companyId == _selectedCompanyId).toList();
     }
     
-    // التصفية حسب المصنع
     if (_selectedFactoryId != null) {
       filtered = filtered.where((product) => product.factoryId == _selectedFactoryId).toList();
     }
     
-/*     // التصفية حسب حالة الصلاحية
-    switch (_filterStatus) {
-      case 'expired':
-        return filtered.where((p) => p.isExpired).toList();
-      case 'expiring_soon':
-        return filtered.where((p) => p.isExpiringSoon && !p.isExpired).toList();
-      case 'good':
-        return filtered.where((p) => !p.isExpired && !p.isExpiringSoon).toList();
-      default:
-        return filtered;
-    }
-   */
     return filtered;
   }
 
@@ -268,8 +220,8 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
         return FutureBuilder<Factory?>(
           future: factoryService.getFactoryById(product.factoryId),
           builder: (context, factorySnapshot) {
-            final companyName = companySnapshot.hasData ? _isArabic ? companySnapshot.data!.nameAr : companySnapshot.data!.nameEn : 'Loading...';
-            final factoryName = factorySnapshot.hasData ? _isArabic ? factorySnapshot.data!.nameAr : factorySnapshot.data!.nameEn : 'Loading...';
+            final companyName = companySnapshot.hasData ? _isArabic ? companySnapshot.data!.nameAr : companySnapshot.data!.nameEn : '...';
+            final factoryName = factorySnapshot.hasData ? _isArabic ? factorySnapshot.data!.nameAr : factorySnapshot.data!.nameEn : '...';
             
             return Card(
               margin: const EdgeInsets.all(8.0),
@@ -284,7 +236,6 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // عرض اسم الشركة والمصنع
                     if (companyName.isNotEmpty)
                       Text('${'company'.tr()}: $companyName'),
                     if (factoryName.isNotEmpty)
@@ -344,85 +295,79 @@ class _FinishedProductsPageState extends State<FinishedProductsPage> {
     }
   }
 
- // في finished_products_page.dart عند الضغط على الكارت
-void _showProductDetails(BuildContext context, FinishedProduct product, String companyName, String factoryName) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(product.name),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (companyName.isNotEmpty)
-              Text('${'company'.tr()}: $companyName'),
-            if (factoryName.isNotEmpty)
-              Text('${'factory'.tr()}: $factoryName'),
-            
-            Text('${'manufacturing.batch_number'.tr()}: ${product.batchNumber}'),
-            Text('${'manufacturing.quantity'.tr()}: ${product.quantity} ${product.unit}'),
-            Text('${'manufacturing.production_date'.tr()}: ${_formatDateDetailed(product.dateTime)}'),
-            Text('${'manufacturing.expiry_date'.tr()}: ${_formatDateDetailed(product.expiryDateTime)}'),
-            Text('${'manufacturing.created_at'.tr()}: ${_formatDateDetailed(product.createdAtDateTime)}'),
-            
-            const SizedBox(height: 16),
-            
-            if (product.isExpired)
-              Text(
-                'manufacturing.expired'.tr(),
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-              )
-            else if (product.isExpiringSoon)
-              Text(
-                'manufacturing.expiring_soon'.tr(),
-                style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-              )
-            else
-              Text(
-                'manufacturing.good'.tr(),
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-              ),
+  void _showProductDetails(BuildContext context, FinishedProduct product, String companyName, String factoryName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(product.name),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (companyName.isNotEmpty)
+                Text('${'company'.tr()}: $companyName'),
+              if (factoryName.isNotEmpty)
+                Text('${'factory'.tr()}: $factoryName'),
+              
+              Text('${'manufacturing.batch_number'.tr()}: ${product.batchNumber}'),
+              Text('${'manufacturing.quantity'.tr()}: ${product.quantity} ${product.unit}'),
+              Text('${'manufacturing.production_date'.tr()}: ${_formatDateDetailed(product.dateTime)}'),
+              Text('${'manufacturing.expiry_date'.tr()}: ${_formatDateDetailed(product.expiryDateTime)}'),
+              Text('${'manufacturing.created_at'.tr()}: ${_formatDateDetailed(product.createdAtDateTime)}'),
+              
+              const SizedBox(height: 16),
+              
+              if (product.isExpired)
+                Text(
+                  'manufacturing.expired'.tr(),
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                )
+              else if (product.isExpiringSoon)
+                Text(
+                  'manufacturing.expiring_soon'.tr(),
+                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                )
+              else
+                Text(
+                  'manufacturing.good'.tr(),
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                ),
 
-            const SizedBox(height: 16),
-            
-            // زر عرض بيان التركيب
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // إغلاق الديالوج الحالي
-                  _showCompositionDetails(context, product);
-                },
-                child: Text('manufacturing.show_composition'.tr()),
+              const SizedBox(height: 16),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showCompositionDetails(context, product);
+                  },
+                  child: Text('manufacturing.show_composition'.tr()),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('close'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompositionDetails(BuildContext context, FinishedProduct product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductCompositionScreen(
+          productId: product.id!,
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('close'.tr()),
-        ),
-      ],
-    ),
-  );
-}
-
-void _showCompositionDetails(BuildContext context, FinishedProduct product) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ProductCompositionScreen(
-        productId: product.id!, // استخدام معرف المنتج
-     //   productName: product.name, // تمرير اسم المنتج
-      ),
-    ),
-  );
-}
-
-
-
+    );
+  }
 
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';

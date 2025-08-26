@@ -42,7 +42,7 @@ final _licenseService = LicenseService();
 final GoRouter appRouter = GoRouter(
     navigatorKey: navigatorKey,
     initialLocation: '/splash',
-    debugLogDiagnostics: true,
+//    debugLogDiagnostics: true,
     routes: [
       GoRoute(
         path: '/splash',
@@ -122,7 +122,7 @@ final GoRouter appRouter = GoRouter(
           child: const ManufacturingOrdersScreen(),
         ),
       ),
-            GoRoute(
+      GoRoute(
         path: '/finished_products',
         name: 'finished_products',
         pageBuilder: (context, state) => MaterialPage(
@@ -216,8 +216,8 @@ final GoRouter appRouter = GoRouter(
 
       // 1. شاشة البداية
       if (currentPath == '/splash') {
-       // return user != null ? '/dashboard' : '/login';
-         return null; 
+        // return user != null ? '/dashboard' : '/login';
+        return null;
       }
 
       // 2. المستخدم غير مسجل الدخول

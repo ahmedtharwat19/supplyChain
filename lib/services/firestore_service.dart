@@ -435,6 +435,21 @@ class FirestoreService {
   }
 
 
+// في ملف firestore_service.dart أضف هذه الدالة
+Future<Item?> getItemById(String itemId) async {
+  try {
+    final doc = await _firestore.collection('items').doc(itemId).get();
+    if (doc.exists) {
+      return Item.fromMap(doc.data()!);
+    }
+    return null;
+  } catch (e) {
+    debugPrint('Error getting item by ID: $e');
+    return null;
+  }
+}
+
+
   Future<List<Item>> getUserTypeItems(String userId,String itemType) async {
     try {
       final querySnapshot = await FirebaseFirestore.instance

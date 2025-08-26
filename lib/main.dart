@@ -8,6 +8,7 @@ import 'package:puresip_purchasing/pages/finished_products/services/finished_pro
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 import 'package:puresip_purchasing/services/company_service.dart';
 import 'package:puresip_purchasing/services/factory_service.dart';
+import 'package:puresip_purchasing/services/firestore_service.dart';
 import 'firebase_options.dart';
 import 'router.dart';
 import 'services/license_service.dart';
@@ -99,11 +100,12 @@ Future<void> main() async {
       fallbackLocale: const Locale('ar'),
       child: MultiProvider(
         providers: [
+           Provider<FirestoreService>(create: (_) => FirestoreService()), 
           Provider<FinishedProductService>(
               create: (_) => FinishedProductService()),
           ChangeNotifierProvider(create: (_) => CompanyService()),
           ChangeNotifierProvider(create: (_) => FactoryService()),
-          ChangeNotifierProvider(create: (_) => CompositionService()),
+         ChangeNotifierProvider(create: (_) => CompositionService()),
           Provider<ManufacturingService>(
             create: (_) => ManufacturingService(),
           ),

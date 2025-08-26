@@ -46,8 +46,17 @@ class CompanyService  with ChangeNotifier {
     );
   }
 
+  // Future<Company?> getCompanyById(String companyId) async {
+  //   final doc = await _firestore.collection('companies').doc(companyId).get();
+  //   return doc.exists ? Company.fromMap(doc.data()!, doc.id) : null;
+  // }
+
   Future<Company?> getCompanyById(String companyId) async {
+  try {
     final doc = await _firestore.collection('companies').doc(companyId).get();
     return doc.exists ? Company.fromMap(doc.data()!, doc.id) : null;
+  } catch (e) {
+    return null;
   }
+}
 }

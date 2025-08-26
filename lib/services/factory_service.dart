@@ -35,18 +35,18 @@ class FactoryService with ChangeNotifier {
             .toList());
   }
 
-  // جلب مصنع بواسطة ID
-  Future<Factory?> getFactoryById(String factoryId) async {
-    try {
-      final doc = await _firestore.collection('factories').doc(factoryId).get();
-      return doc.exists ? Factory.fromMap(doc.data()!, doc.id) : null;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting factory: $e');
-      }
-      return null;
-    }
-  }
+  // // جلب مصنع بواسطة ID
+  // Future<Factory?> getFactoryById(String factoryId) async {
+  //   try {
+  //     final doc = await _firestore.collection('factories').doc(factoryId).get();
+  //     return doc.exists ? Factory.fromMap(doc.data()!, doc.id) : null;
+  //   } catch (e) {
+  //     if (kDebugMode) {
+  //       print('Error getting factory: $e');
+  //     }
+  //     return null;
+  //   }
+  // }
 
   // جلب جميع مصانع المستخدم
   Stream<List<Factory>> getUserFactories(String userId) {
@@ -69,4 +69,14 @@ class FactoryService with ChangeNotifier {
       },
     );
   }
+
+  Future<Factory?> getFactoryById(String factoryId) async {
+  try {
+    final doc = await _firestore.collection('factories').doc(factoryId).get();
+    return doc.exists ? Factory.fromMap(doc.data()!, doc.id) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 }

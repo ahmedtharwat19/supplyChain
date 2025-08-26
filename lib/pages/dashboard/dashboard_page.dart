@@ -431,17 +431,19 @@ class DashboardPageState extends State<DashboardPage> {
           (userDoc.data()?['companyIds'] as List?)?.cast<String>() ?? [];
 
       // Parallel fetch of basic counts
-      final [itemsCount, suppliersCount] = await Future.wait([
+      final [itemsCount, suppliersCount,finishedProductCount] = await Future.wait([
         _fetchCollectionCount('items'),
         _fetchCollectionCount('vendors'),
+        _fetchCollectionCount('finished_products'),
       ]);
       final poStats = await _fetchPoStats();
+    //  final fPStates = await _fetchFinishedProducts();
       // Fetch company-specific stats
       int orderCount = 0;
       double amountSum = 0.0;
       int movementCount = 0;
       int manufacturingCount = 0;
-      int finishedProductCount = 0;
+     // int finishedProductCount = 0;
 
       if (updatedCompanyIds.isNotEmpty) {
         final companyResults = await Future.wait(
@@ -455,7 +457,7 @@ class DashboardPageState extends State<DashboardPage> {
               'totalAmount']; // += (result['amount'] as num).toDouble();
           movementCount += (result['movements'] as num).toInt();
           manufacturingCount += (result['manufacturing'] as num).toInt();
-          finishedProductCount += (result['finishedProducts'] as num).toInt();
+       //   finishedProductCount += fPStates['count']; //(result['finishedProducts'] as num).toInt();
         }
       }
 
@@ -517,7 +519,7 @@ class DashboardPageState extends State<DashboardPage> {
         //      _getSubCollectionCount('purchase_orders', companyId),
         _getSubCollectionCount('stock_movements', companyId),
         _getSubCollectionCount('manufacturing_orders', companyId),
-        _getSubCollectionCount('finished_products', companyId),
+   //     _getSubCollectionCount('finished_products', companyId),
       ]);
 
       return {
@@ -525,7 +527,7 @@ class DashboardPageState extends State<DashboardPage> {
         //    'amount': results[0]['amount'],
         'movements': results[0]['count'],
         'manufacturing': results[1]['count'],
-        'finishedProducts': results[2]['count'],
+  //      'finishedProducts': results[2]['count'],
       };
     } catch (e) {
       debugPrint('❌ Error getting stats for company $companyId: $e');
@@ -534,7 +536,7 @@ class DashboardPageState extends State<DashboardPage> {
         //     'amount': 0.0,
         'movements': 0,
         'manufacturing': 0,
-        'finishedProducts': 0,
+    //   'finishedProducts': 0,
       };
     }
   }
@@ -563,6 +565,34 @@ class DashboardPageState extends State<DashboardPage> {
       return {'count': 0, 'amount': 0.0};
     }
   }
+
+  // Future<Map<String, dynamic>> _fetchFinishedProducts() async {
+  //   try {
+  //     if (userId == null) return {'count': 0};
+
+  //     final querySnapshot = await FirebaseFirestore.instance
+  //         .collection('finished_products')
+  //         .where('userId', isEqualTo: userId)
+  //         //.where('status', isEqualTo: 'pending')
+  //         .get();
+
+  //     // // حساب القيمة الإجمالية
+  //     // double totalAmount = querySnapshot.docs.fold(0.0, (sTotal, doc) {
+  //     //   final amount = doc.data()['totalAmountAfterTax'] ?? 0.0;
+  //     //   return sTotal + (amount is num ? amount.toDouble() : 0.0);
+  //     // });
+
+  //     return {
+  //       'count': querySnapshot.size,
+  //      // 'totalAmount': totalAmount,
+  //     };
+  //   } catch (e) {
+  //     debugPrint('❌ Error fetching PURCHASE_ORDERS: $e');
+  //     return {'count': 0, 'totalAmount': 0.0};
+  //   }
+  // }
+
+
 
   Future<Map<String, dynamic>> _fetchPoStats() async {
     try {

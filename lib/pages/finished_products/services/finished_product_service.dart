@@ -7,9 +7,7 @@ class FinishedProductService {
 
   // إضافة منتج تام جديد
   Future<void> addFinishedProduct(FinishedProduct product) async {
-    await _firestore
-        .collection('finished_products')
-        .add(product.toMap());
+    await _firestore.collection('finished_products').add(product.toMap());
   }
 
   // جلب جميع المنتجات التامة للمستخدم
@@ -55,9 +53,19 @@ class FinishedProductService {
 
   // حذف منتج تام
   Future<void> deleteFinishedProduct(String productId) async {
-    await _firestore
+    await _firestore.collection('finished_products').doc(productId).delete();
+  }
+
+  // في finished_product_service.dart
+  Stream<FinishedProduct?> getFinishedProductByIdStream(String productId) {
+    return _firestore
         .collection('finished_products')
         .doc(productId)
-        .delete();
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.exists
+          ? FinishedProduct.fromMap(snapshot.data()!, snapshot.id)
+          : null;
+    });
   }
 }

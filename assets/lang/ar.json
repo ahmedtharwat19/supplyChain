@@ -454,7 +454,9 @@
   "only_digits_allowed": "يسمح فقط بالأرقام",
 
   "please_select_at_least_one_company": "يرجى اختيار شركة واحدة على الأقل",
-
+  "batch_size": "حجم الدفعة",
+  "shelf_life": "مدة الصلاحية",
+  "packaging_materials": "مواد التعبئة والتغليف",
   "unnamed_company": "شركة بدون اسم",
   
   "settings": {
