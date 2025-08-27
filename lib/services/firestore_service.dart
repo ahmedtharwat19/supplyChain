@@ -434,32 +434,31 @@ class FirestoreService {
     }
   }
 
-
 // في ملف firestore_service.dart أضف هذه الدالة
-Future<Item?> getItemById(String itemId) async {
-  try {
-    final doc = await _firestore.collection('items').doc(itemId).get();
-    if (doc.exists) {
-      return Item.fromMap(doc.data()!);
+  Future<Item?> getItemById(String itemId) async {
+    try {
+      final doc = await _firestore.collection('items').doc(itemId).get();
+      if (doc.exists) {
+        return Item.fromMap(doc.data()!);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting item by ID: $e');
+      return null;
     }
-    return null;
-  } catch (e) {
-    debugPrint('Error getting item by ID: $e');
-    return null;
   }
-}
 
-
-  Future<List<Item>> getUserTypeItems(String userId,String itemType) async {
+  Future<List<Item>> getUserTypeItems(String userId, String itemType) async {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('items')
           .where('userId', isEqualTo: userId)
-          .where('category',isEqualTo: itemType)
+          .where('category', isEqualTo: itemType)
           .orderBy('createdAt', descending: true) // تأكد من اسم الحقل هنا
           .get();
 
-      debugPrint('✅ getUserTypeItems: returned ${querySnapshot.docs.length} items');
+      debugPrint(
+          '✅ getUserTypeItems: returned ${querySnapshot.docs.length} items');
       return querySnapshot.docs
           .map((doc) => Item.fromFirestore(doc.data(), doc.id))
           .toList();
@@ -469,7 +468,6 @@ Future<Item?> getItemById(String itemId) async {
       return [];
     }
   }
-
 
   /// ─────────────── أوامر الشراء ───────────────
   Future<void> addPurchaseOrder(PurchaseOrder order) async {
@@ -809,9 +807,10 @@ Future<Item?> getItemById(String itemId) async {
     required List<Map<String, dynamic>> materials,
   }) async {
     final batch = _firestore.batch();
-    final stockMovementsRef = _firestore
-        .collection('companies/$companyId/stock_movements');
-    final inventoryRef = _firestore.collection('factories/$factoryId/inventory');
+    final stockMovementsRef =
+        _firestore.collection('companies/$companyId/stock_movements');
+    final inventoryRef =
+        _firestore.collection('factories/$factoryId/inventory');
 
     for (final material in materials) {
       final productId = material['itemId']?.toString();
@@ -855,22 +854,23 @@ Future<Item?> getItemById(String itemId) async {
     required String userId,
   }) async {
     final batch = _firestore.batch();
-    final stockMovementsRef = _firestore
-        .collection('companies/$companyId/stock_movements');
-    final inventoryRef = _firestore.collection('factories/$factoryId/inventory');
+    final stockMovementsRef =
+        _firestore.collection('companies/$companyId/stock_movements');
+    final inventoryRef =
+        _firestore.collection('factories/$factoryId/inventory');
 
     // إضافة حركة المخزون للإضافة
     final newMovementRef = stockMovementsRef.doc();
     batch.set(newMovementRef, {
       'type': 'manufacturing_addition',
       'productId': product.id,
-      'itemName': product.name,
+      'itemName': product.nameAr, // بدلًا من product.name
       'quantity': product.quantity,
       'date': FieldValue.serverTimestamp(),
-      'referenceId': product.manufacturingOrderId,
+      'referenceId': product.id, // بدل manufacturingOrderId غير الموجود
       'userId': userId,
       'factoryId': factoryId,
-      'batchNumber': product.batchNumber,
+      // 'batchNumber': product.batchNumber, // إذا غير موجود، إما تحذفه أو تضيفه للنموذج
     });
 
     // تحديث المخزون
@@ -880,12 +880,11 @@ Future<Item?> getItemById(String itemId) async {
         {
           'quantity': FieldValue.increment(product.quantity),
           'lastUpdated': FieldValue.serverTimestamp(),
-          'name': product.name,
-          'unit': product.unit,
+          // 'name': product.name,
+          // 'unit': product.unit,
         },
         SetOptions(merge: true));
 
     await batch.commit();
   }
-  
 }

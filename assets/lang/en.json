@@ -198,7 +198,7 @@
   "stock_alert": "Stock Alert", 
   "stock_movements": "Stock Movement",
   "manufacturing_orders": "Manufacturing Orders",
-  "finished_products": "Finished Products",
+  
   "raw_materials": "Raw Materials",
   "add_factory": "Add Factory",
   "factory_name": "Factory Name",
@@ -317,7 +317,7 @@
   "account_created_successfully": "Account created successfully",
   "passwords_do_not_match": "Passwords do not match",
   "no_internet": "No internet connection. Please check your network and try again.",
-  "error": "Error",
+  
   "retry": "Retry",
   "account_inactive": "Your account is inactive. Please contact the administration.",
   "user_not_logged_in": "You are not logged in. Please log in to continue.",
@@ -671,7 +671,7 @@
   "transfer_out": "Transfer Out",
   "adjustment": "Adjustment",
   "unknown": "Unknown",
-  "no_data" : "No data available",
+
     "product": "Item (raw\\packaging)",
   "current_balance": "Current Balance",
   "balance": "Balance",
@@ -700,6 +700,7 @@
   "no_factories_available": "No factories available",
   "no_items_added_to_composition":  "No items have been added to the composition. Please add items before saving.",
   "manufacturing": {
+    "select_product": "Select Product",
     "production_date": "Production Date",
     "days_remaining": "Days Remaining",
     "created_at": "Created At",
@@ -777,8 +778,30 @@
       "pass": "Pass",
       "fail": "Fail"
     }
-  }
+  },
+
+
+
+  "finished_products": {
+    "title": "Finished Products",
+    "add": "Add Product",
+    "added_success": "Product added successfully",
+    "name_ar": "Name (Arabic)",
+    "name_en": "Name (English)",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "barcode": "Barcode",
+    "save": "Save"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid_number": "Please enter a valid number"
+  },
+  "error": "Error",
+  "no_data": "No data available",
+  "user_not_authenticated": "User not authenticated"
 }
+
 
 
 

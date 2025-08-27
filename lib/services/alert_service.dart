@@ -45,31 +45,33 @@ class AlertService {
     }
   }
 
-  void _showExpiryAlert(ManufacturingOrder order) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'expiry_alerts',
-      'تنبيهات انتهاء الصلاحية',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+void _showExpiryAlert(ManufacturingOrder order) async {
+  const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+    'expiry_alerts',
+    'تنبيهات انتهاء الصلاحية',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
 
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
+  const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
 
-    await _notifications.show(
-      0,
-      'manufacturing.alerts.expiry_alert'.tr(),
-      'manufacturing.alerts.expiry_message'.tr(
-        args: [
-          order.productName,
-          order.batchNumber,
-          '${order.expiryDate.year}/${order.expiryDate.month}/${order.expiryDate.day}'
-        ]
-      ),
-      platformChannelSpecifics,
-    );
-  }
+  await _notifications.show(
+    0,
+    'manufacturing.alerts.expiry_alert'.tr(),
+    'manufacturing.alerts.expiry_message'.tr(
+      args: [
+        order.productName,
+        order.runs.isNotEmpty ? order.runs.first.batchNumber : 'N/A',
+        '${order.expiryDate.year}/${order.expiryDate.month}/${order.expiryDate.day}'
+      ],
+    ),
+    platformChannelSpecifics,
+  );
+}
+
+
 
   void _showLowStockAlert(RawMaterial material) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =

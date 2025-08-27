@@ -68,4 +68,10 @@ class FinishedProductService {
           : null;
     });
   }
+
+Future<void> deleteFinishedProductDirect(String productId) async {
+  await FirebaseFirestore.instance.collection('finished_products').doc(productId).delete();
+}
+
+
 }

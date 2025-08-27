@@ -147,7 +147,7 @@ class _ProductCompositionScreenState extends State<ProductCompositionScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${'product_name'.tr()}: ${product?.name ?? composition.productId}',
+                        '${'product_name'.tr()}: ${product?.nameAr ?? composition.productId}',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),

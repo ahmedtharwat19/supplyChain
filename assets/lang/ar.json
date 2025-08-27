@@ -785,6 +785,7 @@
   "no_factories_available": "لا توجد مصانع متاحة",
 
   "manufacturing": {
+    "select_product": "اختر المنتج التام",
     "production_date": "تاريخ الإنتاج",
     "days_remaining": "الأيام المتبقية",
     "created_at": "تم الإنشاء في",
