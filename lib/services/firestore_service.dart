@@ -713,16 +713,16 @@ class FirestoreService {
       .collection('factories/$factoryId/inventory');
 
   for (final item in items) {
-    final productId = item.itemId;
+    final itemId = item.itemId;
     final quantity = item.quantity;
 
-    if (productId.isEmpty || quantity <= 0) continue;
+    if (itemId.isEmpty || quantity <= 0) continue;
 
     final newMovementRef = stockMovementsRef.doc();
 
     batch.set(newMovementRef, {
       'type': 'purchase',
-      'productId': productId,
+      'itemId': itemId,
       'quantity': quantity,
       'date': FieldValue.serverTimestamp(),
       'referenceId': orderId,
@@ -730,7 +730,7 @@ class FirestoreService {
       'factoryId': factoryId,
     });
 
-    final stockRef = inventoryCollection.doc(productId);
+    final stockRef = inventoryCollection.doc(itemId);
 
     batch.set(
       stockRef,
@@ -761,16 +761,16 @@ class FirestoreService {
 
     for (final item in items) {
       final itemMap = item as Map<String, dynamic>;
-      final productId = itemMap['itemId']?.toString();
+      final itemId = itemMap['itemId']?.toString();
       final quantity = _parseQuantity(itemMap['quantity']);
 
-      if (productId == null || productId.isEmpty || quantity <= 0) continue;
+      if (itemId == null || itemId.isEmpty || quantity <= 0) continue;
 
       final newMovementRef = stockMovementsRef.doc();
 
       batch.set(newMovementRef, {
         'type': 'purchase',
-        'productId': productId,
+        'itemId': itemId,
         'quantity': quantity,
         'date': FieldValue.serverTimestamp(),
         'referenceId': orderId,
@@ -778,7 +778,7 @@ class FirestoreService {
         'factoryId': factoryId,
       });
 
-      final stockDoc = inventoryRef.doc(productId);
+      final stockDoc = inventoryRef.doc(itemId);
       batch.set(
           stockDoc,
           {
@@ -813,17 +813,17 @@ class FirestoreService {
         _firestore.collection('factories/$factoryId/inventory');
 
     for (final material in materials) {
-      final productId = material['itemId']?.toString();
+      final itemId = material['itemId']?.toString();
       final quantity = _parseQuantity(material['quantity']);
-      final itemName = material['itemName']?.toString() ?? productId ?? '';
+      final itemName = material['itemName']?.toString() ?? itemId ?? '';
 
-      if (productId == null || productId.isEmpty || quantity <= 0) continue;
+      if (itemId == null || itemId.isEmpty || quantity <= 0) continue;
 
       final newMovementRef = stockMovementsRef.doc();
 
       batch.set(newMovementRef, {
         'type': 'manufacturing_deduction',
-        'productId': productId,
+        'itemId': itemId,
         'itemName': itemName,
         'quantity': -quantity, // سالب للخصم
         'date': FieldValue.serverTimestamp(),
@@ -833,7 +833,7 @@ class FirestoreService {
         'batchNumber': batchNumber,
       });
 
-      final stockDoc = inventoryRef.doc(productId);
+      final stockDoc = inventoryRef.doc(itemId);
       batch.set(
           stockDoc,
           {
@@ -850,7 +850,7 @@ class FirestoreService {
   Future<void> processManufacturingAddition({
     required String companyId,
     required String factoryId,
-    required FinishedProduct product,
+    required FinishedProduct item,
     required String userId,
   }) async {
     final batch = _firestore.batch();
@@ -863,25 +863,25 @@ class FirestoreService {
     final newMovementRef = stockMovementsRef.doc();
     batch.set(newMovementRef, {
       'type': 'manufacturing_addition',
-      'productId': product.id,
-      'itemName': product.nameAr, // بدلًا من product.name
-      'quantity': product.quantity,
+      'itemId': item.id,
+      'itemName': item.nameAr, // بدلًا من item.name
+      'quantity': item.quantity,
       'date': FieldValue.serverTimestamp(),
-      'referenceId': product.id, // بدل manufacturingOrderId غير الموجود
+      'referenceId': item.id, // بدل manufacturingOrderId غير الموجود
       'userId': userId,
       'factoryId': factoryId,
-      // 'batchNumber': product.batchNumber, // إذا غير موجود، إما تحذفه أو تضيفه للنموذج
+      // 'batchNumber': item.batchNumber, // إذا غير موجود، إما تحذفه أو تضيفه للنموذج
     });
 
     // تحديث المخزون
-    final stockDoc = inventoryRef.doc(product.id);
+    final stockDoc = inventoryRef.doc(item.id);
     batch.set(
         stockDoc,
         {
-          'quantity': FieldValue.increment(product.quantity),
+          'quantity': FieldValue.increment(item.quantity),
           'lastUpdated': FieldValue.serverTimestamp(),
-          // 'name': product.name,
-          // 'unit': product.unit,
+          // 'name': item.name,
+          // 'unit': item.unit,
         },
         SetOptions(merge: true));
 

@@ -38,7 +38,7 @@ class ManufacturingOrder {
   final String id;
   final String productId;
   final String productName;
-  final int totalQuantity; // الكمية الكلية لجميع التشغيلات
+  final int totalQuantity;
   final String productUnit;
   final DateTime manufacturingDate;
   final DateTime expiryDate;
@@ -50,7 +50,9 @@ class ManufacturingOrder {
   final QualityStatus qualityStatus;
   final String? qualityNotes;
   final String? barcodeUrl;
-  final List<ManufacturingRun> runs; // قائمة التشغيلات داخل أمر التصنيع
+  final List<ManufacturingRun> runs;
+  final String companyId; // أضف هذه الخاصية
+  final String factoryId; // أضف هذه الخاصية
 
   ManufacturingOrder({
     required this.id,
@@ -66,11 +68,11 @@ class ManufacturingOrder {
     required this.packagingMaterials,
     required this.createdAt,
     required this.runs,
+    required this.companyId, // أضف هنا
+    required this.factoryId, // أضف هنا
     this.qualityStatus = QualityStatus.pending,
     this.qualityNotes,
     this.barcodeUrl,
-    String? companyId,
-    String? factoryId,
   });
 
   bool get isExpiringSoon {
@@ -98,17 +100,25 @@ class ManufacturingOrder {
       'productName': productName,
       'totalQuantity': totalQuantity,
       'productUnit': productUnit,
-      'manufacturingDate': Timestamp.fromDate(manufacturingDate),
-      'expiryDate': Timestamp.fromDate(expiryDate),
-      'status': status.toString(),
+      'manufacturingDate': manufacturingDate is Timestamp 
+          ? manufacturingDate 
+          : Timestamp.fromDate(manufacturingDate),
+      'expiryDate': expiryDate is Timestamp 
+          ? expiryDate 
+          : Timestamp.fromDate(expiryDate),
+      'status': status.toString().split('.').last,
       'isFinished': isFinished,
       'rawMaterials': rawMaterials.map((rm) => rm.toMap()).toList(),
-      'packagingMaterials': packagingMaterials.map((pk) => pk.toMap()).toList(),
-      'createdAt': Timestamp.fromDate(createdAt),
-      'qualityStatus': qualityStatus.toString(),
+      'packagingMaterials': packagingMaterials.map((pm) => pm.toMap()).toList(),
+      'createdAt': createdAt is Timestamp 
+          ? createdAt 
+          : Timestamp.fromDate(createdAt),
+      'qualityStatus': qualityStatus.toString().split('.').last,
       'qualityNotes': qualityNotes,
       'barcodeUrl': barcodeUrl,
-      'runs': runs.map((r) => r.toMap()).toList(),
+      'runs': runs.map((run) => run.toMap()).toList(),
+      'companyId': companyId, // استخدم الخاصية المضافة
+      'factoryId': factoryId, // استخدم الخاصية المضافة
     };
   }
 
@@ -139,18 +149,20 @@ class ManufacturingOrder {
       runs: List<ManufacturingRun>.from((map['runs'] as List<dynamic>?)
               ?.map((r) => ManufacturingRun.fromMap(r)) ??
           []),
+      companyId: map['companyId'] ?? '', // أضف هنا
+      factoryId: map['factoryId'] ?? '', // أضف هنا
     );
   }
 
   static ManufacturingStatus _parseStatus(String? status) {
     switch (status) {
-      case 'ManufacturingStatus.pending':
+      case 'pending':
         return ManufacturingStatus.pending;
-      case 'ManufacturingStatus.inProgress':
+      case 'inProgress':
         return ManufacturingStatus.inProgress;
-      case 'ManufacturingStatus.completed':
+      case 'completed':
         return ManufacturingStatus.completed;
-      case 'ManufacturingStatus.cancelled':
+      case 'cancelled':
         return ManufacturingStatus.cancelled;
       default:
         return ManufacturingStatus.pending;
@@ -159,9 +171,9 @@ class ManufacturingOrder {
 
   static QualityStatus _parseQualityStatus(String? status) {
     switch (status) {
-      case 'QualityStatus.passed':
+      case 'passed':
         return QualityStatus.passed;
-      case 'QualityStatus.failed':
+      case 'failed':
         return QualityStatus.failed;
       default:
         return QualityStatus.pending;
@@ -179,12 +191,14 @@ class ManufacturingOrder {
     ManufacturingStatus? status,
     bool? isFinished,
     List<RawMaterial>? rawMaterials,
-    List<PackagingMaterial>? packagingMaerials,
+    List<PackagingMaterial>? packagingMaterials,
     DateTime? createdAt,
     List<ManufacturingRun>? runs,
     QualityStatus? qualityStatus,
     String? qualityNotes,
     String? barcodeUrl,
+    String? companyId,
+    String? factoryId,
   }) {
     return ManufacturingOrder(
       id: id ?? this.id,
@@ -197,12 +211,14 @@ class ManufacturingOrder {
       status: status ?? this.status,
       isFinished: isFinished ?? this.isFinished,
       rawMaterials: rawMaterials ?? this.rawMaterials,
-      packagingMaterials: packagingMaterials,
+      packagingMaterials: packagingMaterials ?? this.packagingMaterials,
       createdAt: createdAt ?? this.createdAt,
       runs: runs ?? this.runs,
       qualityStatus: qualityStatus ?? this.qualityStatus,
       qualityNotes: qualityNotes ?? this.qualityNotes,
       barcodeUrl: barcodeUrl ?? this.barcodeUrl,
+      companyId: companyId ?? this.companyId,
+      factoryId: factoryId ?? this.factoryId,
     );
   }
 }
@@ -241,10 +257,8 @@ class RawMaterial {
       minStockLevel: (map['minStockLevel'] as num?)?.toDouble() ?? 0,
     );
   }
-
 }
 
-  
 class PackagingMaterial {
   final String materialId;
   final String materialName;

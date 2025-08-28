@@ -23,8 +23,8 @@ class StockPdfExporter {
 
   static Future<pw.Document> generateStockMovementsPdf({
     required List<QueryDocumentSnapshot> docs,
-    required Map<String, String> productNames,
-    required Map<String, int> productStocks,
+    required Map<String, String> itemNames,
+    required Map<String, int> itemStocks,
     required Map<String, dynamic> companyData,
     required Map<String, dynamic> factoryData,
     required DateTime startDate,
@@ -56,7 +56,7 @@ class StockPdfExporter {
               children: [
                 _buildHeader(companyData, factoryData, startDate, endDate, isArabic, arabicFont),
                 pw.SizedBox(height: 20),
-                _buildMovementsTable(docs, productNames, productStocks, isArabic, arabicFont),
+                _buildMovementsTable(docs, itemNames, itemStocks, isArabic, arabicFont),
                 pw.SizedBox(height: 20),
                 _buildFooter(isArabic, arabicFont),
               ],
@@ -128,30 +128,30 @@ class StockPdfExporter {
 
   static pw.Widget _buildMovementsTable(
     List<QueryDocumentSnapshot> docs,
-    Map<String, String> productNames,
-    Map<String, int> productStocks,
+    Map<String, String> itemNames,
+    Map<String, int> itemStocks,
     bool isArabic,
     pw.Font arabicFont,
   ) {
     // تجميع البيانات حسب المنتج
-    final Map<String, List<Map<String, dynamic>>> productMovements = {};
+    final Map<String, List<Map<String, dynamic>>> itemMovements = {};
    
     for (var doc in docs) {
       try {
         final data = doc.data() as Map<String, dynamic>;
-        final productId = data['productId']?.toString() ?? '';
+        final itemId = data['itemId']?.toString() ?? '';
         final type = data['type']?.toString() ?? 'unknown';
-        final quantity = (data['quantity'] ?? 0) as int;
+        final quantity = (data['quantity'] ?? 0) as double;
         final timestamp = data['date'] as Timestamp?;
         final date = timestamp != null ? timestamp.toDate() : DateTime.now();
 
         final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
         
-        if (!productMovements.containsKey(productId)) {
-          productMovements[productId] = [];
+        if (!itemMovements.containsKey(itemId)) {
+          itemMovements[itemId] = [];
         }
         
-        productMovements[productId]!.add({
+        itemMovements[itemId]!.add({
           'date': date,
           'type_text': movementInfo['type_text'],
           'in': movementInfo['in'],
@@ -164,7 +164,7 @@ class StockPdfExporter {
 
     return pw.Column(
       children: [
-        for (final productId in productMovements.keys)
+        for (final itemId in itemMovements.keys)
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
@@ -172,7 +172,7 @@ class StockPdfExporter {
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 8),
                 child: pw.Text(
-                  '${'product'.tr()}: ${productNames[productId] ?? 'Unknown'}',
+                  '${'item'.tr()}: ${itemNames[itemId] ?? 'Unknown'}',
                   style: pw.TextStyle(
                     fontWeight: pw.FontWeight.bold,
                     fontSize: 14,
@@ -206,7 +206,7 @@ class StockPdfExporter {
                     ],
                   ),
                   // بيانات الجدول
-                  ..._buildProductTableRows(productMovements[productId]!, arabicFont, isArabic),
+                  ..._buildItemTableRows(itemMovements[itemId]!, arabicFont, isArabic),
                 ],
               ),
               pw.SizedBox(height: 16),
@@ -216,7 +216,7 @@ class StockPdfExporter {
     );
   }
 
-  static List<pw.TableRow> _buildProductTableRows(
+  static List<pw.TableRow> _buildItemTableRows(
     List<Map<String, dynamic>> movements,
     pw.Font font,
     bool isArabic,
@@ -345,8 +345,8 @@ class StockPdfExporter {
   // دالة لإنشاء رابط تنزيل PDF
   static Future<String> generatePdfDownloadUrl({
     required List<QueryDocumentSnapshot> docs,
-    required Map<String, String> productNames,
-    required Map<String, int> productStocks,
+    required Map<String, String> itemNames,
+    required Map<String, int> itemStocks,
     required Map<String, dynamic> companyData,
     required Map<String, dynamic> factoryData,
     required DateTime startDate,
@@ -355,8 +355,8 @@ class StockPdfExporter {
   }) async {
     final pdf = await generateStockMovementsPdf(
       docs: docs,
-      productNames: productNames,
-      productStocks: productStocks,
+      itemNames: itemNames,
+      itemStocks: itemStocks,
       companyData: companyData,
       factoryData: factoryData,
       startDate: startDate,

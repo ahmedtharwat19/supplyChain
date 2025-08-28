@@ -29,7 +29,7 @@ class StockMovementsPage extends StatefulWidget {
 class _StockMovementsPageState extends State<StockMovementsPage> {
   String? selectedCompanyId;
   String? selectedFactoryId;
-  String? selectedProductId;
+  String? selectedItemId;
   DateTime? startDate;
   DateTime? endDate;
   String sortOrder = 'desc';
@@ -37,9 +37,9 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   List<String> userCompanyIds = [];
   List<Map<String, dynamic>> companies = [];
   List<Map<String, dynamic>> factories = [];
-  List<Map<String, dynamic>> products = [];
-  Map<String, int> productStocks = {};
-  Map<String, String> productNames = {};
+  List<Map<String, dynamic>> items = [];
+  Map<String, double> itemStocks = {};
+  Map<String, String> itemNames = {};
   bool _isArabic = false;
   bool isLoading = true;
   bool isExporting = false;
@@ -131,7 +131,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       await _loadCompaniesWithMovements();
     }
 
-    await _loadProductNames();
+    await _loadItemNames();
     setState(() => isLoading = false);
   }
 
@@ -176,7 +176,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     final isArabicNow = context.locale.languageCode == 'ar';
     if (_isArabic != isArabicNow) {
       _isArabic = isArabicNow;
-      _loadProductNames();
+      _loadItemNames();
       setState(() {});
     }
   }
@@ -286,7 +286,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       });
 
       if (selectedFactoryId != null) {
-        await _loadProductsWithMovements();
+        await _loadItemsWithMovements();
       }
     } catch (e) {
       debugPrint('[ERROR] Failed to load factories with movements: $e');
@@ -294,11 +294,11 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   }
 
   // دالة جديدة: تحميل المنتجات التي تحتوي على حركات للمصنع المحدد
-  Future<void> _loadProductsWithMovements() async {
+  Future<void> _loadItemsWithMovements() async {
     if (selectedCompanyId == null || selectedFactoryId == null) return;
 
     try {
-      final productsWithMovements = <Map<String, dynamic>>[];
+      final itemsWithMovements = <Map<String, dynamic>>[];
 
       // جلب جميع المنتجات التي لها حركات في المصنع المحدد
       final movementsSnapshot = await FirebaseFirestore.instance
@@ -309,43 +309,43 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
           .get();
 
       // تجميع معرفات المنتجات الفريدة
-      final productIds = <String>{};
+      final itemIds = <String>{};
       for (final movement in movementsSnapshot.docs) {
-        final productId = movement.data()['productId']?.toString();
-        if (productId != null) {
-          productIds.add(productId);
+        final itemId = movement.data()['itemId']?.toString();
+        if (itemId != null) {
+          itemIds.add(itemId);
         }
       }
 
       // جلب تفاصيل المنتجات
-      for (final productId in productIds) {
+      for (final itemId in itemIds) {
         try {
-          final productDoc = await FirebaseFirestore.instance
+          final itemDoc = await FirebaseFirestore.instance
               .collection('items')
-              .doc(productId)
+              .doc(itemId)
               .get();
 
-          if (productDoc.exists) {
-            final productData = productDoc.data()!;
-            productsWithMovements.add({
-              'id': productId,
-              'nameAr': productData['nameAr'] ?? productId,
-              'nameEn': productData['nameEn'] ?? productId,
+          if (itemDoc.exists) {
+            final itemData = itemDoc.data()!;
+            itemsWithMovements.add({
+              'id': itemId,
+              'nameAr': itemData['nameAr'] ?? itemId,
+              'nameEn': itemData['nameEn'] ?? itemId,
             });
           }
         } catch (e) {
-          debugPrint('[ERROR] Loading product $productId: $e');
+          debugPrint('[ERROR] Loading item $itemId: $e');
         }
       }
 
       setState(() {
-        products = productsWithMovements;
-        selectedProductId = products.isNotEmpty ? products[0]['id'] : null;
+        items = itemsWithMovements;
+        selectedItemId = items.isNotEmpty ? items[0]['id'] : null;
       });
 
       await _loadInventory();
     } catch (e) {
-      debugPrint('[ERROR] Failed to load products with movements: $e');
+      debugPrint('[ERROR] Failed to load items with movements: $e');
     }
   }
 
@@ -359,19 +359,19 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
           .collection('inventory')
           .get();
 
-      final stocks = <String, int>{};
+      final stocks = <String, double>{};
       for (var doc in invSnap.docs) {
         try {
           final data = doc.data();
           final quantity = data['quantity'];
-          stocks[doc.id] = (quantity is int
+          stocks[doc.id] = (quantity is double
               ? quantity
-              : (quantity is num ? quantity.toInt() : 0));
+              : (quantity is num ? quantity.toDouble() : 0));
         } catch (e) {
           debugPrint('[ERROR] Processing inventory item ${doc.id}: $e');
         }
       }
-      setState(() => productStocks = stocks);
+      setState(() => itemStocks = stocks);
     } catch (e) {
       debugPrint('[ERROR] Loading inventory: $e');
       if (mounted) {
@@ -382,7 +382,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     }
   }
 
-  Future<void> _loadProductNames() async {
+  Future<void> _loadItemNames() async {
     final itemsSnap =
         await FirebaseFirestore.instance.collection('items').get();
 
@@ -394,31 +394,461 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
           : (data['nameEn'] ?? 'Unknown'.tr());
     }
     setState(() {
-      productNames = names;
+      itemNames = names;
     });
   }
 
   Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
+  // تجميع البيانات حسب المنتج
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
+
+  for (var doc in docs) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      
+      // استخدام itemId بدلاً من itemId (التصحيح الرئيسي)
+      final itemId = data['itemId']?.toString() ?? '';
+      final type = data['type']?.toString() ?? 'unknown';
+      
+      // تحويل الكمية إلى double بشكل آمن
+      double quantity = 0;
+      final quantityValue = data['quantity'];
+      if (quantityValue is int) {
+        quantity = quantityValue.toDouble();
+      } else if (quantityValue is double) {
+        quantity = quantityValue;
+      } else if (quantityValue is String) {
+        quantity = double.tryParse(quantityValue) ?? 0;
+      } else if (quantityValue is num) {
+        quantity = quantityValue.toDouble();
+      }
+      
+      final timestamp = data['date'] as Timestamp?;
+      final date = timestamp != null ? timestamp.toDate() : DateTime.now();
+
+      final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
+
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
+      }
+
+      // إضافة الحركة
+      itemMovements[itemId]!.add({
+        'date': date,
+        'type': type,
+        'in': movementInfo['in'],
+        'out': movementInfo['out'],
+        'type_text': movementInfo['type_text'],
+      });
+    } catch (e) {
+      debugPrint('[ERROR] Processing movement: $e');
+      // طباعة تفاصيل المستند للمساعدة في التصحيح
+      debugPrint('Document data: ${doc.data()}');
+      
+      // تحليل الخطأ بشكل أكثر تفصيلاً
+      if (e is TypeError) {
+        debugPrint('Type error details: ${e.toString()}');
+        final data = doc.data() as Map<String, dynamic>;
+        debugPrint('itemId type: ${data['itemId']?.runtimeType}');
+        debugPrint('type type: ${data['type']?.runtimeType}');
+        debugPrint('quantity type: ${data['quantity']?.runtimeType}');
+        debugPrint('date type: ${data['date']?.runtimeType}');
+      }
+    }
+  }
+
+  // إذا تم التخلص من الـ Widget، نرجع widget فارغ
+  if (!mounted) {
+    return const SizedBox.shrink();
+  }
+
+  return ListView.builder(
+    itemCount: itemMovements.length,
+    itemBuilder: (context, index) {
+      // تحقق مرة أخرى في كل مرة يتم فيها بناء عنصر
+      if (!mounted) {
+        return const SizedBox.shrink();
+      }
+
+      final itemId = itemMovements.keys.elementAt(index);
+      final movements = itemMovements[itemId]!;
+      final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+      final currentStock = itemStocks[itemId] ?? 0;
+
+      // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
+      double runningBalance = currentStock; // نبدأ من الرصيد الحالي
+      final movementsWithBalance = movements.map((movement) {
+        runningBalance = runningBalance + movement['in'] - movement['out'];
+        return {
+          ...movement,
+          'balance': runningBalance,
+        };
+      }).toList();
+
+      // عكس القائمة لعرض الأحدث أولاً مع الرصيد الصحيح
+      final reversedMovements = movementsWithBalance.reversed.toList();
+
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // عنوان المنتج والرصيد الحالي
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${'item'.tr()}: $itemName',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${'current_balance'.tr()}: $currentStock',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // جدول الحركات
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: IntrinsicWidth(
+                  child: DataTable(
+                    columnSpacing: 16,
+                    dataRowMinHeight: 40,
+                    dataRowMaxHeight: 60,
+                    headingRowHeight: 40,
+                    columns: [
+                      const DataColumn(
+                          label: Text('#',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          numeric: true),
+                      DataColumn(
+                        label: Text('date'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('movement_type'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                          label: Text('in'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('out'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('balance'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue)),
+                          numeric: true),
+                    ],
+                    rows: List<DataRow>.generate(reversedMovements.length,
+                        (index) {
+                      // تحقق مرة أخرى قبل بناء كل صف
+                      if (!mounted) {
+                        return const DataRow(cells: []);
+                      }
+
+                      final movement = reversedMovements[index];
+                      return DataRow(
+                        cells: [
+                          DataCell(Text((index + 1).toString())),
+                          DataCell(Text(_formatDate(movement['date']))),
+                          DataCell(Text(movement['type_text'])),
+                          DataCell(Text(
+                            movement['in'] > 0
+                                ? movement['in'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['in'] > 0
+                                  ? Colors.green
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['out'] > 0
+                                ? movement['out'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['out'] > 0
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['balance'].toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          )),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+/* Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
+  // تجميع البيانات حسب المنتج
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
+
+  for (var doc in docs) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      final itemId = data['itemId']?.toString() ?? '';
+      final type = data['type']?.toString() ?? 'unknown';
+      
+      // تحويل الكمية إلى double بشكل آمن
+      double quantity = 0;
+      final quantityValue = data['quantity'];
+      if (quantityValue is int) {
+        quantity = quantityValue.toDouble();
+      } else if (quantityValue is double) {
+        quantity = quantityValue;
+      } else if (quantityValue is String) {
+        quantity = double.tryParse(quantityValue) ?? 0;
+      } else if (quantityValue is num) {
+        quantity = quantityValue.toDouble();
+      }
+      
+      final timestamp = data['date'] as Timestamp?;
+      final date = timestamp != null ? timestamp.toDate() : DateTime.now();
+
+      final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
+
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
+      }
+
+      // إضافة الحركة
+      itemMovements[itemId]!.add({
+        'date': date,
+        'type': type,
+        'in': movementInfo['in'],
+        'out': movementInfo['out'],
+        'type_text': movementInfo['type_text'],
+      });
+    } catch (e) {
+      debugPrint('[ERROR] Processing movement: $e');
+      // طباعة تفاصيل المستند للمساعدة في التصحيح
+      debugPrint('Document data: ${doc.data()}');
+    }
+  }
+
+  // إذا تم التخلص من الـ Widget، نرجع widget فارغ
+  if (!mounted) {
+    return const SizedBox.shrink();
+  }
+
+  return ListView.builder(
+    itemCount: itemMovements.length,
+    itemBuilder: (context, index) {
+      // تحقق مرة أخرى في كل مرة يتم فيها بناء عنصر
+      if (!mounted) {
+        return const SizedBox.shrink();
+      }
+
+      final itemId = itemMovements.keys.elementAt(index);
+      final movements = itemMovements[itemId]!;
+      final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+      final currentStock = itemStocks[itemId] ?? 0;
+
+      // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
+      double runningBalance = 0;
+      final movementsWithBalance = movements.map((movement) {
+        runningBalance =
+            (runningBalance - movement['out'] + movement['in']).toDouble();
+        return {
+          ...movement,
+          'balance': runningBalance,
+        };
+      }).toList();
+
+      // عكس القائمة لعرض الأحدث أولاً مع الرصيد الصحيح
+      final reversedMovements = movementsWithBalance.reversed.toList();
+
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // عنوان المنتج والرصيد الحالي
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${'item'.tr()}: $itemName',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${'current_balance'.tr()}: $currentStock',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // جدول الحركات
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: IntrinsicWidth(
+                  child: DataTable(
+                    columnSpacing: 16,
+                    dataRowMinHeight: 40,
+                    dataRowMaxHeight: 60,
+                    headingRowHeight: 40,
+                    columns: [
+                      const DataColumn(
+                          label: Text('#',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          numeric: true),
+                      DataColumn(
+                        label: Text('date'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('movement_type'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                          label: Text('in'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('out'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('balance'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue)),
+                          numeric: true),
+                    ],
+                    rows: List<DataRow>.generate(reversedMovements.length,
+                        (index) {
+                      // تحقق مرة أخرى قبل بناء كل صف
+                      if (!mounted) {
+                        return const DataRow(cells: []);
+                      }
+
+                      final movement = reversedMovements[index];
+                      return DataRow(
+                        cells: [
+                          DataCell(Text((index + 1).toString())),
+                          DataCell(Text(_formatDate(movement['date']))),
+                          DataCell(Text(movement['type_text'])),
+                          DataCell(Text(
+                            movement['in'] > 0
+                                ? movement['in'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['in'] > 0
+                                  ? Colors.green
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['out'] > 0
+                                ? movement['out'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['out'] > 0
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['balance'].toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          )),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+ *//*   Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
     // تجميع البيانات حسب المنتج
-    final Map<String, List<Map<String, dynamic>>> productMovements = {};
+    final Map<String, List<Map<String, dynamic>>> itemMovements = {};
 
     for (var doc in docs) {
       try {
         final data = doc.data() as Map<String, dynamic>;
-        final productId = data['productId']?.toString() ?? '';
+        final itemId = data['itemId']?.toString() ?? '';
         final type = data['type']?.toString() ?? 'unknown';
-        final quantity = (data['quantity'] ?? 0) as int;
+        final quantity = (data['quantity'] ?? 0) as double;
         final timestamp = data['date'] as Timestamp?;
         final date = timestamp != null ? timestamp.toDate() : DateTime.now();
 
         final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
 
-        if (!productMovements.containsKey(productId)) {
-          productMovements[productId] = [];
+        if (!itemMovements.containsKey(itemId)) {
+          itemMovements[itemId] = [];
         }
 
         // إضافة الحركة
-        productMovements[productId]!.add({
+        itemMovements[itemId]!.add({
           'date': date,
           'type': type,
           'in': movementInfo['in'],
@@ -431,18 +861,18 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     }
 
     return ListView.builder(
-      itemCount: productMovements.length,
+      itemCount: itemMovements.length,
       itemBuilder: (context, index) {
-        final productId = productMovements.keys.elementAt(index);
-        final movements = productMovements[productId]!;
-        final productName = productNames[productId] ?? 'Unknown Product'.tr();
-        final currentStock = productStocks[productId] ?? 0;
+        final itemId = itemMovements.keys.elementAt(index);
+        final movements = itemMovements[itemId]!;
+        final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+        final currentStock = itemStocks[itemId] ?? 0;
 
         // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
-        int runningBalance = 0;
+        double runningBalance = 0;
         final movementsWithBalance = movements.map((movement) {
           runningBalance =
-              (runningBalance - movement['out'] + movement['in']).toInt();
+              (runningBalance - movement['out'] + movement['in']).toDouble();
           return {
             ...movement,
             'balance': runningBalance,
@@ -465,7 +895,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                   children: [
                     Flexible(
                       child: Text(
-                        '${'product'.tr()}: $productName',
+                        '${'item'.tr()}: $itemName',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -577,7 +1007,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       },
     );
   }
-
+ */
 /*   Future<void> _retryLoading() async {
     setState(() {
       isLoading = true;
@@ -607,8 +1037,8 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         .collection('stock_movements')
         .where('factoryId', isEqualTo: selectedFactoryId);
 
-    if (selectedProductId != null) {
-      query = query.where('productId', isEqualTo: selectedProductId);
+    if (selectedItemId != null) {
+      query = query.where('itemId', isEqualTo: selectedItemId);
     }
 
     if (startDate != null) {
@@ -722,23 +1152,23 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   pw.Widget _buildPdfTable(
       List<QueryDocumentSnapshot> docs, pw.Font regularFont, pw.Font boldFont) {
     // تجميع الحركات حسب المنتج
-    final Map<String, List<Map<String, dynamic>>> productMovements = {};
+    final Map<String, List<Map<String, dynamic>>> itemMovements = {};
 
     for (var doc in docs) {
       try {
         final docData = doc.data() as Map<String, dynamic>;
-        final productId = docData['productId']?.toString() ?? '';
+        final itemId = docData['itemId']?.toString() ?? '';
         final type = docData['type']?.toString() ?? 'unknown';
         final movementInfo = MovementUtils.getMovementTypeInfo(
-            type, (docData['quantity'] ?? 0) as int);
+            type, (docData['quantity'] ?? 0) as double);
         final timestamp = docData['date'] as Timestamp?;
         final date = timestamp != null ? _formatDate(timestamp.toDate()) : '';
 
-        if (!productMovements.containsKey(productId)) {
-          productMovements[productId] = [];
+        if (!itemMovements.containsKey(itemId)) {
+          itemMovements[itemId] = [];
         }
 
-        productMovements[productId]!.add({
+        itemMovements[itemId]!.add({
           'date': date,
           'type': type,
           'in': movementInfo['in'],
@@ -752,7 +1182,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
 
     return pw.Column(
       children: [
-        for (final productId in productMovements.keys)
+        for (final itemId in itemMovements.keys)
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
@@ -760,7 +1190,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 8),
                 child: pw.Text(
-                  '${'product'.tr()}: ${productNames[productId] ?? 'Unknown'}',
+                  '${'item'.tr()}: ${itemNames[itemId] ?? 'Unknown'}',
                   style: pw.TextStyle(
                     fontWeight: pw.FontWeight.bold,
                     fontSize: 14,
@@ -820,8 +1250,8 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                           ],
                   ),
                   // بيانات الجدول
-                  ..._buildProductTableRows(
-                      productMovements[productId]!, regularFont),
+                  ..._buildItemTableRows(
+                      itemMovements[itemId]!, regularFont),
                 ],
               ),
               pw.SizedBox(height: 16),
@@ -831,15 +1261,15 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     );
   }
 
-  List<pw.TableRow> _buildProductTableRows(
+  List<pw.TableRow> _buildItemTableRows(
       List<Map<String, dynamic>> movements, pw.Font font) {
     final List<pw.TableRow> rows = [];
 
     // حساب الرصيد التدريجي
-    int runningBalance = 0;
+    double runningBalance = 0;
     final movementsWithBalance = movements.map((movement) {
       runningBalance =
-          (runningBalance - movement['out'] + movement['in']).toInt();
+          (runningBalance - movement['out'] + movement['in']).toDouble();
       return {
         ...movement,
         'balance': runningBalance,
@@ -1017,9 +1447,9 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                       setState(() {
                         selectedCompanyId = val;
                         selectedFactoryId = null;
-                        selectedProductId = null;
+                        selectedItemId = null;
                         factories = [];
-                        products = [];
+                        items = [];
                       });
                       if (val != null) await _loadFactoriesWithMovements();
                     },
@@ -1034,10 +1464,10 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                     onChanged: (val) async {
                       setState(() {
                         selectedFactoryId = val;
-                        selectedProductId = null;
-                        products = [];
+                        selectedItemId = null;
+                        items = [];
                       });
-                      if (val != null) await _loadProductsWithMovements();
+                      if (val != null) await _loadItemsWithMovements();
                     },
                   ),
                 ),
@@ -1048,10 +1478,10 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    label: 'select_product',
-                    value: selectedProductId,
-                    items: products,
-                    onChanged: (val) => setState(() => selectedProductId = val),
+                    label: 'select_item',
+                    value: selectedItemId,
+                    items: items,
+                    onChanged: (val) => setState(() => selectedItemId = val),
                   ),
                 ),
                 const SizedBox(width: 8),

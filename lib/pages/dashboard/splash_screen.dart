@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-//import 'package:go_router/go_router.dart';
-//import 'package:puresip_purchasing/services/user_subscription_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:puresip_purchasing/services/user_subscription_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
         await Future.delayed(const Duration(seconds: 1));
-     //   _startApp(); // ← تابع تحميل التطبيق بعد الانتظار
+       _startApp(); // ← تابع تحميل التطبيق بعد الانتظار
       }
     });
   }
@@ -119,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
 }
  */
 
- /*  Future<void> _startApp() async {
+  Future<void> _startApp() async {
     try {
       final subscriptionService = UserSubscriptionService();
       final result = await subscriptionService.checkUserSubscription();
@@ -161,7 +161,9 @@ class _SplashScreenState extends State<SplashScreen>
       context.go('/login');
     }
   }
- */
+ 
+  
+  
   @override
   void dispose() {
     _fadeController.dispose();
@@ -214,7 +216,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Text(
                         _appVersion,
                         style: const TextStyle(
-                          color: Colors.grey,
+                          color: Colors.black,
                           fontWeight: FontWeight.w400,
                           fontSize: 15,
                         ),

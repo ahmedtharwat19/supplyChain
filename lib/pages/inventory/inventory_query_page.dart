@@ -110,15 +110,15 @@ Future<void> _searchInventory({bool showAll = false}) async {
       debugPrint('Inventory count in factory $factoryId: ${inventorySnapshot.docs.length}');
 
       for (final invDoc in inventorySnapshot.docs) {
-        final productId = invDoc.id;
+        final itemId = invDoc.id;
 
         // فقط المنتجات التي يملكها المستخدم
-        if (!userProducts.containsKey(productId)) {
-          debugPrint('Inventory product $productId ignored: not in user products.');
+        if (!userProducts.containsKey(itemId)) {
+          debugPrint('Inventory product $itemId ignored: not in user products.');
           continue;
         }
 
-        final productData = userProducts[productId]!;
+        final productData = userProducts[itemId]!;
         final inventoryData = invDoc.data();
 
         final productName = _isArabic
@@ -129,7 +129,7 @@ Future<void> _searchInventory({bool showAll = false}) async {
         if (!showAll &&
             _searchQuery.isNotEmpty &&
             !productName.toLowerCase().contains(_searchQuery.toLowerCase())) {
-          debugPrint('Inventory product $productId ignored: search query mismatch.');
+          debugPrint('Inventory product $itemId ignored: search query mismatch.');
           continue;
         }
 
@@ -156,7 +156,7 @@ Future<void> _searchInventory({bool showAll = false}) async {
         }
 
         _inventoryResults.add({
-          'productId': productId,
+          'itemId': itemId,
           'productName': productName,
           'quantity': inventoryData['quantity'] ?? 0,
           'factoryId': factoryId,
@@ -233,7 +233,7 @@ Future<void> _searchInventory({bool showAll = false}) async {
         trailing: IconButton(
           icon: const Icon(Icons.history, size: 20),
           onPressed: () =>
-              _showStockHistory(item['productId'], item['factoryId']),
+              _showStockHistory(item['itemId'], item['factoryId']),
         ),
       ),
     );
@@ -280,7 +280,7 @@ Future<void> _searchInventory({bool showAll = false}) async {
     );
   }
 
-  Future<void> _showStockHistory(String productId, String factoryId) async {
+  Future<void> _showStockHistory(String itemId, String factoryId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -291,7 +291,7 @@ Future<void> _searchInventory({bool showAll = false}) async {
         content: FutureBuilder<QuerySnapshot>(
           future: FirebaseFirestore.instance
               .collectionGroup('stock_movements')
-              .where('productId', isEqualTo: productId)
+              .where('itemId', isEqualTo: itemId)
               .where('factoryId', isEqualTo: factoryId)
               .orderBy('date', descending: true)
               .get(),

@@ -611,10 +611,10 @@ Future<void> _updateOrderStatus(
 
         for (final item in items) {
           final itemMap = item as Map<String, dynamic>;
-          final productId = itemMap['itemId']?.toString();
+          final itemId = itemMap['itemId']?.toString();
           final quantity = _parseQuantity(itemMap['quantity']);
 
-          if (productId == null || productId.isEmpty || quantity <= 0) continue;
+          if (itemId == null || itemId.isEmpty || quantity <= 0) continue;
 
           try {
             // تسجيل حركة المخزن
@@ -622,7 +622,7 @@ Future<void> _updateOrderStatus(
                 .collection('companies/$companyId/stock_movements')
                 .add({
               'type': 'purchase',
-              'productId': productId,
+              'itemId': itemId,
               'quantity': quantity,
               'date': FieldValue.serverTimestamp(),
               'referenceId': orderId,
@@ -633,14 +633,14 @@ Future<void> _updateOrderStatus(
             // تحديث المخزون
             final stockRef = FirebaseFirestore.instance
                 .collection('factories/$factoryId/inventory')
-                .doc(productId);
+                .doc(itemId);
 
             await stockRef.set({
               'quantity': FieldValue.increment(quantity),
               'lastUpdated': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
           } catch (e) {
-            debugPrint('❌ Error processing item $productId: $e');
+            debugPrint('❌ Error processing item $itemId: $e');
           }
         }
       }

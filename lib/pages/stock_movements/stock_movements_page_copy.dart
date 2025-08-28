@@ -27,7 +27,7 @@ class StockMovementsPage extends StatefulWidget {
 class _StockMovementsPageState extends State<StockMovementsPage> {
   String? selectedCompanyId;
   String? selectedFactoryId;
-  String? selectedProductId;
+  String? selectedItemId;
   DateTime? startDate;
   DateTime? endDate;
   String sortOrder = 'desc';
@@ -35,9 +35,9 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   List<String> userCompanyIds = [];
   List<Map<String, dynamic>> companies = [];
   List<Map<String, dynamic>> factories = [];
-  List<Map<String, dynamic>> products = [];
-  Map<String, int> productStocks = {};
-  Map<String, String> productNames = {};
+  List<Map<String, dynamic>> items = [];
+  Map<String, int> itemStocks = {};
+  Map<String, String> itemNames = {};
   bool _isArabic = false;
   bool isLoading = true;
   bool isExporting = false;
@@ -129,7 +129,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       await _loadCompanies();
     }
 
-    await _loadProductNames();
+    await _loadItemNames();
     setState(() => isLoading = false);
   }
 
@@ -220,7 +220,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     final isArabicNow = context.locale.languageCode == 'ar';
     if (_isArabic != isArabicNow) {
       _isArabic = isArabicNow;
-      _loadProductNames();
+      _loadItemNames();
       setState(() {});
     }
   }
@@ -251,7 +251,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         companies = [];
         selectedCompanyId = null;
         factories = [];
-        products = [];
+        items = [];
       });
       return;
     }
@@ -308,11 +308,11 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     });
 
     if (selectedFactoryId != null) {
-      await _loadProducts();
+      await _loadItems();
     }
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadItems() async {
     if (selectedFactoryId == null) return;
 
     final itemsSnap = await FirebaseFirestore.instance.collection('items').get();
@@ -327,8 +327,8 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     }).toList();
 
     setState(() {
-      products = prods;
-      selectedProductId = products.isNotEmpty ? products[0]['id'] : null;
+      items = prods;
+      selectedItemId = items.isNotEmpty ? items[0]['id'] : null;
     });
 
     await _loadInventory();
@@ -354,7 +354,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
           debugPrint('[ERROR] Processing inventory item ${doc.id}: $e');
         }
       }
-      setState(() => productStocks = stocks);
+      setState(() => itemStocks = stocks);
     } catch (e) {
       debugPrint('[ERROR] Loading inventory: $e');
       if (mounted) {
@@ -365,7 +365,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     }
   }
 
-  Future<void> _loadProductNames() async {
+  Future<void> _loadItemNames() async {
     final itemsSnap = await FirebaseFirestore.instance.collection('items').get();
 
     final names = <String, String>{};
@@ -376,18 +376,18 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
           : (data['nameEn'] ?? 'Unknown'.tr());
     }
     setState(() {
-      productNames = names;
+      itemNames = names;
     });
   }
 
 Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
   // تجميع البيانات حسب المنتج
-  final Map<String, List<Map<String, dynamic>>> productMovements = {};
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
   
   for (var doc in docs) {
     try {
       final data = doc.data() as Map<String, dynamic>;
-      final productId = data['productId']?.toString() ?? '';
+      final itemId = data['itemId']?.toString() ?? '';
       final type = data['type']?.toString() ?? 'unknown';
       final quantity = (data['quantity'] ?? 0) as int;
       final timestamp = data['date'] as Timestamp?;
@@ -395,12 +395,12 @@ Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
 
       final movementInfo = _getMovementTypeInfo(type, quantity);
       
-      if (!productMovements.containsKey(productId)) {
-        productMovements[productId] = [];
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
       }
       
       // إضافة الحركة
-      productMovements[productId]!.add({
+      itemMovements[itemId]!.add({
         'date': date,
         'type': type,
         'in': movementInfo['in'],
@@ -414,12 +414,12 @@ Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
   }
 
   return ListView.builder(
-    itemCount: productMovements.length,
+    itemCount: itemMovements.length,
     itemBuilder: (context, index) {
-      final productId = productMovements.keys.elementAt(index);
-      final movements = productMovements[productId]!;
-      final productName = productNames[productId] ?? 'Unknown Product'.tr();
-      final currentStock = productStocks[productId] ?? 0;
+      final itemId = itemMovements.keys.elementAt(index);
+      final movements = itemMovements[itemId]!;
+      final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+      final currentStock = itemStocks[itemId] ?? 0;
 
       // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
       int runningBalance = 0;
@@ -447,7 +447,7 @@ Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
                 children: [
                   Flexible(
                     child: Text(
-                      '${'product'.tr()}: $productName',
+                      '${'item'.tr()}: $itemName',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -568,8 +568,8 @@ Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
         .collection('stock_movements')
         .where('factoryId', isEqualTo: selectedFactoryId);
 
-    if (selectedProductId != null) {
-      query = query.where('productId', isEqualTo: selectedProductId);
+    if (selectedItemId != null) {
+      query = query.where('itemId', isEqualTo: selectedItemId);
     }
 
     if (startDate != null) {
@@ -758,22 +758,22 @@ Future<void> _exportToPdf(List<QueryDocumentSnapshot> docs) async {
 
 pw.Widget _buildPdfTable(List<QueryDocumentSnapshot> docs, pw.Font regularFont, pw.Font boldFont) {
   // تجميع الحركات حسب المنتج
-  final Map<String, List<Map<String, dynamic>>> productMovements = {};
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
   
   for (var doc in docs) {
     try {
       final docData = doc.data() as Map<String, dynamic>;
-      final productId = docData['productId']?.toString() ?? '';
+      final itemId = docData['itemId']?.toString() ?? '';
       final type = docData['type']?.toString() ?? 'unknown';
       final movementInfo = _getMovementTypeInfo(type, (docData['quantity'] ?? 0) as int);
       final timestamp = docData['date'] as Timestamp?;
       final date = timestamp != null ? _formatDate(timestamp.toDate()) : '';
 
-      if (!productMovements.containsKey(productId)) {
-        productMovements[productId] = [];
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
       }
 
-      productMovements[productId]!.add({
+      itemMovements[itemId]!.add({
         'date': date,
         'type': type,
         'in': movementInfo['in'],
@@ -788,7 +788,7 @@ pw.Widget _buildPdfTable(List<QueryDocumentSnapshot> docs, pw.Font regularFont, 
 
   return pw.Column(
     children: [
-      for (final productId in productMovements.keys)
+      for (final itemId in itemMovements.keys)
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -796,7 +796,7 @@ pw.Widget _buildPdfTable(List<QueryDocumentSnapshot> docs, pw.Font regularFont, 
             pw.Padding(
               padding: const pw.EdgeInsets.only(bottom: 8),
               child: pw.Text(
-                '${'product'.tr()}: ${productNames[productId] ?? 'Unknown'}',
+                '${'item'.tr()}: ${itemNames[itemId] ?? 'Unknown'}',
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 14,
@@ -837,7 +837,7 @@ pw.Widget _buildPdfTable(List<QueryDocumentSnapshot> docs, pw.Font regularFont, 
                   ],
                 ),
                 // بيانات الجدول
-                ..._buildProductTableRows(productMovements[productId]!, regularFont),
+                ..._buildItemTableRows(itemMovements[itemId]!, regularFont),
               ],
             ),
             pw.SizedBox(height: 16),
@@ -847,7 +847,7 @@ pw.Widget _buildPdfTable(List<QueryDocumentSnapshot> docs, pw.Font regularFont, 
   );
 }
 
-List<pw.TableRow> _buildProductTableRows(List<Map<String, dynamic>> movements, pw.Font font) {
+List<pw.TableRow> _buildItemTableRows(List<Map<String, dynamic>> movements, pw.Font font) {
   final List<pw.TableRow> rows = [];
   
   // حساب الرصيد التدريجي
@@ -916,7 +916,7 @@ List<pw.TableRow> _buildProductTableRows(List<Map<String, dynamic>> movements, p
           children: [
             _buildPdfHeaderCell('#', boldFont),
             _buildPdfHeaderCell('date'.tr(), boldFont),
-          //  _buildPdfHeaderCell('product'.tr(), boldFont),
+          //  _buildPdfHeaderCell('item'.tr(), boldFont),
             _buildPdfHeaderCell('movement_type'.tr(), boldFont),
             _buildPdfHeaderCell('IN', boldFont),
             _buildPdfHeaderCell('OUT', boldFont),
@@ -958,22 +958,22 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
   final List<pw.TableRow> rows = [];
   
   // تجميع الحركات حسب المنتج وحساب الرصيد
-  final Map<String, List<Map<String, dynamic>>> productMovements = {};
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
   
   for (var doc in docs) {
     try {
       final docData = doc.data() as Map<String, dynamic>;
-      final productId = docData['productId']?.toString() ?? '';
+      final itemId = docData['itemId']?.toString() ?? '';
       final type = docData['type']?.toString() ?? 'unknown';
       final movementInfo = _getMovementTypeInfo(type, (docData['quantity'] ?? 0) as int);
       final timestamp = docData['date'] as Timestamp?;
       final date = timestamp != null ? _formatDate(timestamp.toDate()) : '';
 
-      if (!productMovements.containsKey(productId)) {
-        productMovements[productId] = [];
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
       }
 
-      productMovements[productId]!.add({
+      itemMovements[itemId]!.add({
         'date': date,
         'type': type,
         'in': movementInfo['in'],
@@ -988,9 +988,9 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
 
   int globalIndex = 1;
   
-  for (final productId in productMovements.keys) {
-    final movements = productMovements[productId]!;
-    final productName = productNames[productId] ?? 'Unknown';
+  for (final itemId in itemMovements.keys) {
+    final movements = itemMovements[itemId]!;
+    final itemName = itemNames[itemId] ?? 'Unknown';
     
     // حساب الرصيد التدريجي
     int runningBalance = 0;
@@ -1009,7 +1009,7 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
         children: [
           _buildPdfDataCell('', font, align: pw.TextAlign.center),
           _buildPdfDataCell('', font, align: pw.TextAlign.center),
-          _buildPdfDataCell('${'product'.tr()}: $productName', font, align: pw.TextAlign.left),
+          _buildPdfDataCell('${'item'.tr()}: $itemName', font, align: pw.TextAlign.left),
           _buildPdfDataCell('', font, align: pw.TextAlign.center),
           _buildPdfDataCell('', font, align: pw.TextAlign.center),
           _buildPdfDataCell('', font, align: pw.TextAlign.center),
@@ -1137,9 +1137,9 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
                       setState(() {
                         selectedCompanyId = val;
                         selectedFactoryId = null;
-                        selectedProductId = null;
+                        selectedItemId = null;
                         factories = [];
-                        products = [];
+                        items = [];
                       });
                       if (val != null) await _loadFactories();
                     },
@@ -1154,10 +1154,10 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
                     onChanged: (val) async {
                       setState(() {
                         selectedFactoryId = val;
-                        selectedProductId = null;
-                        products = [];
+                        selectedItemId = null;
+                        items = [];
                       });
-                      if (val != null) await _loadProducts();
+                      if (val != null) await _loadItems();
                     },
                   ),
                 ),
@@ -1168,10 +1168,10 @@ List<pw.TableRow> _buildPdfTableRows(List<QueryDocumentSnapshot> docs, pw.Font f
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    label: 'select_product',
-                    value: selectedProductId,
-                    items: products,
-                    onChanged: (val) => setState(() => selectedProductId = val),
+                    label: 'select_item',
+                    value: selectedItemId,
+                    items: items,
+                    onChanged: (val) => setState(() => selectedItemId = val),
                   ),
                 ),
                 const SizedBox(width: 8),

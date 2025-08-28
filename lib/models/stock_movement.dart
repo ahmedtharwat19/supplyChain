@@ -14,7 +14,7 @@ class StockMovement {
 
   // ➤ الخصائص
   final String? id;
-  final String productId;
+  final String itemId;
   final double quantity;
   final String unit;
   final String type;
@@ -26,7 +26,7 @@ class StockMovement {
 
   StockMovement({
     this.id,
-    required this.productId,
+    required this.itemId,
     required this.quantity,
     required this.unit,
     required this.type,
@@ -40,7 +40,7 @@ class StockMovement {
   factory StockMovement.fromMap(Map<String, dynamic> data, String documentId) {
     return StockMovement(
       id: documentId,
-      productId: data[fieldItemId] ?? '',
+      itemId: data[fieldItemId] ?? '',
       quantity: (data[fieldQuantity] as num?)?.toDouble() ?? 0.0,
       unit: data[fieldUnit] ?? '',
       type: data[fieldType] ?? '',
@@ -54,7 +54,7 @@ class StockMovement {
 
   Map<String, dynamic> toMap() {
     return {
-      fieldItemId: productId,
+      fieldItemId: itemId,
       fieldQuantity: quantity,
       fieldUnit: unit,
       fieldType: type,
@@ -70,7 +70,7 @@ class StockMovement {
     final data = doc.data() as Map<String, dynamic>;
     return StockMovement(
       id: doc.id,
-      productId: data[fieldItemId] ?? '',
+      itemId: data[fieldItemId] ?? '',
       quantity: (data[fieldQuantity] as num?)?.toDouble() ?? 0.0,
       unit: data[fieldUnit] ?? '',
       type: data[fieldType] ?? '',

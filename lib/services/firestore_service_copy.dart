@@ -612,16 +612,16 @@ class FirestoreService {
       .collection('factories/$factoryId/inventory');
 
   for (final item in items) {
-    final productId = item.itemId;
+    final itemId = item.itemId;
     final quantity = item.quantity;
 
-    if (productId.isEmpty || quantity <= 0) continue;
+    if (itemId.isEmpty || quantity <= 0) continue;
 
     final newMovementRef = stockMovementsRef.doc();
 
     batch.set(newMovementRef, {
       'type': 'purchase',
-      'productId': productId,
+      'itemId': itemId,
       'quantity': quantity,
       'date': FieldValue.serverTimestamp(),
       'referenceId': orderId,
@@ -629,7 +629,7 @@ class FirestoreService {
       'factoryId': factoryId,
     });
 
-    final stockRef = inventoryCollection.doc(productId);
+    final stockRef = inventoryCollection.doc(itemId);
 
     batch.set(
       stockRef,
@@ -660,16 +660,16 @@ class FirestoreService {
 
     for (final item in items) {
       final itemMap = item as Map<String, dynamic>;
-      final productId = itemMap['itemId']?.toString();
+      final itemId = itemMap['itemId']?.toString();
       final quantity = _parseQuantity(itemMap['quantity']);
 
-      if (productId == null || productId.isEmpty || quantity <= 0) continue;
+      if (itemId == null || itemId.isEmpty || quantity <= 0) continue;
 
       final newMovementRef = stockMovementsRef.doc();
 
       batch.set(newMovementRef, {
         'type': 'purchase',
-        'productId': productId,
+        'itemId': itemId,
         'quantity': quantity,
         'date': FieldValue.serverTimestamp(),
         'referenceId': orderId,
@@ -677,7 +677,7 @@ class FirestoreService {
         'factoryId': factoryId,
       });
 
-      final stockDoc = inventoryRef.doc(productId);
+      final stockDoc = inventoryRef.doc(itemId);
       batch.set(
           stockDoc,
           {
@@ -741,7 +741,7 @@ class FirestoreService {
   Stream<List<StockMovement>> getStockMovementsStream({
     required String companyId,
     required String factoryId,
-    String? productId,
+    String? itemId,
     DateTime? startDate,
     DateTime? endDate,
     bool desc = true,
@@ -751,7 +751,7 @@ class FirestoreService {
         .collection('stock_movements')
         .where('factoryId', isEqualTo: factoryId);
 
-    if (productId != null) query = query.where('productId', isEqualTo: productId);
+    if (itemId != null) query = query.where('itemId', isEqualTo: itemId);
     if (startDate != null) query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
     if (endDate != null) {
       final endOfDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);

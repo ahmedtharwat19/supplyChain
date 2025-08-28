@@ -264,10 +264,10 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
               '📦 Order is marked as delivered. Processing stock movements.');
 
           for (final item in _items) {
-            final productId = item.itemId;
+            final itemId = item.itemId;
             final quantity = item.quantity;
 
-            if (productId.isEmpty || quantity <= 0) continue;
+            if (itemId.isEmpty || quantity <= 0) continue;
 
             try {
               // 1. أضف حركة المخزون
@@ -275,7 +275,7 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
                   .collection('companies/$_selectedCompanyId/stock_movements')
                   .add({
                 'type': 'purchase',
-                'productId': productId,
+                'itemId': itemId,
                 'quantity': quantity,
                 'date': FieldValue.serverTimestamp(),
                 'referenceId': orderId,
@@ -286,14 +286,14 @@ class _AddPurchaseOrderPageState extends State<AddPurchaseOrderPage> {
               // 2. تحديث الكمية في المخزون
               final stockRef = FirebaseFirestore.instance
                   .collection('factories/$_selectedFactoryId/inventory')
-                  .doc(productId);
+                  .doc(itemId);
 
               await stockRef.set({
                 'quantity': FieldValue.increment(quantity),
                 'lastUpdated': FieldValue.serverTimestamp(),
               }, SetOptions(merge: true));
             } catch (e) {
-              debugPrint('❌ Error processing item $productId: $e');
+              debugPrint('❌ Error processing item $itemId: $e');
             }
           }
         }

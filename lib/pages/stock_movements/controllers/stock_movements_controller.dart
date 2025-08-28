@@ -16,13 +16,13 @@ class StockMovementsController extends ChangeNotifier {
   List<String> userCompanyIds = [];
   List<Map<String, dynamic>> companies = [];
   List<Map<String, dynamic>> factories = [];
-  List<Map<String, dynamic>> products = [];
-  Map<String, int> productStocks = {};
-  Map<String, String> productNames = {};
+  List<Map<String, dynamic>> items = [];
+  Map<String, int> itemStocks = {};
+  Map<String, String> itemNames = {};
   
   String? selectedCompanyId;
   String? selectedFactoryId;
-  String? selectedProductId;
+  String? selectedItemId;
   DateTime? startDate;
   DateTime? endDate;
   String sortOrder = 'desc';
@@ -63,7 +63,7 @@ class StockMovementsController extends ChangeNotifier {
   }
 
   /// تحميل المنتجات
-  Future<void> loadProducts() async {
+  Future<void> loadItems() async {
     // تنفيذ منطق تحميل المنتجات
   }
 
