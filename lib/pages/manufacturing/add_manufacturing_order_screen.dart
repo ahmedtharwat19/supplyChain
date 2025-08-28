@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:puresip_purchasing/models/company.dart';
 import 'package:puresip_purchasing/models/factory.dart';
 import 'package:puresip_purchasing/models/finished_product.dart';
-import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import 'package:puresip_purchasing/pages/manufacturing/services/manufacturing_service.dart';
 
 class AddManufacturingOrderScreen extends StatefulWidget {
@@ -1183,6 +1182,8 @@ Future<void> _calculateInventoryNeeds() async {
   };
 
   try {
+    if (!mounted) return;
+
     final manufacturingService =
         Provider.of<ManufacturingService>(context, listen: false);
 
@@ -1192,6 +1193,8 @@ Future<void> _calculateInventoryNeeds() async {
     // استدعاء startManufacturingWithComposition بعد حفظ الأمر بنجاح
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      if (!mounted) return;
+
       await manufacturingService.startManufacturingWithComposition(
         companyId: _selectedCompany!.id!,
         factoryId: _selectedFactory!.id!,

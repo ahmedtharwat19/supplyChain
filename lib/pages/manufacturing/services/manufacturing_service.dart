@@ -3,7 +3,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:puresip_purchasing/models/manufacturing_order_model.dart';
 import 'package:puresip_purchasing/models/finished_product.dart';
-import 'package:puresip_purchasing/models/product_composition_model.dart';
 
 class ManufacturingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -99,7 +98,7 @@ class ManufacturingService {
 }) async {
   final localContext = context;
   final firestore = FirebaseFirestore.instance;
-
+final bool isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
   try {
     // 1. جلب تركيب المنتج (composition)
     final compDoc = await firestore
@@ -154,7 +153,7 @@ class ManufacturingService {
         final itemDoc = await firestore.collection('items').doc(itemId).get();
         if (itemDoc.exists) {
           final itemData = itemDoc.data()!;
-          final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
+        //  final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
           material['itemName'] = isArabic 
               ? (itemData['nameAr'] ?? itemData['nameEn'] ?? 'Unknown')
               : (itemData['nameEn'] ?? itemData['nameAr'] ?? 'Unknown');
@@ -233,7 +232,7 @@ class ManufacturingService {
     final productDoc = await firestore.collection('finished_products').doc(productId).get();
     if (productDoc.exists) {
       final productData = productDoc.data()!;
-      final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
+     // final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
       productName = isArabic 
           ? (productData['nameAr'] ?? productData['nameEn'] ?? 'Unknown Product')
           : (productData['nameEn'] ?? productData['nameAr'] ?? 'Unknown Product');
@@ -299,6 +298,13 @@ class ManufacturingService {
         orderId = orderDoc.id;
         break;
       }
+
+      if (targetOrder != null) {
+  // Use it, e.g.:
+        debugPrint("Target order found: ${targetOrder.id}");
+  // Or perform some action with it
+}
+
     }
 
     // 11. تحديث أمر التصنيع ليشمل مواد التعبئة
@@ -313,7 +319,7 @@ class ManufacturingService {
           final itemDoc = await firestore.collection('items').doc(itemId).get();
           if (itemDoc.exists) {
             final itemData = itemDoc.data()!;
-            final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
+            
             itemName = isArabic 
                 ? (itemData['nameAr'] ?? itemData['nameEn'] ?? 'Unknown')
                 : (itemData['nameEn'] ?? itemData['nameAr'] ?? 'Unknown');

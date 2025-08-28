@@ -12,7 +12,7 @@ class MovementUtils {
     String trSafe(String key) {
       try {
         final result = key.tr();
-        return result is String ? result : key;
+        return result;
       } catch (e) {
         return key;
       }
