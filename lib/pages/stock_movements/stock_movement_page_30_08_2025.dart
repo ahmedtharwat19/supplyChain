@@ -1,12 +1,12 @@
-// lib/pages/stock_movements/stock_movements_page.dart
+
+/*
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:puresip_purchasing/widgets/app_scaffold.dart';
-//import 'package:flutter/system.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -31,7 +31,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   String? selectedCompanyId;
   String? selectedFactoryId;
   String? selectedItemId;
-  String? selectedCategory;
   DateTime? startDate;
   DateTime? endDate;
   String sortOrder = 'desc';
@@ -40,7 +39,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   List<Map<String, dynamic>> companies = [];
   List<Map<String, dynamic>> factories = [];
   List<Map<String, dynamic>> items = [];
-  List<Map<String, dynamic>> allItems = []; // تخزين جميع العناصر
   Map<String, double> itemStocks = {};
   Map<String, String> itemNames = {};
   bool _isArabic = false;
@@ -286,10 +284,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
       setState(() {
         factories = factoriesWithMovements;
         selectedFactoryId = factories.isNotEmpty ? factories[0]['id'] : null;
-        selectedCategory = null;
-        selectedItemId = null;
-        items = [];
-        allItems = [];
       });
 
       if (selectedFactoryId != null) {
@@ -324,7 +318,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         }
       }
 
-      // جلب تفاصيل جميع المنتجات أولاً
+      // جلب تفاصيل المنتجات
       for (final itemId in itemIds) {
         try {
           final itemDoc = await FirebaseFirestore.instance
@@ -334,13 +328,10 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
 
           if (itemDoc.exists) {
             final itemData = itemDoc.data()!;
-            final itemCategory = itemData['category']?.toString() ?? 'raw_material';
-            
             itemsWithMovements.add({
               'id': itemId,
               'nameAr': itemData['nameAr'] ?? itemId,
               'nameEn': itemData['nameEn'] ?? itemId,
-              'category': itemCategory,
             });
           }
         } catch (e) {
@@ -348,39 +339,14 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         }
       }
 
-      // حفظ جميع العناصر ثم تطبيق الفلترة
       setState(() {
-        allItems = itemsWithMovements;
-        _filterItemsByCategory();
+        items = itemsWithMovements;
+        selectedItemId = items.isNotEmpty ? items[0]['id'] : null;
       });
 
       await _loadInventory();
     } catch (e) {
       debugPrint('[ERROR] Failed to load items with movements: $e');
-    }
-  }
-
-  // دالة جديدة: تصفية العناصر بناءً على الفئة المحددة
-  void _filterItemsByCategory() {
-    if (selectedCategory == null || selectedCategory == 'all') {
-      setState(() {
-        items = List.from(allItems);
-      });
-    } else {
-      setState(() {
-        items = allItems.where((item) => item['category'] == selectedCategory).toList();
-      });
-    }
-
-    // تحديث العنصر المحدد
-    if (items.isNotEmpty) {
-      setState(() {
-        selectedItemId = items[0]['id'];
-      });
-    } else {
-      setState(() {
-        selectedItemId = null;
-      });
     }
   }
 
@@ -434,234 +400,225 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
   }
 
   Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
-    // تجميع البيانات حسب المنتج
-    final Map<String, List<Map<String, dynamic>>> itemMovements = {};
+  // تجميع البيانات حسب المنتج
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
 
-    for (var doc in docs) {
-      try {
+  for (var doc in docs) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      
+      // استخدام itemId بدلاً من itemId (التصحيح الرئيسي)
+      final itemId = data['itemId']?.toString() ?? '';
+      final type = data['type']?.toString() ?? 'unknown';
+      
+      // تحويل الكمية إلى double بشكل آمن
+      double quantity = 0;
+      final quantityValue = data['quantity'];
+      if (quantityValue is int) {
+        quantity = quantityValue.toDouble();
+      } else if (quantityValue is double) {
+        quantity = quantityValue;
+      } else if (quantityValue is String) {
+        quantity = double.tryParse(quantityValue) ?? 0;
+      } else if (quantityValue is num) {
+        quantity = quantityValue.toDouble();
+      }
+      
+      final timestamp = data['date'] as Timestamp?;
+      final date = timestamp != null ? timestamp.toDate() : DateTime.now();
+
+      final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
+
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
+      }
+
+      // إضافة الحركة
+      itemMovements[itemId]!.add({
+        'date': date,
+        'type': type,
+        'in': movementInfo['in'],
+        'out': movementInfo['out'],
+        'type_text': movementInfo['type_text'],
+      });
+    } catch (e) {
+      debugPrint('[ERROR] Processing movement: $e');
+      // طباعة تفاصيل المستند للمساعدة في التصحيح
+      debugPrint('Document data: ${doc.data()}');
+      
+      // تحليل الخطأ بشكل أكثر تفصيلاً
+      if (e is TypeError) {
+        debugPrint('Type error details: ${e.toString()}');
         final data = doc.data() as Map<String, dynamic>;
-        
-        // استخدام itemId بدلاً من itemId (التصحيح الرئيسي)
-        final itemId = data['itemId']?.toString() ?? '';
-        final type = data['type']?.toString() ?? 'unknown';
-        
-        // تحويل الكمية إلى double بشكل آمن
-        double quantity = 0;
-        final quantityValue = data['quantity'];
-        if (quantityValue is int) {
-          quantity = quantityValue.toDouble();
-        } else if (quantityValue is double) {
-          quantity = quantityValue;
-        } else if (quantityValue is String) {
-          quantity = double.tryParse(quantityValue) ?? 0;
-        } else if (quantityValue is num) {
-          quantity = quantityValue.toDouble();
-        }
-        
-        final timestamp = data['date'] as Timestamp?;
-        final date = timestamp != null ? timestamp.toDate() : DateTime.now();
-
-        final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
-
-        if (!itemMovements.containsKey(itemId)) {
-          itemMovements[itemId] = [];
-        }
-
-        // إضافة الحركة
-        itemMovements[itemId]!.add({
-          'date': date,
-          'type': type,
-          'in': movementInfo['in'],
-          'out': movementInfo['out'],
-          'type_text': movementInfo['type_text'],
-          'quantity': quantity,
-        });
-      } catch (e) {
-        debugPrint('[ERROR] Processing movement: $e');
-        // طباعة تفاصيل المستند للمساعدة في التصحيح
-        debugPrint('Document data: ${doc.data()}');
-        
-        // تحليل الخطأ بشكل أكثر تفصيلاً
-        if (e is TypeError) {
-          debugPrint('Type error details: ${e.toString()}');
-          final data = doc.data() as Map<String, dynamic>;
-          debugPrint('itemId type: ${data['itemId']?.runtimeType}');
-          debugPrint('type type: ${data['type']?.runtimeType}');
-          debugPrint('quantity type: ${data['quantity']?.runtimeType}');
-          debugPrint('date type: ${data['date']?.runtimeType}');
-        }
+        debugPrint('itemId type: ${data['itemId']?.runtimeType}');
+        debugPrint('type type: ${data['type']?.runtimeType}');
+        debugPrint('quantity type: ${data['quantity']?.runtimeType}');
+        debugPrint('date type: ${data['date']?.runtimeType}');
       }
     }
+  }
 
-    // إذا تم التخلص من الـ Widget، نرجع widget فارغ
-    if (!mounted) {
-      return const SizedBox.shrink();
-    }
+  // إذا تم التخلص من الـ Widget، نرجع widget فارغ
+  if (!mounted) {
+    return const SizedBox.shrink();
+  }
 
-    return ListView.builder(
-      itemCount: itemMovements.length,
-      itemBuilder: (context, index) {
-        // تحقق مرة أخرى في كل مرة يتم فيها بناء عنصر
-        if (!mounted) {
-          return const SizedBox.shrink();
-        }
+  return ListView.builder(
+    itemCount: itemMovements.length,
+    itemBuilder: (context, index) {
+      // تحقق مرة أخرى في كل مرة يتم فيها بناء عنصر
+      if (!mounted) {
+        return const SizedBox.shrink();
+      }
 
-        final itemId = itemMovements.keys.elementAt(index);
-        final movements = itemMovements[itemId]!;
-        final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
-        final currentStock = itemStocks[itemId] ?? 0;
+      final itemId = itemMovements.keys.elementAt(index);
+      final movements = itemMovements[itemId]!;
+      final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+      final currentStock = itemStocks[itemId] ?? 0;
 
-        // إصلاح حساب الرصيد: يجب أن نبدأ من الصفر ونضيف الحركات بالترتيب الزمني
-        double runningBalance = 0;
-        final movementsWithBalance = [];
-        
-        // ترتيب الحركات من الأقدم إلى الأحدث لحساب الرصيد بشكل صحيح
-        movements.sort((a, b) => a['date'].compareTo(b['date']));
-        
-        for (var movement in movements) {
-          runningBalance = runningBalance + movement['in'] - movement['out'];
-          movementsWithBalance.add({
-            ...movement,
-            'balance': runningBalance,
-          });
-        }
+      // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
+      double runningBalance = currentStock; // نبدأ من الرصيد الحالي
+      final movementsWithBalance = movements.map((movement) {
+        runningBalance = runningBalance + movement['in'] - movement['out'];
+        return {
+          ...movement,
+          'balance': runningBalance,
+        };
+      }).toList();
 
-        // عكس القائمة لعرض الأحدث أولاً مع الحفاظ على الرصيد الصحيح
-        final reversedMovements = movementsWithBalance.reversed.toList();
+      // عكس القائمة لعرض الأحدث أولاً مع الرصيد الصحيح
+      final reversedMovements = movementsWithBalance.reversed.toList();
 
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // عنوان المنتج والرصيد الحالي
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        '${'item'.tr()}: $itemName',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '${'current_balance'.tr()}: $currentStock',
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // عنوان المنتج والرصيد الحالي
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${'item'.tr()}: $itemName',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        fontSize: 16,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // جدول الحركات مع تمرير مزدوج
-                SizedBox(
-                  height: 300, // ارتفاع ثابت للجدول
-                  child: Scrollbar(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 16,
-                          dataRowMinHeight: 40,
-                          dataRowMaxHeight: 60,
-                          headingRowHeight: 40,
-                          columns: [
-                            const DataColumn(
-                                label: Text('#',
-                                    style: TextStyle(fontWeight: FontWeight.bold)),
-                                numeric: true),
-                            DataColumn(
-                              label: Text('date'.tr(),
-                                  style: const TextStyle(fontWeight: FontWeight.bold)),
-                              tooltip: 'movement_date'.tr(),
-                            ),
-                            DataColumn(
-                              label: Text('movement_type'.tr(),
-                                  style: const TextStyle(fontWeight: FontWeight.bold)),
-                              tooltip: 'type_of_movement'.tr(),
-                            ),
-                            DataColumn(
-                                label: Text('in'.tr(),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green)),
-                                numeric: true,
-                                tooltip: 'quantity_in'.tr()),
-                            DataColumn(
-                                label: Text('out'.tr(),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red)),
-                                numeric: true,
-                                tooltip: 'quantity_out'.tr()),
-                            DataColumn(
-                                label: Text('balance'.tr(),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue)),
-                                numeric: true,
-                                tooltip: 'running_balance'.tr()),
-                          ],
-                          rows: List<DataRow>.generate(reversedMovements.length, (index) {
-                            final movement = reversedMovements[index];
-                            return DataRow(
-                              cells: [
-                                DataCell(Text((index + 1).toString())),
-                                DataCell(Text(_formatDate(movement['date']))),
-                                DataCell(Text(movement['type_text'])),
-                                DataCell(Text(
-                                  movement['in'] > 0
-                                      ? movement['in'].toStringAsFixed(2)
-                                      : '-',
-                                  style: TextStyle(
-                                    color: movement['in'] > 0
-                                        ? Colors.green
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )),
-                                DataCell(Text(
-                                  movement['out'] > 0
-                                      ? movement['out'].toStringAsFixed(2)
-                                      : '-',
-                                  style: TextStyle(
-                                    color: movement['out'] > 0
-                                        ? Colors.red
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )),
-                                DataCell(Text(
-                                  movement['balance'].toStringAsFixed(2),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                )),
-                              ],
-                            );
-                          }),
-                        ),
-                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  Text(
+                    '${'current_balance'.tr()}: $currentStock',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // جدول الحركات
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: IntrinsicWidth(
+                  child: DataTable(
+                    columnSpacing: 16,
+                    dataRowMinHeight: 40,
+                    dataRowMaxHeight: 60,
+                    headingRowHeight: 40,
+                    columns: [
+                      const DataColumn(
+                          label: Text('#',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          numeric: true),
+                      DataColumn(
+                        label: Text('date'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('movement_type'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                          label: Text('in'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('out'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('balance'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue)),
+                          numeric: true),
+                    ],
+                    rows: List<DataRow>.generate(reversedMovements.length,
+                        (index) {
+                      // تحقق مرة أخرى قبل بناء كل صف
+                      if (!mounted) {
+                        return const DataRow(cells: []);
+                      }
+
+                      final movement = reversedMovements[index];
+                      return DataRow(
+                        cells: [
+                          DataCell(Text((index + 1).toString())),
+                          DataCell(Text(_formatDate(movement['date']))),
+                          DataCell(Text(movement['type_text'])),
+                          DataCell(Text(
+                            movement['in'] > 0
+                                ? movement['in'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['in'] > 0
+                                  ? Colors.green
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['out'] > 0
+                                ? movement['out'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['out'] > 0
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['balance'].toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          )),
+                        ],
+                      );
+                    }),
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Query<Map<String, dynamic>> _buildMovementsQuery() {
     if (selectedCompanyId == null || selectedFactoryId == null) {
@@ -748,13 +705,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                       'factory'.tr(),
                       _isArabic ? factory['nameAr'] : factory['nameEn'],
                       cairoRegular),
-                  if (selectedCategory != null)
-                    _buildPdfInfoRow(
-                        'category'.tr(),
-                        selectedCategory == 'raw_material' 
-                            ? 'raw_materials'.tr() 
-                            : 'packaging'.tr(),
-                        cairoRegular),
                   _buildPdfInfoRow('generated_on'.tr(),
                       DateFormat('yyyy/MM/dd HH:mm').format(now), cairoRegular),
                   _buildPdfInfoRow(
@@ -1080,7 +1030,6 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // الصف الأول: الشركة والمصنع
             Row(
               children: [
                 Expanded(
@@ -1093,10 +1042,8 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                         selectedCompanyId = val;
                         selectedFactoryId = null;
                         selectedItemId = null;
-                        selectedCategory = null;
                         factories = [];
                         items = [];
-                        allItems = [];
                       });
                       if (val != null) await _loadFactoriesWithMovements();
                     },
@@ -1112,9 +1059,7 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
                       setState(() {
                         selectedFactoryId = val;
                         selectedItemId = null;
-                        selectedCategory = null;
                         items = [];
-                        allItems = [];
                       });
                       if (val != null) await _loadItemsWithMovements();
                     },
@@ -1123,41 +1068,8 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
               ],
             ),
             const SizedBox(height: 8),
-            
-            // الصف الثاني: الفئة والمنتج والترتيب
             Row(
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'category'.tr(),
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('all_categories'.tr()),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'raw_material',
-                        child: Text('raw_materials'.tr()),
-                      ),
-                      DropdownMenuItem<String>(
-                        value: 'packaging',
-                        child: Text('packaging'.tr()),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        selectedCategory = val;
-                      });
-                      _filterItemsByCategory();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: _buildDropdown(
                     label: 'select_item',
@@ -1309,3 +1221,414 @@ class _StockMovementsPageState extends State<StockMovementsPage> {
     );
   }
 }
+
+
+
+/* Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
+  // تجميع البيانات حسب المنتج
+  final Map<String, List<Map<String, dynamic>>> itemMovements = {};
+
+  for (var doc in docs) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      final itemId = data['itemId']?.toString() ?? '';
+      final type = data['type']?.toString() ?? 'unknown';
+      
+      // تحويل الكمية إلى double بشكل آمن
+      double quantity = 0;
+      final quantityValue = data['quantity'];
+      if (quantityValue is int) {
+        quantity = quantityValue.toDouble();
+      } else if (quantityValue is double) {
+        quantity = quantityValue;
+      } else if (quantityValue is String) {
+        quantity = double.tryParse(quantityValue) ?? 0;
+      } else if (quantityValue is num) {
+        quantity = quantityValue.toDouble();
+      }
+      
+      final timestamp = data['date'] as Timestamp?;
+      final date = timestamp != null ? timestamp.toDate() : DateTime.now();
+
+      final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
+
+      if (!itemMovements.containsKey(itemId)) {
+        itemMovements[itemId] = [];
+      }
+
+      // إضافة الحركة
+      itemMovements[itemId]!.add({
+        'date': date,
+        'type': type,
+        'in': movementInfo['in'],
+        'out': movementInfo['out'],
+        'type_text': movementInfo['type_text'],
+      });
+    } catch (e) {
+      debugPrint('[ERROR] Processing movement: $e');
+      // طباعة تفاصيل المستند للمساعدة في التصحيح
+      debugPrint('Document data: ${doc.data()}');
+    }
+  }
+
+  // إذا تم التخلص من الـ Widget، نرجع widget فارغ
+  if (!mounted) {
+    return const SizedBox.shrink();
+  }
+
+  return ListView.builder(
+    itemCount: itemMovements.length,
+    itemBuilder: (context, index) {
+      // تحقق مرة أخرى في كل مرة يتم فيها بناء عنصر
+      if (!mounted) {
+        return const SizedBox.shrink();
+      }
+
+      final itemId = itemMovements.keys.elementAt(index);
+      final movements = itemMovements[itemId]!;
+      final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+      final currentStock = itemStocks[itemId] ?? 0;
+
+      // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
+      double runningBalance = 0;
+      final movementsWithBalance = movements.map((movement) {
+        runningBalance =
+            (runningBalance - movement['out'] + movement['in']).toDouble();
+        return {
+          ...movement,
+          'balance': runningBalance,
+        };
+      }).toList();
+
+      // عكس القائمة لعرض الأحدث أولاً مع الرصيد الصحيح
+      final reversedMovements = movementsWithBalance.reversed.toList();
+
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // عنوان المنتج والرصيد الحالي
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${'item'.tr()}: $itemName',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${'current_balance'.tr()}: $currentStock',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // جدول الحركات
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: IntrinsicWidth(
+                  child: DataTable(
+                    columnSpacing: 16,
+                    dataRowMinHeight: 40,
+                    dataRowMaxHeight: 60,
+                    headingRowHeight: 40,
+                    columns: [
+                      const DataColumn(
+                          label: Text('#',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          numeric: true),
+                      DataColumn(
+                        label: Text('date'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                        label: Text('movement_type'.tr(),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DataColumn(
+                          label: Text('in'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('out'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
+                          numeric: true),
+                      DataColumn(
+                          label: Text('balance'.tr(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue)),
+                          numeric: true),
+                    ],
+                    rows: List<DataRow>.generate(reversedMovements.length,
+                        (index) {
+                      // تحقق مرة أخرى قبل بناء كل صف
+                      if (!mounted) {
+                        return const DataRow(cells: []);
+                      }
+
+                      final movement = reversedMovements[index];
+                      return DataRow(
+                        cells: [
+                          DataCell(Text((index + 1).toString())),
+                          DataCell(Text(_formatDate(movement['date']))),
+                          DataCell(Text(movement['type_text'])),
+                          DataCell(Text(
+                            movement['in'] > 0
+                                ? movement['in'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['in'] > 0
+                                  ? Colors.green
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['out'] > 0
+                                ? movement['out'].toStringAsFixed(2)
+                                : '-',
+                            style: TextStyle(
+                              color: movement['out'] > 0
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                          DataCell(Text(
+                            movement['balance'].toStringAsFixed(2),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          )),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+ *//*   Widget _buildMovementsTable(List<QueryDocumentSnapshot> docs) {
+    // تجميع البيانات حسب المنتج
+    final Map<String, List<Map<String, dynamic>>> itemMovements = {};
+
+    for (var doc in docs) {
+      try {
+        final data = doc.data() as Map<String, dynamic>;
+        final itemId = data['itemId']?.toString() ?? '';
+        final type = data['type']?.toString() ?? 'unknown';
+        final quantity = (data['quantity'] ?? 0) as double;
+        final timestamp = data['date'] as Timestamp?;
+        final date = timestamp != null ? timestamp.toDate() : DateTime.now();
+
+        final movementInfo = MovementUtils.getMovementTypeInfo(type, quantity);
+
+        if (!itemMovements.containsKey(itemId)) {
+          itemMovements[itemId] = [];
+        }
+
+        // إضافة الحركة
+        itemMovements[itemId]!.add({
+          'date': date,
+          'type': type,
+          'in': movementInfo['in'],
+          'out': movementInfo['out'],
+          'type_text': movementInfo['type_text'],
+        });
+      } catch (e) {
+        debugPrint('[ERROR] Processing movement: $e');
+      }
+    }
+
+    return ListView.builder(
+      itemCount: itemMovements.length,
+      itemBuilder: (context, index) {
+        final itemId = itemMovements.keys.elementAt(index);
+        final movements = itemMovements[itemId]!;
+        final itemName = itemNames[itemId] ?? 'Unknown Item'.tr();
+        final currentStock = itemStocks[itemId] ?? 0;
+
+        // حساب الرصيد التدريجي (من الأقدم إلى الأحدث)
+        double runningBalance = 0;
+        final movementsWithBalance = movements.map((movement) {
+          runningBalance =
+              (runningBalance - movement['out'] + movement['in']).toDouble();
+          return {
+            ...movement,
+            'balance': runningBalance,
+          };
+        }).toList();
+
+        // عكس القائمة لعرض الأحدث أولاً مع الرصيد الصحيح
+        final reversedMovements = movementsWithBalance.reversed.toList();
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // عنوان المنتج والرصيد الحالي
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${'item'.tr()}: $itemName',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${'current_balance'.tr()}: $currentStock',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // جدول الحركات
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: IntrinsicWidth(
+                    child: DataTable(
+                      columnSpacing: 16,
+                      dataRowMinHeight: 40,
+                      dataRowMaxHeight: 60,
+                      headingRowHeight: 40,
+                      columns: [
+                        const DataColumn(
+                            label: Text('#',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            numeric: true),
+                        DataColumn(
+                          label: Text('date'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        DataColumn(
+                          label: Text('movement_type'.tr(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        DataColumn(
+                            label: Text('in'.tr(),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green)),
+                            numeric: true),
+                        DataColumn(
+                            label: Text('out'.tr(),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red)),
+                            numeric: true),
+                        DataColumn(
+                            label: Text('balance'.tr(),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue)),
+                            numeric: true),
+                      ],
+                      rows: List<DataRow>.generate(reversedMovements.length,
+                          (index) {
+                        final movement = reversedMovements[index];
+                        return DataRow(
+                          cells: [
+                            DataCell(Text((index + 1).toString())),
+                            DataCell(Text(_formatDate(movement['date']))),
+                            DataCell(Text(movement['type_text'])),
+                            DataCell(Text(
+                              movement['in'] > 0
+                                  ? movement['in'].toString()
+                                  : '-',
+                              style: TextStyle(
+                                color: movement['in'] > 0
+                                    ? Colors.green
+                                    : Colors.grey,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )),
+                            DataCell(Text(
+                              movement['out'] > 0
+                                  ? movement['out'].toString()
+                                  : '-',
+                              style: TextStyle(
+                                color: movement['out'] > 0
+                                    ? Colors.red
+                                    : Colors.grey,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )),
+                            DataCell(Text(
+                              movement['balance'].toString(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            )),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+ */
+/*   Future<void> _retryLoading() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await _loadUserCompaniesFromFirestore();
+      if (userCompanyIds.isNotEmpty) {
+        await _loadCompaniesWithMovements();
+        await _loadInventory();
+      }
+    } catch (e) {
+      debugPrint('[ERROR] Retry failed: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+ */
+ */

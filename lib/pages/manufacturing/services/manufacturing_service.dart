@@ -228,14 +228,14 @@ final bool isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
     final stockMovRef = firestore.collection('companies/$companyId/stock_movements');
 
     // 8. جلب اسم المنتج من finished_products
-    String productName = '';
+  //  String productName = '';
     final productDoc = await firestore.collection('finished_products').doc(productId).get();
     if (productDoc.exists) {
-      final productData = productDoc.data()!;
+    //  final productData = productDoc.data()!;
      // final isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
-      productName = isArabic 
-          ? (productData['nameAr'] ?? productData['nameEn'] ?? 'Unknown Product')
-          : (productData['nameEn'] ?? productData['nameAr'] ?? 'Unknown Product');
+      // productName = isArabic 
+      //     ? (productData['nameAr'] ?? productData['nameEn'] ?? 'Unknown Product')
+      //     : (productData['nameEn'] ?? productData['nameAr'] ?? 'Unknown Product');
     }
 
     for (var material in requiredMaterials) {
@@ -248,20 +248,20 @@ final bool isArabic = Localizations.localeOf(localContext).languageCode == 'ar';
         final newMovRef = stockMovRef.doc();
         batch.set(newMovRef, {
           'type': 'manufacturing_deduction',
-          'productId': productId,
-          'productName': productName,
+         // 'productId': productId,
+         // 'productName': productName,
           'itemId': itemId,
-          'itemName': itemName,
-          'quantity': -qty,
+        //  'itemName': itemName,
+          'quantity': qty,
           'date': FieldValue.serverTimestamp(),
-          'referenceId': batchNumber,
+          'referenceId': newMovRef.id,
           'userId': userId,
           'factoryId': factoryId,
-          'companyId': companyId,
-          'batchNumber': batchNumber,
-          'movementType': 'out',
-          'description': 'Manufacturing deduction for product $productName',
-          'unit': material['unit'],
+       //   'companyId': companyId,
+       //   'batchNumber': batchNumber,
+        //  'movementType': 'out',
+        //  'description': 'Manufacturing deduction for product $productName',
+      //    'unit': material['unit'],
         });
 
         // تحديث المخزون في المصنع

@@ -1435,7 +1435,7 @@ Future<void> _calculateInventoryNeeds() async {
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
                       columns: [
-                        const DataColumn(label: Text('itemId')),
+                      //  const DataColumn(label: Text('itemId')),
                         const DataColumn(label: Text('itemName')),
                         const DataColumn(label: Text('plan')),
                         const DataColumn(label: Text('inventory')),
@@ -1445,7 +1445,7 @@ Future<void> _calculateInventoryNeeds() async {
                         final differenceColor =
                             item.difference < 0 ? Colors.red : Colors.green;
                         return DataRow(cells: [
-                          DataCell(Text(item.itemId)),
+                    //      DataCell(Text(item.itemId)),
                           DataCell(Text(item.itemName)),
                           DataCell(
                               Text(item.plannedQuantity.toStringAsFixed(2))),

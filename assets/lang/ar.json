@@ -783,7 +783,16 @@
   "all_factories": "جميع المصانع",
   "close": "إغلاق",
   "no_factories_available": "لا توجد مصانع متاحة",
+  "select_item": "اختر الصنف",
+  "select_item_type": "اختر نوع الصنف",
 
+  "all_categories": "جميع الفئات", 
+
+  "movement_date": "تاريخ الحركة",
+  "type_of_movement": "نوع الحركة",
+  "quantity_in": "الكمية الداخلة",
+  "quantity_out": "الكمية الخارجة", 
+  "running_balance": "الرصيد المتداول",
   "manufacturing": {
     "select_product": "اختر المنتج التام",
     "production_date": "تاريخ الإنتاج",
