@@ -1,102 +1,38 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base href="$FLUTTER_BASE_HREF">
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
 
-    <meta charset="UTF-8" />
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta name="description" content="PureSip Purchasing Web App" />
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
 
-    <meta name="google-signin-client_id" content="80836764748-b9oa8c86ago3ckp801ogm5ol6ae5va3b.apps.googleusercontent.com" />
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
-    <!-- iOS meta tags & icons -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="PureSip Purchasing" />
-    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
 
-    <!-- Manifest -->
-    <link rel="manifest" href="manifest.json" />
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="puresip_purchasing">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-    <title>PureSip Purchasing</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
 
-    <!-- ✅ شاشة تحميل مخصصة -->
-    <style>
-      body {
-        margin: 0;
-        font-family: 'Arial', sans-serif;
-        background-color: #f2f2f2;
-      }
-
-      #loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        text-align: center;
-      }
-
-      .logo-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .logo {
-        width: 100px;
-        margin-bottom: 20px;
-      }
-
-      .loading-text {
-        font-size: 18px;
-        color: #333;
-      }
-    </style>
-    <base href="/">
-        <style>
-      @font-face {
-        font-family: 'Cairo';
-        src: url('fonts/Cairo-Regular.ttf');
-      }
-
-      body {
-        font-family: 'Cairo', sans-serif;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- ✅ عنصر شاشة التحميل -->
-    <div id="loading">
-      <div class="logo-container">
-        <img src="assets/logo.png" alt="Logo" class="logo" />
-        <p id="loading-text" class="loading-text">Loading...</p>
-      </div>
-    </div>
-
-    <!-- ✅ تغيير لغة التحميل بناءً على المتصفح -->
-    <script>
-      const lang = navigator.language || navigator.userLanguage;
-
-      let loadingText = "Loading the app...";
-      if (lang.startsWith("ar")) {
-        loadingText = "جارٍ تحميل التطبيق...";
-        document.body.style.direction = "rtl";
-        document.body.style.fontFamily = "Cairo, sans-serif";
-      }
-
-      document.getElementById("loading-text").innerText = loadingText;
-
-      // إخفاء شاشة التحميل بعد بدء تشغيل فلاتر
-      window.addEventListener('flutter-first-frame', function () {
-        const loader = document.getElementById('loading');
-        if (loader) loader.remove();
-      });
-    </script>
-
-    <!-- ✅ تحميل تطبيق Flutter -->
-    <script src="flutter_bootstrap.js" async></script>
-  </body>
+  <title>puresip_purchasing</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
 </html>

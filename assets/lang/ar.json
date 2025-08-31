@@ -776,6 +776,10 @@
   "insufficient_stock": "المخزون غير كافي",
   "insufficient_stock_error": "خطأ: المخزون غير كافي لبدء التصنيع",
   "manufacturing_deduction": "خصم تصنيع",
+  "balance_summary": "ملخص الرصيد",
+
+  "total_in": "إجمالي الداخل",
+  "total_out": "إجمالي الخارج",
 
 "all": "الكل",
   "all_companies": "كل الشركات",
@@ -785,15 +789,23 @@
   "no_factories_available": "لا توجد مصانع متاحة",
   "select_item": "اختر الصنف",
   "select_item_type": "اختر نوع الصنف",
-
+"opening_balance": "الرصيد الافتتاحي",
+  "closing_balance": "الرصيد الختامي",
   "all_categories": "جميع الفئات", 
-
+  "initial_balance": "الرصيد الافتتاحي",
+  "final_balance": "الرصيد الختامي",
   "movement_date": "تاريخ الحركة",
   "type_of_movement": "نوع الحركة",
   "quantity_in": "الكمية الداخلة",
   "quantity_out": "الكمية الخارجة", 
   "running_balance": "الرصيد المتداول",
+  "reports": "التقارير",
   "manufacturing": {
+       "number_of_runs": "عدد التشغيلات",
+    "show_inventory": "عرض المخزون",
+    "save_order": "حفظ الطلب",
+    "run_quantity": "كمية التشغيل",
+    "enter_run_quantity": "يرجى إدخال كمية التشغيل",
     "select_product": "اختر المنتج التام",
     "production_date": "تاريخ الإنتاج",
     "days_remaining": "الأيام المتبقية",

@@ -42,8 +42,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Needed to identify your device</string>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

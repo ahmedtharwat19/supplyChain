@@ -36,6 +36,8 @@ jre/
 android/ndk-bundle/
 android/ndk/
 android/sdk/
+android/key.properties
+
 
 # ==================================================
 #                FLUTTER/ARTIFACTS                 

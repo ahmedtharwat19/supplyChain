@@ -156,4 +156,17 @@ final List<DashboardMetric> dashboardMetrics = [
     },
     defaultMenuType: 'long', // short, long, أو custom
   ),
+    DashboardMetric(
+    titleKey: 'reports',
+    valueBuilder: (data) => (data['reports'] ?? 0).toString(),
+    icon: Icons.report,
+    color: Colors.red,
+    route: '/reports',
+    progressBuilder: (data) {
+      final value = (data['reports'] ?? 0) as int;
+      final max = 50;
+      return (value / max).clamp(0.0, 1.0);
+    },
+    defaultMenuType: 'long', // short, long, أو custom
+  ),
 ];
