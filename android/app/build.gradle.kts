@@ -40,7 +40,7 @@ flutter {
 
 dependencies {
     // ✅ الصيغة الصحيحة لـ Kotlin DSL
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:3.0.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     
     implementation("androidx.core:core-ktx:1.12.0")
     // أضف باقي dependencies هنا بنفس الصيغة
